@@ -1,0 +1,142 @@
+// ═══════════════════════════════════════════════════════════════
+//  Advak Language — Interfaces (como Java / C#)
+//  Execute: advak run interfaces_exemplo.dk
+// ═══════════════════════════════════════════════════════════════
+
+// ── 1. Definição de interface ─────────────────────────────────
+// Uma interface é um CONTRATO: define quais métodos a classe DEVE ter
+// A classe que usar 'implementa' é OBRIGADA a ter todos os métodos
+
+interface IAnimal {
+    falar();
+    mover();
+    descricao();
+}
+
+interface IVoador {
+    voar();
+    pousar();
+    altitude();
+}
+
+interface IDomestico {
+    brincar();
+    dormir();
+}
+
+// ── 2. Classe com UMA interface ───────────────────────────────
+classe Cachorro implementa IAnimal, IDomestico {
+    construtor(nome, raca) {
+        isso.nome = nome;
+        isso.raca = raca;
+    }
+    falar()     { retornar `${isso.nome}: Au Au Au!`; }
+    mover()     { retornar `${isso.nome} corre abanando o rabo!`; }
+    descricao() { retornar `Cachorro ${isso.raca} chamado ${isso.nome}`; }
+    brincar()   { retornar `${isso.nome} brinca com a bolinha!`; }
+    dormir()    { retornar `${isso.nome} dorme na caminha.`; }
+}
+
+// ── 3. Classe com MÚLTIPLAS interfaces ────────────────────────
+classe Aguia implementa IAnimal, IVoador {
+    construtor(nome, envergadura) {
+        isso.nome        = nome;
+        isso.envergadura = envergadura;
+        isso._altitude   = 0;
+    }
+    falar()     { retornar `${isso.nome}: KREEEE!`; }
+    mover()     { retornar `${isso.nome} caminha majestosamente.`; }
+    descricao() { retornar `Águia de ${isso.envergadura}m de envergadura`; }
+    voar() {
+        isso._altitude = 1000;
+        retornar `${isso.nome} sobe aos céus! Altitude: ${isso._altitude}m`;
+    }
+    pousar() {
+        isso._altitude = 0;
+        retornar `${isso.nome} pousou suavemente.`;
+    }
+    altitude() { retornar isso._altitude; }
+}
+
+// ── 4. Interface herdando outra interface ─────────────────────
+// Como em Java: interface pode estender outra interface
+interface IVeiculo {
+    acelerar();
+    frear();
+}
+
+interface IVeiculoEletrico herda IVeiculo {
+    carregar();
+    bateria();
+}
+
+classe Tesla implementa IVeiculoEletrico {
+    construtor(modelo) {
+        isso.modelo    = modelo;
+        isso.velocidade = 0;
+        isso._bateria  = 100;
+    }
+    acelerar() {
+        isso.velocidade = isso.velocidade + 30;
+        isso._bateria   = isso._bateria - 5;
+        retornar `${isso.modelo}: ${isso.velocidade}km/h | Bateria: ${isso._bateria}%`;
+    }
+    frear() {
+        isso.velocidade = 0;
+        retornar `${isso.modelo} freou.`;
+    }
+    carregar() {
+        isso._bateria = 100;
+        retornar `${isso.modelo} carregando... 100%`;
+    }
+    bateria() { retornar isso._bateria; }
+}
+
+// ── 5. Polimorfismo — trata objetos diferentes como mesmo tipo ─
+// Todos os IAnimal podem ser tratados da mesma forma!
+
+imprimir("═══ Polimorfismo com Interface IAnimal ═══");
+seja dog   = novo Cachorro("Rex", "Labrador");
+seja eagle = novo Aguia("Zeus", 2.5);
+seja animais = [dog, eagle];
+
+para (a em animais) {
+    imprimir(a.descricao());
+    imprimir(a.falar());
+    imprimir(a.mover());
+    imprimir("---");
+}
+
+imprimir("═══ Interfaces Múltiplas ═══");
+imprimir(dog.brincar());
+imprimir(dog.dormir());
+imprimir(eagle.voar());
+imprimir(eagle.altitude());
+imprimir(eagle.pousar());
+
+imprimir("═══ Interface com Herança ═══");
+seja carro = novo Tesla("Model S");
+imprimir(carro.acelerar());
+imprimir(carro.acelerar());
+imprimir(carro.acelerar());
+imprimir(`Velocidade final: ${carro.velocidade}km/h`);
+imprimir(`Bateria restante: ${carro.bateria()}%`);
+imprimir(carro.frear());
+imprimir(carro.carregar());
+
+// ── 6. Erro de contrato — tente descomentar este código ───────
+// Se Gato não implementar TODOS os métodos de IAnimal,
+// Advak lança erro: "Classe 'Gato' não implementa os métodos: ['mover']"
+//
+// classe Gato implementa IAnimal {
+//     construtor(nome) { isso.nome = nome; }
+//     falar()     { retornar "Miau"; }
+//     descricao() { retornar "Gato"; }
+//     // mover() está faltando → ERRO!
+// }
+
+imprimir("═══════════════════════════════════");
+imprimir("Interfaces Advak — como Java/C#!");
+imprimir("interface → define contrato");
+imprimir("implementa → obriga a cumprir");
+imprimir("polimorfismo → mesmo tipo, comportamentos diferentes");

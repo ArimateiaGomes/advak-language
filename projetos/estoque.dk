@@ -1,0 +1,540 @@
+// ═══════════════════════════════════════════════════════════════
+//  ADVAK ESTOQUE PRO — Sistema de Estoque Ultramoderno
+//  Execute: advak run estoque.dk --db
+// ═══════════════════════════════════════════════════════════════
+
+// ── Auto-setup do banco (cria automaticamente se não existir) ──
+imprimir("🗄️  Configurando banco de dados...")
+banco.auto_setup("advak_estoque", {
+    "categorias": {
+        "id":   "autonum",
+        "nome": "texto"
+    },
+    "produtos": {
+        "id":           "autonum",
+        "nome":         "texto",
+        "codigo":       "varchar",
+        "categoria_id": "inteiro",
+        "preco":        "decimal",
+        "custo":        "decimal",
+        "estoque":      "inteiro",
+        "estoque_min":  "inteiro",
+        "unidade":      "varchar",
+        "ativo":        "booleano",
+        "criado":       "data"
+    },
+    "movimentos": {
+        "id":         "autonum",
+        "produto_id": "inteiro",
+        "tipo":       "varchar",
+        "quantidade": "inteiro",
+        "observacao": "texto",
+        "data":       "data"
+    }
+})
+
+// Categorias padrão
+se (banco.buscar("categorias").contar() == 0) {
+    banco.inserir_varios("categorias", [
+        {"nome": "Informatica"},
+        {"nome": "Eletronicos"},
+        {"nome": "Escritorio"},
+        {"nome": "Limpeza"},
+        {"nome": "Outros"}
+    ]);
+}
+
+// Produtos de exemplo
+se (banco.buscar("produtos").contar() == 0) {
+    banco.inserir_varios("produtos", [
+        {"nome":"Notebook Dell",    "codigo":"NB001","categoria_id":1,"preco":3500.00,"custo":2800.00,"estoque":8, "estoque_min":3,"unidade":"un"},
+        {"nome":"Mouse Wireless",   "codigo":"MS001","categoria_id":1,"preco":89.90, "custo":45.00, "estoque":25,"estoque_min":10,"unidade":"un"},
+        {"nome":"Teclado USB",      "codigo":"TC001","categoria_id":1,"preco":129.90,"custo":65.00, "estoque":15,"estoque_min":8, "unidade":"un"},
+        {"nome":"Monitor 24\"",     "codigo":"MN001","categoria_id":2,"preco":899.00,"custo":650.00,"estoque":4, "estoque_min":3,"unidade":"un"},
+        {"nome":"Headset Gamer",    "codigo":"HS001","categoria_id":2,"preco":249.90,"custo":120.00,"estoque":2, "estoque_min":5,"unidade":"un"},
+        {"nome":"Papel A4 Resma",   "codigo":"PP001","categoria_id":3,"preco":28.90, "custo":18.00, "estoque":50,"estoque_min":20,"unidade":"resma"},
+        {"nome":"Caneta Azul cx",   "codigo":"CN001","categoria_id":3,"preco":15.90, "custo":8.00,  "estoque":30,"estoque_min":15,"unidade":"cx"},
+        {"nome":"Detergente 500ml", "codigo":"DT001","categoria_id":4,"preco":3.90,  "custo":2.00,  "estoque":3, "estoque_min":10,"unidade":"un"}
+    ]);
+}
+
+// ── Interface Gráfica ─────────────────────────────────────────
+seja janela = gui.janela("ADVAK ESTOQUE PRO v1.0", 1100, 680);
+janela.centralizar();
+
+// ── Abas principais ───────────────────────────────────────────
+seja abas = gui.abas(janela);
+seja aba_dash    = abas.adicionar("  Dashboard  ");
+seja aba_prod    = abas.adicionar("  Produtos  ");
+seja aba_mov     = abas.adicionar("  Movimentos  ");
+seja aba_relat   = abas.adicionar("  Relatorios  ");
+
+// ════════════════════════════════════════════════════════════
+//  ABA 1 — DASHBOARD
+// ════════════════════════════════════════════════════════════
+gui.label(aba_dash, "ADVAK ESTOQUE PRO — Painel de Controle", negrito=verdadeiro);
+gui.separador(aba_dash);
+
+// Cards de resumo
+seja fr_cards = gui.frame_horizontal(aba_dash);
+
+gui.label(fr_cards, "  Total de Produtos: ");
+seja lbl_total = gui.label(fr_cards, "---");
+
+gui.label(fr_cards, "    Estoque Critico: ");
+seja lbl_critico = gui.label(fr_cards, "---");
+
+gui.label(fr_cards, "    Valor em Estoque: ");
+seja lbl_valor = gui.label(fr_cards, "---");
+
+gui.separador(aba_dash);
+
+// Tabela de produtos criticos
+gui.label(aba_dash, "Produtos com Estoque Critico (abaixo do minimo):", negrito=verdadeiro);
+seja tab_critico = gui.tabela(aba_dash,
+    ["Codigo", "Produto", "Estoque Atual", "Estoque Minimo", "Situacao"],
+    altura=6);
+
+gui.separador(aba_dash);
+
+// Tabela ultimos movimentos
+gui.label(aba_dash, "Ultimos Movimentos:", negrito=verdadeiro);
+seja tab_ultimos = gui.tabela(aba_dash,
+    ["Data", "Produto", "Tipo", "Quantidade", "Observacao"],
+    altura=6);
+
+// Botao atualizar dashboard
+gui.botao(aba_dash, "Atualizar Dashboard", (btn) => {
+    atualizar_dashboard();
+}, estilo="primario");
+
+// ════════════════════════════════════════════════════════════
+//  ABA 2 — PRODUTOS
+// ════════════════════════════════════════════════════════════
+// Barra de busca e filtros
+seja fr_busca = gui.frame_horizontal(aba_prod);
+gui.label(fr_busca, "Buscar:");
+seja campo_busca = gui.campo(fr_busca, "Nome ou codigo...", largura=25);
+gui.label(fr_busca, "  Categoria:");
+seja sel_cat = gui.caixa_selecao(fr_busca, ["Todas", "Informatica", "Eletronicos", "Escritorio", "Limpeza", "Outros"]);
+gui.botao(fr_busca, "Buscar", (btn) => { buscar_produtos(); });
+gui.botao(fr_busca, "Todos", (btn) => {
+    campo_busca.limpar();
+    carregar_produtos();
+}, estilo="secundario");
+
+// Tabela de produtos
+seja tab_produtos = gui.tabela(aba_prod,
+    ["ID", "Codigo", "Nome", "Categoria", "Preco", "Custo", "Estoque", "Min", "Unidade", "Status"],
+    altura=15,
+    ao_selecionar=(linha) => { selecionar_produto(linha); });
+
+// Botoes de acao
+seja fr_btns = gui.frame_horizontal(aba_prod);
+gui.botao(fr_btns, "Novo Produto",   (btn) => { form_produto(nulo); },    estilo="sucesso");
+gui.botao(fr_btns, "Editar",         (btn) => { editar_produto_sel(); },  estilo="primario");
+gui.botao(fr_btns, "Entrada Estoque",(btn) => { form_movimento("ENTRADA"); }, estilo="sucesso");
+gui.botao(fr_btns, "Saida Estoque",  (btn) => { form_movimento("SAIDA"); },   estilo="perigo");
+gui.botao(fr_btns, "Excluir",        (btn) => { excluir_produto_sel(); }, estilo="perigo");
+
+// ════════════════════════════════════════════════════════════
+//  ABA 3 — MOVIMENTOS
+// ════════════════════════════════════════════════════════════
+gui.label(aba_mov, "Historico de Movimentos", negrito=verdadeiro);
+gui.separador(aba_mov);
+
+seja fr_filtro_mov = gui.frame_horizontal(aba_mov);
+gui.label(fr_filtro_mov, "Tipo:");
+seja sel_tipo_mov = gui.caixa_selecao(fr_filtro_mov, ["Todos", "ENTRADA", "SAIDA", "AJUSTE"]);
+gui.botao(fr_filtro_mov, "Filtrar", (btn) => { filtrar_movimentos(); });
+
+seja tab_mov = gui.tabela(aba_mov,
+    ["ID", "Data", "Produto", "Codigo", "Tipo", "Quantidade", "Observacao"],
+    altura=20);
+
+// ════════════════════════════════════════════════════════════
+//  ABA 4 — RELATORIOS
+// ════════════════════════════════════════════════════════════
+gui.label(aba_relat, "Relatorios do Sistema", negrito=verdadeiro);
+gui.separador(aba_relat);
+
+seja fr_relat_btns = gui.frame_horizontal(aba_relat);
+gui.botao(fr_relat_btns, "Relatorio Geral",     (btn) => { relatorio_geral(); });
+gui.botao(fr_relat_btns, "Estoque Critico",      (btn) => { relatorio_critico(); });
+gui.botao(fr_relat_btns, "Mais Movimentados",    (btn) => { relatorio_movimentados(); });
+gui.botao(fr_relat_btns, "Valor por Categoria",  (btn) => { relatorio_categorias(); });
+
+seja area_relat = gui.area_texto(aba_relat, largura=90, altura=25);
+
+// ════════════════════════════════════════════════════════════
+//  VARIAVEL GLOBAL — produto selecionado
+// ════════════════════════════════════════════════════════════
+seja produto_selecionado = nulo;
+
+// ════════════════════════════════════════════════════════════
+//  FUNCOES
+// ════════════════════════════════════════════════════════════
+
+função carregar_produtos() {
+    tab_produtos.limpar();
+    seja prods = banco.sql(
+        "SELECT p.id, p.codigo, p.nome, c.nome as cat, p.preco, p.custo, " +
+        "p.estoque, p.estoque_min, p.unidade, p.ativo " +
+        "FROM produtos p LEFT JOIN categorias c ON p.categoria_id = c.id " +
+        "WHERE p.ativo = true ORDER BY p.nome"
+    );
+    para (p em prods) {
+        seja status = "OK";
+        se (p.estoque <= 0) { status = "SEM ESTOQUE"; }
+        senão se (p.estoque <= p.estoque_min) { status = "CRITICO"; }
+        tab_produtos.adicionar([
+            p.id, p.codigo, p.nome, p.cat,
+            `R$ ${p.preco}`, `R$ ${p.custo}`,
+            p.estoque, p.estoque_min, p.unidade, status
+        ]);
+    }
+}
+
+função buscar_produtos() {
+    seja busca = campo_busca.valor();
+    seja cat   = sel_cat.valor();
+    tab_produtos.limpar();
+    seja sql = "SELECT p.id, p.codigo, p.nome, c.nome as cat, p.preco, p.custo, " +
+               "p.estoque, p.estoque_min, p.unidade, p.ativo " +
+               "FROM produtos p LEFT JOIN categorias c ON p.categoria_id = c.id " +
+               "WHERE p.ativo = true";
+    se (busca) {
+        seja filtro = "%" + busca + "%";
+        seja prods = banco.sql(sql + " AND (p.nome ILIKE '" + filtro + "' OR p.codigo ILIKE '" + filtro + "') ORDER BY p.nome");
+        para (p em prods) {
+            seja status = "OK";
+            se (p.estoque <= 0) { status = "SEM ESTOQUE"; }
+            senão se (p.estoque <= p.estoque_min) { status = "CRITICO"; }
+            tab_produtos.adicionar([p.id, p.codigo, p.nome, p.cat, `R$ ${p.preco}`, `R$ ${p.custo}`, p.estoque, p.estoque_min, p.unidade, status]);
+        }
+    } senão {
+        carregar_produtos();
+    }
+}
+
+função selecionar_produto(linha) {
+    se (linha) {
+        produto_selecionado = linha;
+    }
+}
+
+função form_produto(prod) {
+    seja win2 = gui.janela("Cadastro de Produto", 450, 420);
+    gui.label(win2, "Cadastro de Produto", negrito=verdadeiro);
+    gui.separador(win2);
+    gui.label(win2, "Codigo:");
+    seja f_codigo = gui.campo(win2, "Ex: NB001", largura=30);
+    gui.label(win2, "Nome do Produto:");
+    seja f_nome = gui.campo(win2, "Nome completo", largura=40);
+    gui.label(win2, "Preco de Venda (R$):");
+    seja f_preco = gui.campo(win2, "0.00", largura=15);
+    gui.label(win2, "Custo (R$):");
+    seja f_custo = gui.campo(win2, "0.00", largura=15);
+    gui.label(win2, "Estoque Inicial:");
+    seja f_estoque = gui.campo(win2, "0", largura=10);
+    gui.label(win2, "Estoque Minimo:");
+    seja f_min = gui.campo(win2, "5", largura=10);
+    gui.label(win2, "Unidade:");
+    seja f_unid = gui.caixa_selecao(win2, ["un", "cx", "kg", "lt", "mt", "resma", "pct"]);
+    gui.separador(win2);
+    seja fr2 = gui.frame_horizontal(win2);
+    gui.botao(fr2, "Salvar", (btn) => {
+        seja codigo  = f_codigo.valor();
+        seja nome    = f_nome.valor();
+        seja preco   = f_preco.valor();
+        seja custo   = f_custo.valor();
+        seja estoque = f_estoque.valor();
+        seja minimo  = f_min.valor();
+        seja unidade = f_unid.valor();
+        se (!codigo || !nome || !preco) {
+            gui.erro("Codigo, Nome e Preco sao obrigatorios!");
+            retornar;
+        }
+        tentar {
+            banco.inserir("produtos", {
+                codigo: codigo,
+                nome: nome,
+                preco: numero(preco),
+                custo: numero(custo),
+                estoque: numero(estoque),
+                estoque_min: numero(minimo),
+                unidade: unidade,
+                categoria_id: 5
+            });
+            banco.inserir("movimentos", {
+                produto_id: banco.sql("SELECT id FROM produtos WHERE codigo='" + codigo + "' LIMIT 1")[0].id,
+                tipo: "ENTRADA",
+                quantidade: numero(estoque),
+                observacao: "Estoque inicial"
+            });
+            gui.alerta("Produto cadastrado com sucesso!");
+            win2.fechar();
+            carregar_produtos();
+            atualizar_dashboard();
+        } capturar (e) {
+            gui.erro(`Erro ao salvar: ${e}`);
+        }
+    }, estilo="sucesso");
+    gui.botao(fr2, "Cancelar", (btn) => { win2.fechar(); }, estilo="secundario");
+}
+
+função editar_produto_sel() {
+    se (!produto_selecionado) {
+        gui.aviso("Selecione um produto primeiro!");
+        retornar;
+    }
+    seja id = produto_selecionado["ID"];
+    seja prod = banco.buscar_id("produtos", numero(id));
+    seja win3 = gui.janela("Editar Produto", 400, 300);
+    gui.label(win3, `Editando: ${prod.nome}`, negrito=verdadeiro);
+    gui.separador(win3);
+    gui.label(win3, "Preco de Venda (R$):");
+    seja f_preco = gui.campo(win3, texto(prod.preco), largura=15);
+    gui.label(win3, "Custo (R$):");
+    seja f_custo = gui.campo(win3, texto(prod.custo), largura=15);
+    gui.label(win3, "Estoque Minimo:");
+    seja f_min = gui.campo(win3, texto(prod.estoque_min), largura=10);
+    gui.separador(win3);
+    seja fr3 = gui.frame_horizontal(win3);
+    gui.botao(fr3, "Salvar", (btn) => {
+        banco.atualizar("produtos", {
+            preco: numero(f_preco.valor()),
+            custo: numero(f_custo.valor()),
+            estoque_min: numero(f_min.valor())
+        }).onde("id = %s", numero(id)).executar();
+        gui.alerta("Produto atualizado!");
+        win3.fechar();
+        carregar_produtos();
+        atualizar_dashboard();
+    }, estilo="sucesso");
+    gui.botao(fr3, "Cancelar", (btn) => { win3.fechar(); }, estilo="secundario");
+}
+
+função form_movimento(mov_tipo) {
+    se (!produto_selecionado) {
+        gui.aviso("Selecione um produto na tabela primeiro!");
+        retornar;
+    }
+    seja id   = produto_selecionado["ID"];
+    seja nome_prod = produto_selecionado["Nome"];
+    seja est_atual = produto_selecionado["Estoque"];
+    seja win4 = gui.janela(`${mov_tipo} de Estoque`, 380, 260);
+    gui.label(win4, `${mov_tipo}: ${nome_prod}`, negrito=verdadeiro);
+    gui.label(win4, `Estoque atual: ${est_atual}`);
+    gui.separador(win4);
+    gui.label(win4, "Quantidade:");
+    seja f_qtd = gui.campo(win4, "1", largura=10);
+    gui.label(win4, "Observacao:");
+    seja f_obs = gui.campo(win4, "", largura=35);
+    gui.separador(win4);
+    seja fr4 = gui.frame_horizontal(win4);
+    gui.botao(fr4, "Confirmar", (btn) => {
+        seja qtd = numero(f_qtd.valor());
+        seja obs = f_obs.valor();
+        se (qtd <= 0) { gui.erro("Quantidade deve ser maior que zero!"); retornar; }
+        seja novo_est = numero(est_atual);
+        se (mov_tipo == "SAIDA") {
+            se (qtd > novo_est) {
+                gui.erro(`Estoque insuficiente! Disponivel: ${novo_est}`);
+                retornar;
+            }
+            novo_est = novo_est - qtd;
+        } senão {
+            novo_est = novo_est + qtd;
+        }
+        banco.atualizar("produtos", {estoque: novo_est})
+            .onde("id = %s", numero(id)).executar();
+        banco.inserir("movimentos", {
+            produto_id: numero(id),
+            tipo: mov_tipo,
+            quantidade: qtd,
+            observacao: obs
+        });
+        gui.alerta(`${mov_tipo} realizada! Novo estoque: ${novo_est}`);
+        win4.fechar();
+        carregar_produtos();
+        carregar_movimentos();
+        atualizar_dashboard();
+    }, estilo="sucesso");
+    gui.botao(fr4, "Cancelar", (btn) => { win4.fechar(); }, estilo="secundario");
+}
+
+função excluir_produto_sel() {
+    se (!produto_selecionado) {
+        gui.aviso("Selecione um produto primeiro!");
+        retornar;
+    }
+    seja id   = produto_selecionado["ID"];
+    seja nome_prod = produto_selecionado["Nome"];
+    se (gui.confirmar(`Desativar o produto "${nome_prod}"?`)) {
+        banco.atualizar("produtos", {ativo: falso})
+            .onde("id = %s", numero(id)).executar();
+        gui.alerta("Produto desativado!");
+        carregar_produtos();
+        atualizar_dashboard();
+    }
+}
+
+função carregar_movimentos() {
+    tab_mov.limpar();
+    seja movs = banco.sql(
+        "SELECT m.id, m.data, p.nome, p.codigo, m.tipo, m.quantidade, m.observacao " +
+        "FROM movimentos m JOIN produtos p ON m.produto_id = p.id " +
+        "ORDER BY m.id DESC LIMIT 100"
+    );
+    para (m em movs) {
+        seja data_fmt = texto(m.data);
+        se (Texto.tamanho(data_fmt) > 16) { data_fmt = Texto.slice(data_fmt, 0, 16); }
+        tab_mov.adicionar([m.id, data_fmt, m.nome, m.codigo, m.tipo, m.quantidade, m.observacao]);
+    }
+}
+
+função filtrar_movimentos() {
+    seja mov_tipo = sel_tipo_mov.valor();
+    tab_mov.limpar();
+    seja sql = "SELECT m.id, m.data, p.nome, p.codigo, m.tipo, m.quantidade, m.observacao " +
+               "FROM movimentos m JOIN produtos p ON m.produto_id = p.id ";
+    se (mov_tipo != "Todos") {
+        sql = sql + "WHERE m.tipo = '" + mov_tipo + "' ";
+    }
+    sql = sql + "ORDER BY m.id DESC LIMIT 100";
+    seja movs = banco.sql(sql);
+    para (m em movs) {
+        seja data_fmt = texto(m.data);
+        se (Texto.tamanho(data_fmt) > 16) { data_fmt = Texto.slice(data_fmt, 0, 16); }
+        tab_mov.adicionar([m.id, data_fmt, m.nome, m.codigo, m.tipo, m.quantidade, m.observacao]);
+    }
+}
+
+função atualizar_dashboard() {
+    // Cards de resumo
+    seja total = banco.buscar("produtos").onde("ativo = %s", verdadeiro).contar();
+    seja criticos = banco.sql("SELECT COUNT(*) as n FROM produtos WHERE ativo=true AND estoque <= estoque_min")[0].n;
+    seja valor_res = banco.sql("SELECT SUM(preco * estoque) as total FROM produtos WHERE ativo=true")[0].total;
+    seja valor_fmt = "R$ 0,00";
+    se (valor_res) { valor_fmt = `R$ ${valor_res}`; }
+
+    lbl_total.texto(`${total} produtos`);
+    lbl_critico.texto(`${criticos} produtos`);
+    lbl_valor.texto(valor_fmt);
+
+    // Tabela criticos
+    tab_critico.limpar();
+    seja crits = banco.sql(
+        "SELECT codigo, nome, estoque, estoque_min FROM produtos " +
+        "WHERE ativo=true AND estoque <= estoque_min ORDER BY estoque ASC"
+    );
+    para (p em crits) {
+        seja sit = "BAIXO";
+        se (p.estoque <= 0) { sit = "ZERADO!"; }
+        tab_critico.adicionar([p.codigo, p.nome, p.estoque, p.estoque_min, sit]);
+    }
+
+    // Ultimos movimentos
+    tab_ultimos.limpar();
+    seja ultimos = banco.sql(
+        "SELECT m.data, p.nome, m.tipo, m.quantidade, m.observacao " +
+        "FROM movimentos m JOIN produtos p ON m.produto_id = p.id " +
+        "ORDER BY m.id DESC LIMIT 10"
+    );
+    para (m em ultimos) {
+        seja data_fmt = texto(m.data);
+        se (Texto.tamanho(data_fmt) > 16) { data_fmt = Texto.slice(data_fmt, 0, 16); }
+        tab_ultimos.adicionar([data_fmt, m.nome, m.tipo, m.quantidade, m.observacao]);
+    }
+}
+
+função relatorio_geral() {
+    seja prods = banco.sql(
+        "SELECT p.nome, c.nome as cat, p.estoque, p.preco, " +
+        "(p.preco * p.estoque) as valor_total " +
+        "FROM produtos p LEFT JOIN categorias c ON p.categoria_id = c.id " +
+        "WHERE p.ativo=true ORDER BY valor_total DESC"
+    );
+    seja total_val = banco.sql("SELECT SUM(preco*estoque) as t FROM produtos WHERE ativo=true")[0].t;
+    seja txt = "RELATORIO GERAL DE ESTOQUE\n";
+    txt = txt + "══════════════════════════════════════════════\n";
+    txt = txt + `${"Produto":<30} ${"Categ":<12} ${"Qtd":>6} ${"Preco":>10} ${"Total":>12}\n`;
+    txt = txt + "──────────────────────────────────────────────\n";
+    para (p em prods) {
+        seja n = p.nome;
+        se (Texto.tamanho(n) > 29) { n = Texto.slice(n, 0, 28); }
+        txt = txt + `${n:<30} ${p.cat:<12} ${p.estoque:>6} R$${p.preco:>9} R$${p.valor_total:>11}\n`;
+    }
+    txt = txt + "══════════════════════════════════════════════\n";
+    txt = txt + `VALOR TOTAL EM ESTOQUE: R$ ${total_val}\n`;
+    area_relat.definir(txt);
+}
+
+função relatorio_critico() {
+    seja prods = banco.sql(
+        "SELECT p.codigo, p.nome, p.estoque, p.estoque_min, " +
+        "(p.estoque_min - p.estoque) as falta " +
+        "FROM produtos p WHERE p.ativo=true AND p.estoque <= p.estoque_min " +
+        "ORDER BY p.estoque ASC"
+    );
+    seja txt = "RELATORIO — PRODUTOS EM ESTOQUE CRITICO\n";
+    txt = txt + "═══════════════════════════════════════════════\n";
+    txt = txt + `${"Codigo":<8} ${"Produto":<28} ${"Atual":>6} ${"Min":>5} ${"Falta":>6}\n`;
+    txt = txt + "───────────────────────────────────────────────\n";
+    para (p em prods) {
+        seja n = p.nome;
+        se (Texto.tamanho(n) > 27) { n = Texto.slice(n, 0, 27); }
+        txt = txt + `${p.codigo:<8} ${n:<28} ${p.estoque:>6} ${p.estoque_min:>5} ${p.falta:>6}\n`;
+    }
+    txt = txt + `\nTotal de produtos criticos: ${prods.tamanho}\n`;
+    area_relat.definir(txt);
+}
+
+função relatorio_movimentados() {
+    seja dados = banco.sql(
+        "SELECT p.nome, " +
+        "SUM(CASE WHEN m.tipo='ENTRADA' THEN m.quantidade ELSE 0 END) as entradas, " +
+        "SUM(CASE WHEN m.tipo='SAIDA' THEN m.quantidade ELSE 0 END) as saidas " +
+        "FROM movimentos m JOIN produtos p ON m.produto_id=p.id " +
+        "GROUP BY p.nome ORDER BY saidas DESC LIMIT 10"
+    );
+    seja txt = "RELATORIO — PRODUTOS MAIS MOVIMENTADOS\n";
+    txt = txt + "══════════════════════════════════════════\n";
+    txt = txt + `${"Produto":<30} ${"Entradas":>10} ${"Saidas":>8}\n`;
+    txt = txt + "──────────────────────────────────────────\n";
+    para (d em dados) {
+        seja n = d.nome;
+        se (Texto.tamanho(n) > 29) { n = Texto.slice(n, 0, 28); }
+        txt = txt + `${n:<30} ${d.entradas:>10} ${d.saidas:>8}\n`;
+    }
+    area_relat.definir(txt);
+}
+
+função relatorio_categorias() {
+    seja dados = banco.sql(
+        "SELECT c.nome as categoria, COUNT(p.id) as qtd_produtos, " +
+        "SUM(p.estoque) as total_itens, " +
+        "SUM(p.preco * p.estoque) as valor_total " +
+        "FROM categorias c LEFT JOIN produtos p ON c.id=p.categoria_id AND p.ativo=true " +
+        "GROUP BY c.nome ORDER BY valor_total DESC"
+    );
+    seja txt = "RELATORIO — VALOR POR CATEGORIA\n";
+    txt = txt + "════════════════════════════════════════════════\n";
+    txt = txt + `${"Categoria":<15} ${"Produtos":>9} ${"Itens":>7} ${"Valor Total":>14}\n`;
+    txt = txt + "────────────────────────────────────────────────\n";
+    para (d em dados) {
+        seja vt = d.valor_total;
+        se (!vt) { vt = 0; }
+        txt = txt + `${d.categoria:<15} ${d.qtd_produtos:>9} ${d.total_itens:>7} R$${vt:>13}\n`;
+    }
+    area_relat.definir(txt);
+}
+
+// ── Carrega dados iniciais ────────────────────────────────────
+carregar_produtos();
+carregar_movimentos();
+atualizar_dashboard();
+
+// ── Inicia a janela ───────────────────────────────────────────
+gui.iniciar();

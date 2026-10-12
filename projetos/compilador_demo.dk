@@ -1,0 +1,97 @@
+// ═══════════════════════════════════════════════════════════════
+//  ADVAK 5.0 — DEMO DO COMPILADOR NATIVO
+//  Execute: advak projetos\compilador_demo.dk
+// ═══════════════════════════════════════════════════════════════
+
+imprimir("╔══════════════════════════════════════════════════════╗")
+imprimir("║   ADVAK 5.0 — COMPILADOR NATIVO                     ║")
+imprimir("╚══════════════════════════════════════════════════════╝")
+
+// ── Info dos backends disponíveis ──────────────────────────────
+imprimir(compilador.info())
+
+// ── 1. Backend PYTHON ──────────────────────────────────────────
+imprimir("")
+imprimir("═══ 1. TRANSPILADOR → PYTHON PURO ═══")
+seja r_py = compilador.python("projetos/fibonacci.dk")
+imprimir(r_py)
+
+// ── 2. Backend C ───────────────────────────────────────────────
+imprimir("")
+imprimir("═══ 2. TRANSPILADOR → C ═══")
+seja r_c = compilador.c("projetos/fibonacci.dk")
+imprimir(r_c)
+
+// ── 3. Backend BYTECODE ────────────────────────────────────────
+imprimir("")
+imprimir("═══ 3. BYTECODE ADVAK (.dk) ═══")
+seja r_bc = compilador.bytecode("projetos/fibonacci.dk")
+imprimir(r_bc)
+
+// ── 4. Backend NATIVO (C + GCC) ────────────────────────────────
+imprimir("")
+imprimir("═══ 4. BINÁRIO NATIVO (C + GCC) ═══")
+seja r_nat = compilador.nativo("projetos/fibonacci.dk")
+imprimir(r_nat)
+
+// ── 5. Backend EXE (zipapp) ────────────────────────────────────
+imprimir("")
+imprimir("═══ 5. EXECUTÁVEL STANDALONE (.pyz) ═══")
+seja r_exe = compilador.exe("projetos/fibonacci.dk")
+imprimir(r_exe)
+
+// ── 6. Análise de código ───────────────────────────────────────
+imprimir("")
+imprimir("═══ 6. ANÁLISE DE CÓDIGO ═══")
+imprimir(compilador.analisar("projetos/fibonacci.dk"))
+
+imprimir("")
+imprimir("═══ 7. ANÁLISE — ESTOQUE (sistema complexo) ═══")
+imprimir(compilador.analisar("projetos/estoque.dk"))
+
+// ── 7. Benchmark ───────────────────────────────────────────────
+imprimir("")
+imprimir("═══ 8. BENCHMARK DE PERFORMANCE ═══")
+imprimir(compilador.benchmark("projetos/fibonacci.dk", 3))
+
+// ── Compilação via objeto compilar() ──────────────────────────
+imprimir("")
+imprimir("═══ 9. API UNIFICADA compilar() ═══")
+seja r = compilador.compilar("projetos/fibonacci.dk", {
+    backend: "python",
+    nome: "fib_otimizado",
+    saida: "dist"
+})
+imprimir(r)
+
+imprimir("")
+// ── 10. NUITKA (C++ nativo) ───────────────────────────────────
+imprimir("")
+imprimir("═══ 10. NUITKA — COMPILADOR C++ NATIVO ═══")
+seja r_nuitka = compilador.nuitka("projetos/fibonacci.dk")
+imprimir(r_nuitka)
+
+// ── 11. CYTHON (extensão nativa) ──────────────────────────────
+imprimir("")
+imprimir("═══ 11. CYTHON — EXTENSÃO NATIVA .pyd/.so ═══")
+seja r_cython = compilador.cython("projetos/fibonacci.dk", tipo_c=verdadeiro)
+imprimir(r_cython)
+
+imprimir("")
+imprimir("╔══════════════════════════════════════════════════════╗")
+imprimir("║   ✅ COMPILADOR NATIVO — RESUMO COMPLETO            ║")
+imprimir("╠══════════════════════════════════════════════════════╣")
+imprimir("║  compilador.python(arq)    → Python puro (.py)      ║")
+imprimir("║  compilador.bytecode(arq)  → Bytecode Advak (.dk)   ║")
+imprimir("║  compilador.c(arq)         → Código C (.c)          ║")
+imprimir("║  compilador.nativo(arq)    → Binário GCC/Clang      ║")
+imprimir("║  compilador.exe(arq)       → Standalone .exe        ║")
+imprimir("║  compilador.nuitka(arq)    → C++ nativo (5× speed)  ║")
+imprimir("║  compilador.cython(arq)    → Extensão .pyd/.so      ║")
+imprimir("║  compilador.analisar(arq)  → Métricas qualidade     ║")
+imprimir("║  compilador.benchmark(arq) → Performance (ms)       ║")
+imprimir("╠══════════════════════════════════════════════════════╣")
+imprimir("║  Instalar:                                           ║")
+imprimir("║  compilador.instalar_nuitka()  → pip install nuitka ║")
+imprimir("║  compilador.instalar_cython()  → pip install cython ║")
+imprimir("╚══════════════════════════════════════════════════════╝")

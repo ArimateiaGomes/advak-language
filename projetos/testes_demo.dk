@@ -1,0 +1,90 @@
+// ═══════════════════════════════════════════════════════════════════════
+//  ADVAK 5.0 — Demo de Testes Unitários
+//  Execute: advak projetos\testes_demo.dk
+// ═══════════════════════════════════════════════════════════════════════
+
+imprimir("🧪 Iniciando testes...\n")
+
+// ── Testes de matemática ──────────────────────────────────────────────
+testar("Operações básicas", () => {
+    afirmar_igual(2 + 2, 4)
+    afirmar_igual(10 - 3, 7)
+    afirmar_igual(3 * 4, 12)
+    afirmar_igual(10 / 4, 2.5)
+    afirmar_igual(10 // 3, 3)
+    afirmar_igual(10 % 3, 1)
+    afirmar_igual(2 ** 10, 1024)
+})
+
+testar("Funções matemáticas", () => {
+    afirmar_igual(arred(3.14159, 2), 3.14)
+    afirmar_igual(piso(3.9), 3)
+    afirmar_igual(teto(3.1), 4)
+    afirmar_igual(raiz(16), 4.0)
+    afirmar_igual(abs(-42), 42)
+})
+
+// ── Testes de string ──────────────────────────────────────────────────
+testar("Métodos de texto", () => {
+    afirmar_igual("hello".upper(), "HELLO")
+    afirmar_igual("  oi  ".strip(), "oi")
+    afirmar_igual("a,b,c".split(","), ["a","b","c"])
+    afirmar_verdadeiro("advak".includes("dv"))
+    afirmar_igual("hello".length, 5)
+    afirmar_igual("advak".primeiros(3), "adv")
+})
+
+// ── Testes de lista ───────────────────────────────────────────────────
+testar("Métodos de lista", () => {
+    seja lst = [3, 1, 4, 1, 5, 9, 2, 6]
+    afirmar_igual(lst.soma(), 31)
+    afirmar_igual(lst.min(), 1)
+    afirmar_igual(lst.max(), 9)
+    afirmar_igual([1,2,2,3,3].unico(), [1,2,3])
+    afirmar_verdadeiro(lst.includes(5))
+    afirmar_igual(lst.filtrar((x) => x > 5), [9, 6])
+})
+
+// ── Testes de mapa ────────────────────────────────────────────────────
+testar("Mapas e dicionários", () => {
+    seja m = {nome: "Ana", idade: 30}
+    afirmar_igual(m.nome, "Ana")
+    afirmar_igual(m.tamanho, 2)
+    afirmar_verdadeiro(m.contem("nome"))
+    afirmar_falso(m.contem("email"))
+})
+
+// ── Testes de funções ─────────────────────────────────────────────────
+função fatorial(n) {
+    se (n <= 1) { retornar 1 }
+    retornar n * fatorial(n - 1)
+}
+
+função media(lst) {
+    se (lst.tamanho == 0) { retornar 0 }
+    retornar lst.soma() / lst.tamanho
+}
+
+testar("Função fatorial", () => {
+    afirmar_igual(fatorial(0), 1)
+    afirmar_igual(fatorial(1), 1)
+    afirmar_igual(fatorial(5), 120)
+    afirmar_igual(fatorial(10), 3628800)
+})
+
+testar("Função média", () => {
+    afirmar_igual(media([10, 20, 30]), 20.0)
+    afirmar_igual(media([7, 8, 9, 10]), 8.5)
+    afirmar_igual(media([]), 0)
+})
+
+// ── Testes de erro ────────────────────────────────────────────────────
+testar("Erros são lançados", () => {
+    afirmar_erro(() => {
+        seja lst = [1, 2, 3]
+        imprimir(lst[99])  // índice inválido
+    })
+})
+
+// ── Resumo ────────────────────────────────────────────────────────────
+resumo_testes()

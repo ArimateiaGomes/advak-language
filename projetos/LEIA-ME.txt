@@ -1,0 +1,22 @@
+╔══════════════════════════════════════════════════╗
+║         ADVAK — PASTA DE PROJETOS               ║
+╚══════════════════════════════════════════════════╝
+
+Como usar:
+  1. Coloque seus arquivos .dk aqui nesta pasta
+  2. Execute: python advak.py projetos
+     (lista todos os projetos disponíveis)
+  3. Execute: python advak.py projetos run meu_app.dk
+     (executa um projeto)
+  4. Execute: python advak.py projetos compilar meu_app.dk
+     (compila para executável .exe)
+  5. Execute: python advak.py projetos novo meu_app
+     (cria novo projeto com estrutura básica)
+
+Exemplos de projetos prontos:
+  estoque.dk      — Sistema de estoque com GUI
+  gui_escola.dk   — Sistema escolar com GUI
+  servidor_exemplo.dk — Servidor HTTP REST
+  banco_exemplo.dk    — Exemplos de banco de dados
+
+Os executáveis compilados vão para a pasta: ../dist/

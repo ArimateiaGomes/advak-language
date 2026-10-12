@@ -1,0 +1,48 @@
+// ═══════════════════════════════════════════════════════════════════════
+//  ADVAK 5.0 — Demo do Depurador
+//  Execute: advak --debug projetos\debug_demo.dk
+//  Ou:      advak --passo projetos\debug_demo.dk
+// ═══════════════════════════════════════════════════════════════════════
+
+seja nome  = "Advak"
+seja versao = 5
+seja notas = [7.5, 8.0, 9.5, 6.0, 10.0]
+
+// Ponto de parada manual — pausa aqui
+parar()
+
+// Soma das notas
+seja total = 0
+para (n em notas) {
+    total += n
+}
+
+seja media = total / notas.tamanho
+
+// Inspeciona o valor da média
+inspecionar(media)
+
+// Verifica aprovação
+se (media >= 7) {
+    imprimir("Aprovado com média " + texto(arred(media, 1)))
+} senão {
+    imprimir("Reprovado com média " + texto(arred(media, 1)))
+}
+
+// Segundo ponto de parada
+parar()
+
+// Função com depuração
+função calcular_imc(peso, altura) {
+    seja imc = peso / (altura * altura)
+    inspecionar(imc)
+    retornar imc
+}
+
+seja imc = calcular_imc(70, 1.75)
+imprimir("IMC: " + texto(arred(imc, 1)))
+
+// Rastreia pilha de chamadas
+rastrear()
+
+imprimir("Depuração concluída!")

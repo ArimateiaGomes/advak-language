@@ -1,0 +1,297 @@
+// ═══════════════════════════════════════════════════════════
+//  ADVAK 4.0 — Compilador GUI
+//  Interface gráfica para compilar projetos .dk em .exe
+//  Execute: advak projetos run compilador_gui.dk
+// ═══════════════════════════════════════════════════════════
+
+seja jan = gui.janela("Advak 4.0 — Compilador", 900, 650);
+jan.centralizar();
+
+seja menu = gui.menu_bar(jan);
+menu.adicionar("Arquivo", [
+    ["Abrir .dk", (x) => { escolher_arquivo_dk(); }],
+    "---",
+    ["Sair", (x) => { gui.parar(); }]
+]);
+menu.adicionar("Ajuda", [
+    ["Instalar PyInstaller", (x) => { instalar_pyinstaller(); }],
+    ["Sobre", (x) => { gui.alerta("Advak 4.0 — Compilador GUI
+Compila projetos .dk em executáveis .exe"); }]
+]);
+
+// ── Header ────────────────────────────────────────────────
+gui.label(jan, "Compilador Advak 4.0 — Gere executáveis .exe", negrito=verdadeiro);
+gui.separador(jan);
+
+// ── Layout principal ──────────────────────────────────────
+seja fr_main = gui.frame_horizontal(jan);
+
+// ── ESQUERDA — Configurações ──────────────────────────────
+seja fr_esq = gui.frame(fr_main);
+fr_esq.posicionar(lado="left", preencher="y", espaco_x=8, espaco_y=8);
+
+// Arquivo fonte
+gui.label(fr_esq, "Arquivo .dk:", negrito=verdadeiro);
+seja fr_arq = gui.frame_horizontal(fr_esq);
+seja f_arquivo = gui.campo(fr_arq, "Caminho do arquivo .dk...", largura=30);
+gui.botao(fr_arq, "...", (btn) => {
+    escolher_arquivo_dk();
+}, estilo="secundario");
+
+gui.separador(fr_esq);
+
+// Nome do executável
+gui.label(fr_esq, "Nome do executável:");
+seja f_nome = gui.campo(fr_esq, "MeuApp", largura=25);
+
+// Pasta de saída
+gui.label(fr_esq, "Pasta de saída:");
+seja fr_saida = gui.frame_horizontal(fr_esq);
+seja f_saida = gui.campo(fr_saida, "dist", largura=22);
+gui.botao(fr_saida, "...", (btn) => {
+    seja pasta = gui.escolher_pasta();
+    se (pasta) { f_saida.definir(pasta); }
+}, estilo="secundario");
+
+gui.separador(fr_esq);
+
+// Ícone
+gui.label(fr_esq, "Ícone (.ico):");
+seja fr_icone = gui.frame_horizontal(fr_esq);
+seja f_icone = gui.campo(fr_icone, "Opcional...", largura=22);
+gui.botao(fr_icone, "...", (btn) => {
+    seja ico = gui.escolher_arquivo("Ícone", [["Ícone", "*.ico"], ["Todos", "*.*"]]);
+    se (ico) { f_icone.definir(ico); }
+}, estilo="secundario");
+
+gui.separador(fr_esq);
+
+// Opções
+gui.label(fr_esq, "Opções:", negrito=verdadeiro);
+seja cb_gui     = gui.checkbox(fr_esq, "Modo GUI (sem console)", valor_inicial=verdadeiro);
+seja cb_unico   = gui.checkbox(fr_esq, "Arquivo único (.exe)", valor_inicial=verdadeiro);
+seja cb_verbose = gui.checkbox(fr_esq, "Saída detalhada");
+seja cb_db      = gui.checkbox(fr_esq, "Incluir suporte a banco");
+seja cb_groq    = gui.checkbox(fr_esq, "Incluir chave Groq do .env");
+
+gui.separador(fr_esq);
+
+// Versão e autor
+gui.label(fr_esq, "Versão do app:");
+seja f_versao = gui.campo(fr_esq, "1.0.0", largura=15);
+gui.label(fr_esq, "Autor:");
+seja f_autor = gui.campo(fr_esq, "", largura=25);
+
+gui.separador(fr_esq);
+
+// Botão compilar
+gui.botao(fr_esq, "COMPILAR .EXE", (btn) => {
+    compilar();
+}, estilo="sucesso");
+
+gui.botao(fr_esq, "Verificar Sintaxe", (btn) => {
+    verificar_sintaxe();
+}, estilo="primario");
+
+gui.botao(fr_esq, "Limpar Log", (btn) => {
+    area_log.definir("");
+}, estilo="secundario");
+
+// ── DIREITA — Log e Preview ───────────────────────────────
+seja fr_dir = gui.frame(fr_main);
+fr_dir.posicionar(lado="left", preencher="both", expandir=verdadeiro, espaco_x=8, espaco_y=8);
+
+seja abas_dir = gui.abas(fr_dir);
+seja aba_log     = abas_dir.adicionar("Log de Compilação");
+seja aba_preview = abas_dir.adicionar("Preview do Código");
+seja aba_info    = abas_dir.adicionar("Informações");
+
+// Log
+seja area_log = gui.area_texto(aba_log, largura=55, altura=28,
+    valor_inicial="");
+
+// Preview
+seja area_preview = gui.area_texto(aba_preview, largura=55, altura=28,
+    valor_inicial="// Selecione um arquivo .dk para ver o preview");
+
+// Info
+gui.label(aba_info, "Informações do Sistema", negrito=verdadeiro);
+gui.separador(aba_info);
+seja tab_info = gui.tabela(aba_info, ["Componente", "Status"], altura=12);
+
+// ── Barra de progresso ────────────────────────────────────
+gui.separador(fr_dir);
+seja barra_prog = gui.barra_progresso(fr_dir, valor=0, maximo=100);
+seja lbl_status = gui.label(fr_dir, "Pronto.");
+
+// ════════════════════════════════════════════════════════
+//  FUNÇÕES
+// ════════════════════════════════════════════════════════
+
+função log(msg) {
+    seja atual = area_log.valor();
+    area_log.definir(atual + msg + "
+");
+    gui.atualizar();
+}
+
+função escolher_arquivo_dk() {
+    seja arq = gui.escolher_arquivo("Abrir arquivo Advak",
+        [["Advak", "*.dk"], ["Todos", "*.*"]]);
+    se (arq) {
+        f_arquivo.definir(arq);
+        // Auto-preenche nome
+        seja partes = Texto.dividir(arq, "\\");
+        seja nome_arq = partes[partes.tamanho - 1];
+        seja nome_sem_ext = Texto.dividir(nome_arq, ".")[0];
+        f_nome.definir(nome_sem_ext);
+        // Carrega preview
+        tentar {
+            seja conteudo = Arquivo.ler(arq);
+            area_preview.definir(conteudo);
+            log("Arquivo carregado: " + arq);
+        } capturar (e) {
+            log("Erro ao carregar: " + texto(e));
+        }
+    }
+}
+
+função verificar_sintaxe() {
+    seja arq = f_arquivo.valor();
+    se (!arq) { gui.aviso("Selecione um arquivo .dk!"); retornar; }
+    se (!Arquivo.existe(arq)) { gui.erro("Arquivo não encontrado: " + arq); retornar; }
+    log("
+Verificando sintaxe de: " + arq);
+    Arquivo.escrever("_temp_check.dk", Arquivo.ler(arq));
+    log("Arquivo salvo como _temp_check.dk");
+    log("Execute: advak check _temp_check.dk");
+    gui.toast("Use: advak check _temp_check.dk", tipo="info");
+}
+
+função compilar() {
+    seja arq = f_arquivo.valor();
+    se (!arq) { gui.aviso("Selecione um arquivo .dk!"); retornar; }
+    se (!Arquivo.existe(arq)) { gui.erro("Arquivo não encontrado!"); retornar; }
+
+    seja nome    = f_nome.valor() || "MeuApp";
+    seja saida   = f_saida.valor() || "dist";
+    seja icone   = f_icone.valor();
+    seja gui_m   = cb_gui.valor();
+    seja unico   = cb_unico.valor();
+    seja verbose = cb_verbose.valor();
+    seja versao  = f_versao.valor() || "1.0.0";
+
+    log("
+═══════════════════════════════════");
+    log("  ADVAK COMPILER 4.0");
+    log("═══════════════════════════════════");
+    log("Arquivo: " + arq);
+    log("Nome:    " + nome);
+    log("Saída:   " + saida);
+    log("Modo GUI: " + texto(gui_m));
+    log("Único:   " + texto(unico));
+    log("Versão:  " + versao);
+    log("═══════════════════════════════════
+");
+
+    barra_prog.definir(10);
+    lbl_status.texto("Verificando dependências...");
+    gui.atualizar();
+
+    // Verifica PyInstaller
+    tentar {
+        seja info_comp = compilador.info();
+        se (!info_comp.pyinstaller) {
+            log("ERRO: PyInstaller não instalado!");
+            log("Execute: pip install pyinstaller");
+            gui.erro("PyInstaller não encontrado!
+Instale com: pip install pyinstaller");
+            barra_prog.definir(0);
+            lbl_status.texto("Erro: PyInstaller não instalado.");
+            retornar;
+        }
+        log("PyInstaller: " + info_comp.pyinstaller);
+        log("Python: " + info_comp.python);
+    } capturar (e) {
+        log("Aviso ao verificar info: " + texto(e));
+    }
+
+    barra_prog.definir(25);
+    lbl_status.texto("Compilando...");
+    gui.atualizar();
+
+    log("
+Iniciando compilação...");
+
+    seja opcoes = {
+        nome:    nome,
+        saida:   saida,
+        gui:     gui_m,
+        unico:   unico,
+        verbose: verbose
+    };
+
+    se (icone && Arquivo.existe(icone)) {
+        opcoes.icone = icone;
+        log("Ícone: " + icone);
+    }
+
+    tentar {
+        barra_prog.definir(40);
+        seja resultado = compilador.compilar(arq, opcoes);
+        barra_prog.definir(100);
+
+        log("
+" + resultado);
+
+        se (Texto.contem(resultado, "concluída") || Texto.contem(resultado, "Compilação")) {
+            lbl_status.texto("Compilação concluída com sucesso!");
+            gui.toast("Executável gerado com sucesso!", tipo="sucesso");
+        } senão {
+            lbl_status.texto("Compilação com erros. Veja o log.");
+            barra_prog.definir(0);
+        }
+    } capturar (e) {
+        log("
+ERRO: " + texto(e));
+        barra_prog.definir(0);
+        lbl_status.texto("Erro na compilação.");
+        gui.erro("Erro na compilação:
+" + texto(e));
+    }
+}
+
+função instalar_pyinstaller() {
+    se (gui.confirmar("Instalar PyInstaller agora?
+
+Será executado: pip install pyinstaller")) {
+        log("
+Instalando PyInstaller...");
+        log("Execute no terminal: pip install pyinstaller");
+        gui.toast("Abra o CMD e execute: pip install pyinstaller", tipo="info");
+    }
+}
+
+função carregar_info_sistema() {
+    tab_info.limpar();
+    tentar {
+        seja info = compilador.info();
+        tab_info.adicionar(["PyInstaller", info.pyinstaller || "Não instalado"]);
+        tab_info.adicionar(["Python",      info.python]);
+        tab_info.adicionar(["Plataforma",  info.plataforma || OS.plataforma()]);
+        tab_info.adicionar(["Tkinter",     info.tkinter ? "OK" : "Não disponível"]);
+        tab_info.adicionar(["psycopg2",    info.psycopg2 ? "OK" : "Não instalado"]);
+        tab_info.adicionar(["Groq SDK",    info.groq ? "OK" : "Não instalado"]);
+    } capturar (e) {
+        tab_info.adicionar(["Erro", texto(e)]);
+    }
+    tab_info.adicionar(["Versão Advak", "4.0"]);
+}
+
+// Carrega info ao iniciar
+carregar_info_sistema();
+area_log.definir("Advak 4.0 - Compilador GUI");
+log("");
+log("Pronto para compilar.");
+log("Selecione um arquivo .dk e clique em COMPILAR.");
+gui.iniciar();

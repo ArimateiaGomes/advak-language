@@ -1,0 +1,21 @@
+banco.usar("minha_escola");
+seja jan = gui.janela("Advak - Escola", 700, 500);
+jan.centralizar();
+gui.label(jan, "Sistema de Alunos", negrito=verdadeiro);
+gui.separador(jan);
+seja tabela = gui.tabela(jan, ["ID", "Nome", "Nota", "Turma"], altura=12);
+seja alunos = banco.buscar("alunos").ordenar("nota", "DESC").executar();
+para (a em alunos) {
+    tabela.adicionar([a.id, a.nome, a.nota, a.turma]);
+}
+gui.botao(jan, "Novo Aluno", (btn) => {
+    seja nome = gui.pedir("Nome do aluno:");
+    se (nome) {
+        seja nota = gui.pedir_numero("Nota:");
+        seja turma = gui.pedir("Turma:");
+        banco.inserir("alunos", {nome: nome, nota: nota, turma: turma});
+        tabela.adicionar([0, nome, nota, turma]);
+        gui.alerta("Cadastrado!");
+    }
+});
+gui.iniciar();

@@ -1,0 +1,723 @@
+// ═══════════════════════════════════════════════════════════════════════════
+//  ADVAK 5.0 — Aplicação Web com PostgreSQL Automático
+//
+//  BANCO: PostgreSQL (via .env) com fallback para SQLite
+//
+//  Configure .env para PostgreSQL:
+//    ADVAK_DB_HOST=localhost
+//    ADVAK_DB_PORT=5432
+//    ADVAK_DB_USER=postgres
+//    ADVAK_DB_PASS=sua_senha
+//    ADVAK_DB_NAME=minha_app
+//
+//  Execute: advak projetos\app_completo.dk
+//  Acesse:  http://localhost:8080  →  Login: admin@app.br / admin123
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════════════════════
+// 1. BANCO DE DADOS AUTOMÁTICO
+//    PostgreSQL se disponível, SQLite como fallback
+// ══════════════════════════════════════════════════════════════════════════
+
+seja db = banco_auto("minha_app")   // Conecta PG via .env ou cria SQLite
+
+// Cria tabelas automaticamente (primeira execução)
+seja t_usuarios = db.criar_tabela("usuarios", {
+    nome:    "texto",
+    email:   "texto",
+    senha:   "texto",
+    nivel:   "texto",
+    ativo:   "booleano"
+})
+
+seja t_tarefas = db.criar_tabela("tarefas", {
+    titulo:     "texto",
+    descricao:  "texto",
+    concluida:  "booleano",
+    usuario_id: "inteiro",
+    prioridade: "texto"
+})
+
+seja t_mensagens = db.criar_tabela("mensagens", {
+    autor:    "texto",
+    conteudo: "texto",
+    sala:     "texto"
+})
+
+// Dados iniciais
+se (t_usuarios.contar() == 0) {
+    t_usuarios.inserir({nome:"Administrador", email:"admin@app.br", senha:"admin123", nivel:"admin",   ativo:verdadeiro})
+    t_usuarios.inserir({nome:"Ana Silva",     email:"ana@app.br",   senha:"ana123",   nivel:"usuario",  ativo:verdadeiro})
+    t_usuarios.inserir({nome:"Bruno Costa",   email:"bruno@app.br", senha:"bruno123", nivel:"usuario",  ativo:verdadeiro})
+    imprimir("✅ Usuários iniciais inseridos")
+}
+
+se (t_tarefas.contar() == 0) {
+    t_tarefas.inserir({titulo:"Aprender Advak 5.0",    descricao:"Estudar a documentação",         concluida:falso,      usuario_id:1, prioridade:"alta"})
+    t_tarefas.inserir({titulo:"Criar API REST",         descricao:"Implementar endpoints CRUD",     concluida:falso,      usuario_id:1, prioridade:"alta"})
+    t_tarefas.inserir({titulo:"Configurar PostgreSQL",  descricao:"Instalar e configurar banco",    concluida:verdadeiro, usuario_id:1, prioridade:"alta"})
+    t_tarefas.inserir({titulo:"Testar WebSocket",       descricao:"Chat em tempo real funcionando", concluida:verdadeiro, usuario_id:2, prioridade:"media"})
+    t_tarefas.inserir({titulo:"Deploy em produção",     descricao:"Publicar a aplicação",           concluida:falso,      usuario_id:2, prioridade:"baixa"})
+    imprimir("✅ Tarefas iniciais inseridas")
+}
+
+imprimir("🗄️  Banco: " + (db.eh_postgres ? "PostgreSQL ✅" : "SQLite (fallback)"))
+
+// ══════════════════════════════════════════════════════════════════════════
+// 2. SERVIDOR WEB
+// ══════════════════════════════════════════════════════════════════════════
+
+servidor.porta(8080)
+
+// Middleware de log
+servidor.usar((req) => {
+    imprimir("  → " + req.metodo + " " + req.caminho)
+    retornar nulo
+})
+
+// ══════════════════════════════════════════════════════════════════════════
+// 3. AUTENTICAÇÃO
+// ══════════════════════════════════════════════════════════════════════════
+
+funcao pegar_usuario(req) {
+    seja cookie = req.cabecalhos.Cookie ?? req.cabecalhos.cookie ?? ""
+    seja resultado = Regex.extrair("sessao_id=([^;\\s]+)", cookie)
+    se (resultado == nulo) { retornar nulo }
+    retornar sessoes.obter(texto(resultado[0]))
+}
+
+funcao exigir_login(req) {
+    seja u = pegar_usuario(req)
+    se (u == nulo) { retornar redirecionar("/login") }
+    retornar nulo
+}
+
+// Página de Login
+servidor.obter("/login", (req) => {
+    seja msg = req.consulta.erro ?? ""
+    seja alerta = msg != "" ? `<div class="alerta">${msg}</div>` : ""
+    retornar html(`<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><title>Login</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI',sans-serif;background:linear-gradient(135deg,#0F172A,#1E3A5F);
+       min-height:100vh;display:flex;align-items:center;justify-content:center;color:#F1F5F9}
+  .card{background:#1E293B;border:1px solid #334155;border-radius:20px;
+        padding:48px 52px;min-width:420px;box-shadow:0 24px 48px rgba(0,0,0,.5)}
+  .logo{text-align:center;margin-bottom:32px}
+  .logo-icon{font-size:52px}
+  .logo h1{font-size:26px;color:#60A5FA;margin-top:10px}
+  .logo p{color:#64748B;font-size:14px;margin-top:4px}
+  .db-badge{display:inline-block;padding:4px 12px;border-radius:999px;font-size:11px;
+            font-weight:700;margin-top:8px;
+            background:${db.eh_postgres ? "#064E3B" : "#1E3A5F"};
+            color:${db.eh_postgres ? "#34D399" : "#60A5FA"}}
+  label{display:block;font-size:11px;color:#94A3B8;font-weight:700;
+        letter-spacing:1px;margin:16px 0 6px;text-transform:uppercase}
+  input{width:100%;background:#0F172A;border:1px solid #334155;color:#F1F5F9;
+        padding:12px 14px;border-radius:10px;font-size:15px;box-sizing:border-box}
+  input:focus{outline:none;border-color:#3B82F6}
+  .btn{width:100%;background:#3B82F6;color:white;border:none;padding:14px;
+       border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;margin-top:20px}
+  .btn:hover{background:#2563EB}
+  .alerta{background:#7F1D1D;color:#FCA5A5;padding:10px 14px;
+           border-radius:8px;font-size:13px;margin-bottom:16px}
+  .dica{margin-top:20px;background:#0F172A;border-radius:10px;padding:14px;font-size:12px;color:#64748B}
+  .dica b{color:#94A3B8}  .dica span{color:#60A5FA;font-weight:600}
+</style></head>
+<body>
+<div class="card">
+  <div class="logo">
+    <div class="logo-icon">⚡</div>
+    <h1>Advak App</h1>
+    <p>Sistema Web com Banco Automático</p>
+    <span class="db-badge">${db.eh_postgres ? "🐘 PostgreSQL" : "🗄️ SQLite"}</span>
+  </div>
+  ${alerta}
+  <form method="POST" action="/login">
+    <label>Email</label>
+    <input name="email" type="email" placeholder="seu@email.br" autofocus required>
+    <label>Senha</label>
+    <input name="senha" type="password" placeholder="••••••••" required>
+    <button class="btn">Entrar →</button>
+  </form>
+  <div class="dica">
+    <b>Contas de teste:</b><br>
+    <span>admin@app.br</span> / admin123 — Admin<br>
+    <span>ana@app.br</span> / ana123 — Usuário
+  </div>
+</div></body></html>`)
+})
+
+servidor.publicar("/login", (req) => {
+    seja email = req.dados.email ?? req.consulta.email ?? ""
+    seja senha = req.dados.senha ?? req.consulta.senha ?? ""
+
+    seja usuario_db = t_usuarios.buscar_um(
+        db.eh_postgres ? "email=$1 AND ativo=TRUE" : "email=? AND ativo=1",
+        [email])
+
+    se (usuario_db == nulo ou usuario_db.senha != senha) {
+        retornar redirecionar("/login?erro=Email ou senha incorretos!")
+    }
+
+    seja sid = sessoes.criar({
+        id:    usuario_db.id,
+        nome:  usuario_db.nome,
+        email: usuario_db.email,
+        nivel: usuario_db.nivel,
+        login: usuario_db.email
+    })
+
+    seja resp = redirecionar("/")
+    resp.cabecalhos["Set-Cookie"] = "sessao_id=" + sid + "; HttpOnly; SameSite=Lax; Path=/"
+    retornar resp
+})
+
+servidor.obter("/logout", (req) => {
+    seja cookie = req.cabecalhos.Cookie ?? ""
+    seja resultado = Regex.extrair("sessao_id=([^;\\s]+)", cookie)
+    se (resultado != nulo) { sessoes.destruir(texto(resultado[0])) }
+    seja resp = redirecionar("/login")
+    resp.cabecalhos["Set-Cookie"] = "sessao_id=; Max-Age=0; Path=/"
+    retornar resp
+})
+
+// ══════════════════════════════════════════════════════════════════════════
+// 4. DASHBOARD
+// ══════════════════════════════════════════════════════════════════════════
+
+servidor.obter("/", (req) => {
+    seja u = pegar_usuario(req)
+    se (u == nulo) { retornar redirecionar("/login") }
+
+    seja total_t = t_tarefas.contar()
+    seja feitas  = t_tarefas.contar(db.eh_postgres ? "concluida=TRUE" : "concluida=1")
+    seja pendentes = total_t - feitas
+    seja total_u = t_usuarios.contar()
+    seja pct = total_t > 0 ? inteiro(feitas / total_t * 100) : 0
+    seja info_db = db.info()
+    seja tipo_db = db.eh_postgres ? "🐘 PostgreSQL" : "🗄️ SQLite"
+
+    seja ultimas = t_tarefas.buscar(
+        nulo, nulo,
+        db.eh_postgres ? "id DESC" : "id DESC",
+        5)
+
+    seja linhas_tarefas = ultimas.mapear((t) => {
+        seja cor = t.prioridade == "alta" ? "#EF4444" :
+                   t.prioridade == "media" ? "#F59E0B" : "#22C55E"
+        seja check = (db.eh_postgres ? t.concluida == verdadeiro : t.concluida == 1) ? "✅" : "⬜"
+        retornar `<div class="tarefa-item">
+          <span class="check">${check}</span>
+          <span class="nome ${(db.eh_postgres ? t.concluida == verdadeiro : t.concluida == 1) ? "feita" : ""}">${t.titulo}</span>
+          <span class="prio" style="color:${cor}">${t.prioridade}</span>
+        </div>`
+    }).unir("")
+
+    retornar html(`<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><title>Dashboard</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI',sans-serif;background:#060D1F;color:#F1F5F9;display:flex;min-height:100vh}
+  .side{width:230px;background:#0A1628;border-right:1px solid #1E293B;
+        display:flex;flex-direction:column;position:fixed;height:100vh}
+  .side-logo{padding:22px 18px;border-bottom:1px solid #1E293B}
+  .side-logo h2{font-size:17px;color:#60A5FA}
+  .side-logo .db{font-size:11px;margin-top:4px;color:#64748B}
+  nav{padding:12px 0;flex:1}
+  nav a{display:flex;align-items:center;gap:10px;padding:9px 18px;
+        color:#94A3B8;text-decoration:none;font-size:14px;transition:.15s}
+  nav a:hover,nav a.on{background:#1E293B;color:#F1F5F9;border-right:3px solid #3B82F6}
+  .user{padding:14px;border-top:1px solid #1E293B;font-size:13px}
+  .user .nm{font-weight:700}.user .nv{color:#64748B;font-size:11px}
+  .user a{color:#EF4444;font-size:12px;display:block;margin-top:6px;text-decoration:none}
+  main{margin-left:230px;padding:28px;flex:1}
+  .header{margin-bottom:24px}
+  .header h1{font-size:24px;font-weight:800}
+  .header p{color:#64748B;font-size:13px;margin-top:3px}
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+  .card{background:#1E293B;border:1px solid #334155;border-radius:12px;padding:20px}
+  .card .num{font-size:32px;font-weight:900;margin-bottom:4px}
+  .card .lab{font-size:12px;color:#64748B;text-transform:uppercase;letter-spacing:1px}
+  .prog{background:#0F172A;border-radius:999px;height:6px;margin:8px 0}
+  .prog-b{border-radius:999px;height:100%;background:linear-gradient(90deg,#3B82F6,#22C55E);transition:.5s}
+  .box{background:#1E293B;border:1px solid #334155;border-radius:12px;padding:20px;margin-bottom:18px}
+  .box h3{font-size:14px;font-weight:700;margin-bottom:14px;display:flex;justify-content:space-between}
+  .box h3 a{font-size:12px;color:#3B82F6;text-decoration:none;font-weight:400}
+  .tarefa-item{display:flex;align-items:center;gap:10px;padding:9px 0;
+               border-bottom:1px solid #1E293B;font-size:13px}
+  .tarefa-item:last-child{border:none}
+  .check{flex-shrink:0;font-size:16px}
+  .nome{flex:1}.nome.feita{text-decoration:line-through;color:#64748B}
+  .prio{font-size:11px;font-weight:700;text-transform:uppercase}
+  .db-info{font-family:monospace;font-size:12px;color:#64748B;line-height:2}
+  .db-info .ok{color:#22C55E}
+  .chat-fab{position:fixed;bottom:24px;right:24px;width:52px;height:52px;
+             background:#3B82F6;border-radius:50%;display:flex;align-items:center;
+             justify-content:center;font-size:22px;text-decoration:none;
+             box-shadow:0 8px 20px rgba(59,130,246,.4)}
+  .chat-fab:hover{background:#2563EB;transform:scale(1.1);transition:.2s}
+</style></head>
+<body>
+<div class="side">
+  <div class="side-logo">
+    <h2>⚡ Advak App</h2>
+    <div class="db">${tipo_db}</div>
+  </div>
+  <nav>
+    <a href="/" class="on">🏠 Dashboard</a>
+    <a href="/tarefas">✅ Tarefas</a>
+    <a href="/usuarios">👥 Usuários</a>
+    <a href="/chat">💬 Chat</a>
+    <a href="/api/stats">🔌 API</a>
+  </nav>
+  <div class="user">
+    <div class="nm">👤 ${u.nome}</div>
+    <div class="nv">${u.nivel}</div>
+    <a href="/logout">→ Sair</a>
+  </div>
+</div>
+<main>
+  <div class="header">
+    <h1>Olá, ${u.nome}! 👋</h1>
+    <p>Dashboard do sistema — ${tipo_db}</p>
+  </div>
+  <div class="cards">
+    <div class="card">
+      <div class="num" style="color:#3B82F6">${texto(total_t)}</div>
+      <div class="lab">Tarefas</div>
+    </div>
+    <div class="card">
+      <div class="num" style="color:#22C55E">${texto(feitas)}</div>
+      <div class="lab">Concluídas</div>
+      <div class="prog"><div class="prog-b" style="width:${texto(pct)}%"></div></div>
+      <div style="font-size:11px;color:#64748B">${texto(pct)}%</div>
+    </div>
+    <div class="card">
+      <div class="num" style="color:#F59E0B">${texto(pendentes)}</div>
+      <div class="lab">Pendentes</div>
+    </div>
+    <div class="card">
+      <div class="num" style="color:#A78BFA">${texto(total_u)}</div>
+      <div class="lab">Usuários</div>
+    </div>
+  </div>
+  <div class="box">
+    <h3>Tarefas Recentes <a href="/tarefas">Ver todas →</a></h3>
+    ${linhas_tarefas}
+  </div>
+  <div class="box">
+    <h3>Banco de Dados <span style="color:#22C55E;font-size:12px;font-weight:400">✅ criado automaticamente</span></h3>
+    <div class="db-info">
+      <span class="ok">${tipo_db}</span><br>
+      📋 usuarios — ${texto(total_u)} registros<br>
+      📋 tarefas — ${texto(total_t)} registros<br>
+      📋 mensagens — ${texto(t_mensagens.contar())} registros
+    </div>
+  </div>
+</main>
+<a href="/chat" class="chat-fab">💬</a>
+</body></html>`)
+})
+
+// ══════════════════════════════════════════════════════════════════════════
+// 5. TAREFAS — CRUD
+// ══════════════════════════════════════════════════════════════════════════
+
+servidor.obter("/tarefas", (req) => {
+    seja u = pegar_usuario(req)
+    se (u == nulo) { retornar redirecionar("/login") }
+
+    seja filtro = req.consulta.filtro ?? "todas"
+    seja condicao = filtro == "concluidas" ? (db.eh_postgres ? "concluida=TRUE" : "concluida=1") :
+                    filtro == "pendentes"  ? (db.eh_postgres ? "concluida=FALSE" : "concluida=0") : nulo
+
+    seja tarefas = t_tarefas.buscar(condicao, nulo, "id DESC")
+    seja total = t_tarefas.contar()
+
+    seja linhas = tarefas.mapear((t) => {
+        seja concluida = db.eh_postgres ? t.concluida == verdadeiro : t.concluida == 1
+        seja cor = t.prioridade == "alta" ? "#EF4444" :
+                   t.prioridade == "media" ? "#F59E0B" : "#22C55E"
+        retornar `<tr>
+          <td><input type="checkbox" ${concluida ? "checked" : ""}
+            onchange="toggleTarefa(${t.id})"
+            style="width:16px;height:16px;cursor:pointer;accent-color:#3B82F6"></td>
+          <td style="${concluida ? "text-decoration:line-through;color:#64748B" : ""}">${t.titulo}</td>
+          <td style="color:#64748B;font-size:12px">${t.descricao ?? ""}</td>
+          <td><span style="color:${cor};font-weight:700;font-size:11px;text-transform:uppercase">${t.prioridade}</span></td>
+          <td style="font-size:12px;color:#64748B">#${texto(t.usuario_id)}</td>
+          <td>
+            <button onclick="excluirTarefa(${t.id})"
+              style="background:#7F1D1D;color:#FCA5A5;border:none;padding:4px 10px;
+              border-radius:6px;cursor:pointer;font-size:11px">🗑 Excluir</button>
+          </td>
+        </tr>`
+    }).unir("")
+
+    retornar html(`<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><title>Tarefas</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI',sans-serif;background:#060D1F;color:#F1F5F9;padding:28px}
+  .topo{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+  h1{flex:1;font-size:22px}
+  .nova{background:#1E293B;border:1px solid #334155;border-radius:12px;padding:16px;
+        margin-bottom:18px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+  .nova input,.nova select{background:#0F172A;border:1px solid #334155;color:#F1F5F9;
+        padding:9px 12px;border-radius:8px;font-size:13px}
+  .nova input{flex:1;min-width:180px}
+  .btn-add{background:#22C55E;color:white;border:none;padding:9px 18px;
+           border-radius:8px;font-size:13px;font-weight:700;cursor:pointer}
+  .filtros a{padding:5px 12px;border-radius:7px;border:1px solid #334155;
+             color:#94A3B8;text-decoration:none;font-size:12px;font-weight:600}
+  .filtros a.on,.filtros a:hover{background:#3B82F6;color:white;border-color:#3B82F6}
+  table{width:100%;border-collapse:collapse;background:#1E293B;border-radius:12px;overflow:hidden}
+  th{background:#0F172A;padding:10px 14px;text-align:left;color:#94A3B8;
+     font-size:11px;text-transform:uppercase;letter-spacing:1px}
+  td{padding:10px 14px;border-bottom:1px solid #1E293B;font-size:13px}
+  tr:last-child td{border:none}
+  a.back{color:#64748B;font-size:13px;text-decoration:none}
+  .filtros{display:flex;gap:8px}
+</style>
+<script>
+async function toggleTarefa(id) {
+  await fetch('/api/tarefas/'+id+'/toggle', {method:'POST'})
+  location.reload()
+}
+async function excluirTarefa(id) {
+  if(!confirm('Excluir esta tarefa?')) return
+  await fetch('/api/tarefas/'+id, {method:'DELETE'})
+  location.reload()
+}
+async function novaTarefa(e) {
+  e.preventDefault()
+  const d = {
+    titulo: document.getElementById('tit').value,
+    descricao: document.getElementById('dsc').value,
+    prioridade: document.getElementById('pri').value,
+    concluida: false, usuario_id: 1
+  }
+  const r = await fetch('/api/tarefas', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(d)
+  })
+  if(r.ok) location.reload()
+  else alert('Erro ao criar tarefa')
+}
+</script></head>
+<body>
+  <div class="topo">
+    <a href="/" class="back">← Dashboard</a>
+    <h1>✅ Tarefas (${texto(total)})</h1>
+    <div class="filtros">
+      <a href="/tarefas" class="${filtro=="todas"?"on":""}">Todas</a>
+      <a href="/tarefas?filtro=pendentes" class="${filtro=="pendentes"?"on":""}">Pendentes</a>
+      <a href="/tarefas?filtro=concluidas" class="${filtro=="concluidas"?"on":""}">Concluídas</a>
+    </div>
+  </div>
+  <form class="nova" onsubmit="novaTarefa(event)">
+    <input id="tit" placeholder="Título da tarefa..." required>
+    <input id="dsc" placeholder="Descrição (opcional)">
+    <select id="pri">
+      <option value="alta">🔴 Alta</option>
+      <option value="media" selected>🟡 Média</option>
+      <option value="baixa">🟢 Baixa</option>
+    </select>
+    <button type="submit" class="btn-add">➕ Adicionar</button>
+  </form>
+  <table>
+    <thead><tr>
+      <th>✓</th><th>Tarefa</th><th>Descrição</th><th>Prioridade</th><th>Usuário</th><th>Ações</th>
+    </tr></thead>
+    <tbody>${linhas}</tbody>
+  </table>
+</body></html>`)
+})
+
+// ══════════════════════════════════════════════════════════════════════════
+// 6. CHAT COM WEBSOCKET
+// ══════════════════════════════════════════════════════════════════════════
+
+servidor.obter("/chat", (req) => {
+    seja u = pegar_usuario(req)
+    seja nome_u = u != nulo ? u.nome : "Visitante"
+
+    seja historico_db = t_mensagens.buscar(nulo, nulo, "id DESC", 20)
+    seja msgs_html = historico_db.mapear((m) =>
+        `<div class="msg"><span class="autor">${m.autor}:</span> ${m.conteudo}</div>`
+    ).unir("")
+
+    retornar html(`<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><title>Chat ao Vivo</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI',sans-serif;background:#060D1F;color:#F1F5F9;
+       display:flex;flex-direction:column;height:100vh}
+  .header{background:#0A1628;border-bottom:1px solid #1E293B;padding:14px 22px;
+          display:flex;align-items:center;gap:12px}
+  .header h2{flex:1;font-size:17px}
+  .status{display:flex;align-items:center;gap:6px;font-size:12px;color:#22C55E}
+  .dot{width:7px;height:7px;background:#22C55E;border-radius:50%;animation:pulse 1.5s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .msgs{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:7px}
+  .msg{background:#1E293B;border-radius:9px;padding:9px 13px;max-width:80%;font-size:13px}
+  .msg .autor{font-weight:700;color:#60A5FA;font-size:11px;margin-right:6px}
+  .msg.proprio{align-self:flex-end;background:#1D4ED8}
+  .msg.proprio .autor{color:#BFDBFE}
+  .msg.sistema{align-self:center;background:transparent;color:#64748B;font-size:11px}
+  .bar{background:#0A1628;border-top:1px solid #1E293B;padding:14px;display:flex;gap:10px}
+  .bar input{flex:1;background:#1E293B;border:1px solid #334155;color:#F1F5F9;
+             padding:11px 14px;border-radius:9px;font-size:14px}
+  .bar input:focus{outline:none;border-color:#3B82F6}
+  .bar button{background:#3B82F6;color:white;border:none;padding:11px 22px;
+              border-radius:9px;font-size:14px;font-weight:700;cursor:pointer}
+  .bar button:hover{background:#2563EB}
+  a.back{color:#64748B;font-size:13px;text-decoration:none}
+  #online{font-size:12px;color:#64748B}
+</style>
+<script>
+const MEU_NOME = "${nome_u}"
+let ws
+
+function conectar() {
+  ws = new WebSocket('ws://localhost:8080/ws/chat')
+  ws.onopen = () => {
+    ws.send(JSON.stringify({evento:'entrar', dados:{nome:MEU_NOME}, sala:'geral'}))
+  }
+  ws.onmessage = (e) => {
+    const m = JSON.parse(e.data)
+    const div = document.createElement('div')
+    if (m.evento === 'mensagem') {
+      div.className = 'msg' + (m.autor === MEU_NOME ? ' proprio' : '')
+      div.innerHTML = '<span class="autor">' + m.autor + ':</span> ' + m.texto
+      document.querySelector('.msgs').appendChild(div)
+    } else if (m.evento === 'sistema') {
+      div.className = 'msg sistema'
+      div.textContent = m.texto
+      document.querySelector('.msgs').appendChild(div)
+    } else if (m.evento === 'online') {
+      document.getElementById('online').textContent = m.count + ' online'
+    }
+    document.querySelector('.msgs').scrollTop = 99999
+  }
+  ws.onclose = () => setTimeout(conectar, 3000)
+}
+
+function enviar() {
+  const inp = document.getElementById('inp')
+  const txt = inp.value.trim()
+  if (!txt || !ws) return
+  ws.send(JSON.stringify({evento:'mensagem', dados:{autor:MEU_NOME, texto:txt}, sala:'geral'}))
+  inp.value = ''
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelector('.msgs').scrollTop = 99999
+  conectar()
+  document.getElementById('inp').addEventListener('keydown', e => {
+    if (e.key === 'Enter') enviar()
+  })
+})
+</script></head>
+<body>
+<div class="header">
+  <a href="/" class="back">← Dashboard</a>
+  <h2>💬 Chat ao Vivo — WebSocket</h2>
+  <div class="status"><div class="dot"></div> Ao vivo</div>
+  <span id="online">0 online</span>
+</div>
+<div class="msgs">
+  <div class="msg sistema">📜 Últimas 20 mensagens do banco:</div>
+  ${msgs_html}
+</div>
+<div class="bar">
+  <input id="inp" placeholder="Digite sua mensagem... (Enter para enviar)" autofocus>
+  <button onclick="enviar()">Enviar 📨</button>
+</div>
+</body></html>`)
+})
+
+// ══════════════════════════════════════════════════════════════════════════
+// 7. PÁGINA USUÁRIOS
+// ══════════════════════════════════════════════════════════════════════════
+
+servidor.obter("/usuarios", (req) => {
+    seja u = pegar_usuario(req)
+    se (u == nulo) { retornar redirecionar("/login") }
+
+    seja todos = t_usuarios.buscar(nulo, nulo, "nome")
+    seja linhas = todos.mapear((usr) => {
+        seja ativo = db.eh_postgres ? usr.ativo == verdadeiro : usr.ativo == 1
+        retornar `<tr>
+          <td style="color:#64748B">${texto(usr.id)}</td>
+          <td><b>${usr.nome}</b></td>
+          <td style="color:#64748B">${usr.email}</td>
+          <td><span style="background:${usr.nivel=="admin"?"#7C3AED":"#1D4ED8"};color:white;
+            padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700">${usr.nivel}</span></td>
+          <td style="color:${ativo?"#22C55E":"#EF4444"}">${ativo?"✅":"❌"}</td>
+        </tr>`
+    }).unir("")
+
+    retornar html(`<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="UTF-8"><title>Usuários</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI',sans-serif;background:#060D1F;color:#F1F5F9;padding:28px}
+  h1{margin-bottom:20px;font-size:22px}
+  table{width:100%;border-collapse:collapse;background:#1E293B;border-radius:12px;overflow:hidden}
+  th{background:#0F172A;padding:10px 14px;text-align:left;color:#94A3B8;font-size:11px;
+     text-transform:uppercase;letter-spacing:1px}
+  td{padding:10px 14px;border-bottom:1px solid #1E293B;font-size:13px}
+  a{color:#3B82F6;text-decoration:none;font-size:13px;display:inline-block;margin-bottom:16px}
+</style></head>
+<body>
+  <a href="/">← Dashboard</a>
+  <h1>👥 Usuários (${texto(todos.tamanho)})</h1>
+  <table>
+    <thead><tr><th>ID</th><th>Nome</th><th>Email</th><th>Nível</th><th>Status</th></tr></thead>
+    <tbody>${linhas}</tbody>
+  </table>
+</body></html>`)
+})
+
+// ══════════════════════════════════════════════════════════════════════════
+// 8. API REST
+// ══════════════════════════════════════════════════════════════════════════
+
+// Tarefas — CRUD
+servidor.obter("/api/tarefas", (req) => {
+    seja tarefas = t_tarefas.buscar(nulo, nulo, "id DESC")
+    retornar resposta_json({total: tarefas.tamanho, tarefas: tarefas})
+})
+
+servidor.obter("/api/tarefas/:id", (req) => {
+    seja id = req.parametros.id
+    seja condicao = db.eh_postgres ? "id=$1" : "id=?"
+    seja t = t_tarefas.buscar_um(condicao, [id])
+    se (t == nulo) { retornar resposta_json({erro: "Não encontrado"}, 404) }
+    retornar resposta_json(t)
+})
+
+servidor.publicar("/api/tarefas", (req) => {
+    seja d = req.dados
+    se (d == nulo ou d.titulo == nulo) {
+        retornar resposta_json({erro: "Campo 'titulo' obrigatório"}, 400)
+    }
+    seja id = t_tarefas.inserir({
+        titulo:     d.titulo,
+        descricao:  d.descricao ?? "",
+        concluida:  falso,
+        usuario_id: d.usuario_id ?? 1,
+        prioridade: d.prioridade ?? "media"
+    })
+    seja nova = t_tarefas.buscar_um(db.eh_postgres ? "id=$1" : "id=?", [id])
+    retornar resposta_json({mensagem: "Tarefa criada!", tarefa: nova}, 201)
+})
+
+servidor.atualizar("/api/tarefas/:id", (req) => {
+    seja id = inteiro(req.parametros.id)
+    seja d  = req.dados
+    se (d == nulo) { retornar resposta_json({erro: "Dados inválidos"}, 400) }
+    seja condicao = db.eh_postgres ? "id=$" + (d.tamanho + 1) : "id=?"
+    t_tarefas.atualizar(d, db.eh_postgres ? "id=$1" : "id=?", [id])
+    retornar resposta_json({mensagem: "Atualizado!"})
+})
+
+servidor.deletar("/api/tarefas/:id", (req) => {
+    seja id = req.parametros.id
+    t_tarefas.excluir(db.eh_postgres ? "id=$1" : "id=?", [id])
+    retornar resposta_json({mensagem: "Excluído!"})
+})
+
+servidor.publicar("/api/tarefas/:id/toggle", (req) => {
+    seja id = inteiro(req.parametros.id)
+    seja condicao = db.eh_postgres ? "id=$1" : "id=?"
+    seja t = t_tarefas.buscar_um(condicao, [id])
+    se (t == nulo) { retornar resposta_json({erro: "Não encontrado"}, 404) }
+    seja nova_val = db.eh_postgres
+        ? (t.concluida == verdadeiro ? falso : verdadeiro)
+        : (t.concluida == 1 ? falso : verdadeiro)
+    t_tarefas.atualizar({concluida: nova_val}, db.eh_postgres ? "id=$1" : "id=?", [id])
+    retornar resposta_json({mensagem: "Atualizado!", concluida: nova_val})
+})
+
+// Usuários
+servidor.obter("/api/usuarios", (req) => {
+    seja usuarios = t_usuarios.buscar(nulo, nulo, "nome")
+    retornar resposta_json({total: usuarios.tamanho, usuarios: usuarios})
+})
+
+servidor.publicar("/api/usuarios", (req) => {
+    seja d = req.dados
+    se (d == nulo ou d.nome == nulo) {
+        retornar resposta_json({erro: "Campo 'nome' obrigatório"}, 400)
+    }
+    seja id = t_usuarios.inserir({
+        nome:  d.nome, email: d.email ?? "",
+        senha: d.senha ?? "advak123",
+        nivel: d.nivel ?? "usuario", ativo: verdadeiro
+    })
+    retornar resposta_json({mensagem: "Usuário criado!", id: id}, 201)
+})
+
+// Stats
+servidor.obter("/api/stats", (req) => {
+    seja bool_true = db.eh_postgres ? "TRUE" : "1"
+    retornar resposta_json({
+        banco: {
+            tipo:       db.eh_postgres ? "PostgreSQL" : "SQLite",
+            eh_postgres:db.eh_postgres
+        },
+        tarefas: {
+            total:     t_tarefas.contar(),
+            concluidas:t_tarefas.contar("concluida=" + bool_true),
+            pendentes: t_tarefas.contar("concluida=" + (db.eh_postgres ? "FALSE" : "0")),
+            alta:      t_tarefas.contar("prioridade='alta'")
+        },
+        usuarios: {
+            total:  t_usuarios.contar(),
+            ativos: t_usuarios.contar("ativo=" + bool_true),
+            admins: t_usuarios.contar("nivel='admin'")
+        },
+        mensagens: t_mensagens.contar()
+    })
+})
+
+// ══════════════════════════════════════════════════════════════════════════
+// 9. WEBSOCKET — CHAT
+// ══════════════════════════════════════════════════════════════════════════
+
+servidor.ao_conexao_ws((cliente) => {
+    ws.entrar_sala(cliente.id, "geral")
+    ws.transmitir({evento:"online", count: ws.contar("geral")}, "geral")
+})
+
+servidor.ao_mensagem_ws("entrar", (msg) => {
+    seja nome = msg.dados.nome ?? "Anônimo"
+    ws.entrar_sala(msg.id, "geral")
+    ws.transmitir({evento:"sistema", texto: nome + " entrou no chat 👋"}, "geral", msg.id)
+    ws.transmitir({evento:"online", count: ws.contar("geral")}, "geral")
+})
+
+servidor.ao_mensagem_ws("mensagem", (msg) => {
+    seja autor = msg.dados.autor ?? "Anônimo"
+    seja conteudo = msg.dados.texto ?? ""
+    se (conteudo == "") { retornar }
+    t_mensagens.inserir({autor: autor, conteudo: conteudo, sala: "geral"})
+    ws.transmitir({evento:"mensagem", autor: autor, texto: conteudo}, "geral")
+})
+
+// ══════════════════════════════════════════════════════════════════════════
+// 10. INICIAR
+// ══════════════════════════════════════════════════════════════════════════
+
+imprimir("")
+imprimir("🚀 Iniciando Advak App...")
+imprimir("   Banco:  " + (db.eh_postgres ? "PostgreSQL ✅" : "SQLite (configure .env para PostgreSQL)"))
+imprimir("   Acesse: http://localhost:8080")
+imprimir("   Login:  admin@app.br / admin123")
+imprimir("")
+
+servidor.iniciar(8080)

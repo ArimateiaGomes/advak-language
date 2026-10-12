@@ -1,0 +1,97 @@
+// ═══════════════════════════════════════════════════════════════
+//  Advak Language 3.0 — Primeiros Passos no Windows
+//  
+//  COMO EXECUTAR:
+//    python advak.py run primeiros_passos.dk --db
+//
+//  OU no REPL (python advak.py --db):
+//    copie e cole linha por linha
+// ═══════════════════════════════════════════════════════════════
+
+// ── PASSO 1: Teste básico ─────────────────────────────────────
+imprimir("Advak funcionando no Windows!");
+imprimir(`Versao: 3.0  |  Banco: PostgreSQL`);
+
+// ── PASSO 2: Cria banco do projeto ───────────────────────────
+imprimir("Criando banco de dados...");
+seja resultado = banco.criar_banco("advak_windows");
+imprimir(resultado);
+banco.usar("advak_windows");
+imprimir("Banco selecionado: advak_windows");
+
+// ── PASSO 3: Cria tabela ──────────────────────────────────────
+banco.tabela("contatos", {
+    "id":       "autonum",
+    "nome":     "texto obrigatorio",
+    "telefone": "varchar",
+    "email":    "texto unico",
+    "cidade":   "texto",
+    "criado":   "datahora"
+});
+imprimir("Tabela 'contatos' criada!");
+
+// ── PASSO 4: Insere dados ─────────────────────────────────────
+banco.inserir_varios("contatos", [
+    {"nome": "Ana Silva",    "telefone": "86 99999-1111", "email": "ana@email.com",    "cidade": "Arraial"},
+    {"nome": "Bob Santos",   "telefone": "86 99999-2222", "email": "bob@email.com",    "cidade": "Oeiras"},
+    {"nome": "Carla Lima",   "telefone": "86 99999-3333", "email": "carla@email.com",  "cidade": "Arraial"},
+    {"nome": "Diego Costa",  "telefone": "86 99999-4444", "email": "diego@email.com",  "cidade": "Teresina"},
+    {"nome": "Eva Pereira",  "telefone": "86 99999-5555", "email": "eva@email.com",    "cidade": "Arraial"}
+]);
+imprimir("5 contatos inseridos!");
+
+// ── PASSO 5: Busca e exibe ────────────────────────────────────
+seja todos = banco.buscar("contatos").ordenar("nome").executar();
+imprimir(`Total de contatos: ${todos.tamanho}`);
+imprimir("Lista completa:");
+para (c em todos) {
+    imprimir(`  ${c.id}. ${c.nome} | ${c.telefone} | ${c.cidade}`);
+}
+
+// ── PASSO 6: Filtro por cidade ────────────────────────────────
+seja arraial = banco.buscar("contatos")
+    .onde("cidade = %s", "Arraial")
+    .ordenar("nome")
+    .executar();
+imprimir(`Contatos em Arraial: ${arraial.tamanho}`);
+para (c em arraial) {
+    imprimir(`  - ${c.nome}`);
+}
+
+// ── PASSO 7: Atualiza um registro ─────────────────────────────
+banco.atualizar("contatos", {"cidade": "Picos"})
+    .onde("nome = %s", "Bob Santos")
+    .executar();
+imprimir("Bob Santos transferido para Picos!");
+
+// ── PASSO 8: Estatísticas com SQL ─────────────────────────────
+seja stats = banco.sql(
+    "SELECT cidade, COUNT(*) as total FROM contatos GROUP BY cidade ORDER BY total DESC"
+);
+imprimir("Contatos por cidade:");
+para (s em stats) {
+    imprimir(`  ${s.cidade}: ${s.total}`);
+}
+
+// ── PASSO 9: Busca por ID ─────────────────────────────────────
+seja primeiro = banco.buscar_id("contatos", 1);
+imprimir(`Contato ID 1: ${primeiro.nome} — ${primeiro.email}`);
+
+// ── PASSO 10: Paginação ───────────────────────────────────────
+seja pag1 = banco.buscar("contatos")
+    .ordenar("nome")
+    .pagina(1, 3)
+    .executar();
+imprimir(`Pagina 1 (3 por pagina): ${pag1.tamanho} registros`);
+
+// ── Finaliza ──────────────────────────────────────────────────
+imprimir("");
+imprimir("Comandos uteis no REPL:");
+imprimir("  :bancos          lista todos os bancos");
+imprimir("  :tabelas         lista tabelas do banco atual");
+imprimir("  :descrever contatos   mostra estrutura da tabela");
+imprimir("  :sql SELECT * FROM contatos   SQL direto");
+imprimir("  :menu            documentacao completa");
+imprimir("  :sair            encerra o REPL");
+imprimir("");
+imprimir("Tudo funcionando! Advak no Windows OK.");

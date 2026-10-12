@@ -1,0 +1,166 @@
+// ════════════════════════════════════════════════════════
+//  Advak Language — English Syntax (Full Demo)
+//  Execute: python advak.py run syntax_english.dk
+//  Note: English keywords work side-by-side with PT-BR
+// ════════════════════════════════════════════════════════
+
+print("═══ 1. VARIABLES ═══");
+let name    = "Arimatea";
+const PI    = 3.14159;
+let active  = true;
+let empty   = null;
+let score   = 9.5;
+print(`name=${name} PI=${PI} active=${active}`);
+
+print("═══ 2. OPERATORS ═══");
+print(2 ** 10);           // 1024
+print(10 % 3);            // 1
+print(null ?? "default"); // default
+print(5 == 5);            // verdadeiro
+print(5 != 3);            // verdadeiro
+print(10 > 5 && 3 < 7);  // verdadeiro
+
+print("═══ 3. TEMPLATE STRINGS ═══");
+let a = 8; let b = 4;
+print(`${a} + ${b} = ${a + b}`);
+print(`${a} ** 2 = ${a ** 2}`);
+
+print("═══ 4. LISTS ═══");
+let nums = [5, 2, 8, 1, 9, 3];
+nums.ordenar();
+print(`sorted: ${nums}`);
+nums.adicionar(99);
+print(`size: ${nums.tamanho}`);
+
+print("═══ 5. MAPS ═══");
+let user = {name: "Ana", city: "Arraial", score: 9.5};
+print(user.name);
+print(user["city"]);
+user.active = true;
+print(`active: ${user.active}`);
+
+print("═══ 6. CONDITIONALS ═══");
+let grade = 75;
+if (grade >= 90) {
+    print("Excellent");
+} else if (grade >= 70) {
+    print("Passed");
+} else {
+    print("Failed");
+}
+
+print("═══ 7. LOOPS ═══");
+let fruits = ["apple", "banana", "grape"];
+for (f in fruits) { print(`- ${f}`); }
+
+for (let i = 1; i <= 3; i += 1) {
+    print(`line ${i}`);
+}
+
+let n = 3;
+while (n > 0) {
+    print(`countdown: ${n}`);
+    n -= 1;
+}
+
+print("═══ 8. FUNCTIONS ═══");
+function add(a, b) { return a + b; }
+function greet(n, s = "Hello") { return `${s}, ${n}!`; }
+function factorial(n) {
+    if (n <= 1) { return 1; }
+    return n * factorial(n - 1);
+}
+print(add(15, 27));
+print(greet("Dev"));
+print(greet("Dev", "Hi"));
+print(factorial(6));
+
+print("═══ 9. LAMBDAS & PIPELINE ═══");
+let double  = (x) => x * 2;
+let square  = (x) => x ** 2;
+let add10   = (x) => x + 10;
+
+print(double(7));
+print(3 |> double |> square |> add10);  // 46
+
+print("═══ 10. CLASSES ═══");
+class Vehicle {
+    construtor(brand, model) {
+        isso.brand = brand;
+        isso.model = model;
+    }
+    describe() { return `${isso.brand} ${isso.model}`; }
+}
+class Car extends Vehicle {
+    construtor(brand, model, doors) {
+        isso.brand = brand;
+        isso.model = model;
+        isso.doors = doors;
+    }
+    describe() { return `${isso.brand} ${isso.model} (${isso.doors}d)`; }
+}
+let car = new Car("Toyota", "Corolla", 4);
+print(car.describe());
+
+print("═══ 11. MATCH / SWITCH ═══");
+let day = 3;
+match(day) {
+    case 1: print("Monday");
+    case 2: print("Tuesday");
+    case 3: print("Wednesday");
+    default: print("Other day");
+}
+
+function classify(n) {
+    match(true) {
+        case n >= 9: return "A";
+        case n >= 7: return "B";
+        case n >= 5: return "C";
+        default:     return "F";
+    }
+}
+print(classify(8.5));
+
+print("═══ 12. ERROR HANDLING ═══");
+try {
+    throw "Intentional error!";
+} catch (e) {
+    print(`Caught: ${e}`);
+} finally {
+    print("Finally ran");
+}
+
+print("═══ 13. STDLIB ═══");
+print(Mat.raiz(144));
+print(Mat.abs(-42));
+print(Texto.maiusculo("advak"));
+print(Lista.intervalo(5));
+
+print("═══ 14. JSON & FILE ═══");
+let obj = {name: "Advak", version: 4, active: true};
+let json_str = JSON.stringify(obj);
+print(json_str);
+let parsed = JSON.parse(json_str);
+print(parsed.version);
+
+Arquivo.escrever("/tmp/test_advak.txt", "Advak English syntax works!");
+let content = Arquivo.ler("/tmp/test_advak.txt");
+print(content);
+
+print("═══ 15. DATABASE ═══");
+// banco.usar("myapp");
+// banco.tabela("users", {"id": "autonum", "name": "texto", "email": "texto unico"});
+// let user = banco.inserir("users", {name: "Ana", email: "ana@x.com"});
+// let all  = banco.buscar("users").executar();
+// let one  = banco.buscar_id("users", 1);
+print("(DB lines commented — run with --db flag)");
+
+print("═══ 16. AI NATIVE ═══");
+// let answer = ai_perguntar("What is recursion?");
+// let category = ai_classificar("Great product!", ["positive", "negative"]);
+// let summary  = ai_resumir("Long text here...");
+// let content  = ai_gerar("Write a haiku about programming");
+print("(AI lines commented — set ANTHROPIC_API_KEY to use)");
+
+print("═══════════════════════════════════");
+print("✅ Advak English Syntax — ALL OK!");

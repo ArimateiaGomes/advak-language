@@ -1,0 +1,10 @@
+
+exportar função fatorial(n) {
+    se (n <= 1) { retornar 1 }
+    retornar n * fatorial(n - 1)
+}
+exportar função fibonacci(n) {
+    se (n <= 1) { retornar n }
+    retornar fibonacci(n-1) + fibonacci(n-2)
+}
+exportar fixo PI_APROX = 3.14159

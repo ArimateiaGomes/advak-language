@@ -1,0 +1,378 @@
+// ═══════════════════════════════════════════════════════════
+//  ADVAK 4.0 — Classes e Herança
+//  Demonstração completa do sistema OOP
+//  Execute: advak projetos run classes_demo.dk
+// ═══════════════════════════════════════════════════════════
+
+// ── 1. CLASSE BÁSICA ─────────────────────────────────────
+classe Animal {
+    construtor(nome, som) {
+        isso.nome = nome
+        isso.som  = som
+        isso.vivo = verdadeiro
+    }
+
+    falar() {
+        retornar isso.nome + " diz: " + isso.som + "!"
+    }
+
+    apresentar() {
+        retornar "Eu sou " + isso.nome
+    }
+
+    // getter
+    get descricao() {
+        retornar "[Animal: " + isso.nome + "]"
+    }
+
+    // método estático
+    static criar(nome, som) {
+        retornar new Animal(nome, som)
+    }
+}
+
+// ── 2. HERANÇA ───────────────────────────────────────────
+classe Cachorro extends Animal {
+    construtor(nome, raca) {
+        super(nome, "Au Au")
+        isso.raca = raca
+        isso.truques = []
+    }
+
+    aprender(truque) {
+        isso.truques.adicionar(truque)
+        retornar isso.nome + " aprendeu: " + truque
+    }
+
+    mostrar_truques() {
+        se (isso.truques.tamanho == 0) {
+            retornar isso.nome + " nao sabe nenhum truque ainda."
+        }
+        retornar isso.nome + " sabe: " + Lista.unir(isso.truques, ", ")
+    }
+
+    // Sobrescreve método do pai
+    apresentar() {
+        retornar "Eu sou " + isso.nome + ", um " + isso.raca
+    }
+}
+
+classe Gato extends Animal {
+    construtor(nome) {
+        super(nome, "Miau")
+        isso.vidas = 9
+    }
+
+    ronronar() {
+        retornar isso.nome + ": Purrrrr... (vidas: " + texto(isso.vidas) + ")"
+    }
+
+    apresentar() {
+        retornar "Eu sou " + isso.nome + " e tenho " + texto(isso.vidas) + " vidas"
+    }
+}
+
+// ── 3. HERANÇA MÚLTIPLOS NÍVEIS ──────────────────────────
+classe PastorAlemao extends Cachorro {
+    construtor(nome) {
+        super(nome, "Pastor Alemao")
+        isso.treinado = verdadeiro
+    }
+
+    guardar() {
+        retornar isso.nome + " esta guardando a casa! (treinado: " + texto(isso.treinado) + ")"
+    }
+}
+
+// ── 4. CLASSE COM GETTERS E SETTERS ─────────────────────
+classe Pessoa {
+    construtor(nome, idade) {
+        isso._nome  = nome
+        isso._idade = idade
+    }
+
+    get nome() {
+        retornar isso._nome
+    }
+
+    set nome(valor) {
+        se (Texto.tamanho(valor) < 2) {
+            imprimir("Nome muito curto!")
+            retornar
+        }
+        isso._nome = valor
+    }
+
+    get idade() {
+        retornar isso._idade
+    }
+
+    set idade(valor) {
+        se (valor < 0 || valor > 150) {
+            imprimir("Idade invalida!")
+            retornar
+        }
+        isso._idade = valor
+    }
+
+    get maior_de_idade() {
+        retornar isso._idade >= 18
+    }
+
+    apresentar() {
+        seja status = isso.maior_de_idade ? "maior" : "menor"
+        retornar isso._nome + " tem " + texto(isso._idade) + " anos (" + status + " de idade)"
+    }
+
+    static comparar(p1, p2) {
+        se (p1._idade > p2._idade) { retornar p1._nome + " e mais velho" }
+        se (p1._idade < p2._idade) { retornar p2._nome + " e mais velho" }
+        retornar "Mesma idade!"
+    }
+}
+
+// ── 5. INTERFACE ─────────────────────────────────────────
+interface Pagavel {
+    calcular_total()
+    aplicar_desconto(pct)
+}
+
+classe Produto implementa Pagavel {
+    construtor(nome, preco, quantidade) {
+        isso.nome       = nome
+        isso.preco      = preco
+        isso.quantidade = quantidade
+        isso.desconto   = 0
+    }
+
+    calcular_total() {
+        seja subtotal = isso.preco * isso.quantidade
+        retornar subtotal * (1 - isso.desconto / 100)
+    }
+
+    aplicar_desconto(pct) {
+        isso.desconto = pct
+        retornar isso.nome + ": desconto de " + texto(pct) + "% aplicado"
+    }
+
+    get resumo() {
+        retornar isso.nome + " x" + texto(isso.quantidade) +
+                 " = R$ " + texto(isso.calcular_total())
+    }
+}
+
+// ══════════════════════════════════════════════════════════
+//  EXECUÇÃO E DEMONSTRAÇÃO
+// ══════════════════════════════════════════════════════════
+
+imprimir("=== ADVAK 4.0 — Classes e Herança ===")
+imprimir("")
+
+// Testando Animal
+imprimir("-- Animal basico --")
+seja bicho = new Animal("Leão", "ROAR")
+imprimir(bicho.falar())
+imprimir(bicho.apresentar())
+imprimir(bicho.descricao)
+
+// Método estático
+seja passaro = Animal.criar("Papagaio", "Piiii")
+imprimir(passaro.falar())
+imprimir("")
+
+// Testando Cachorro
+imprimir("-- Cachorro (heranca de Animal) --")
+seja dog = new Cachorro("Rex", "Labrador")
+imprimir(dog.falar())
+imprimir(dog.apresentar())
+imprimir(dog.aprender("sentar"))
+imprimir(dog.aprender("dar a pata"))
+imprimir(dog.aprender("rolar"))
+imprimir(dog.mostrar_truques())
+imprimir("")
+
+// Testando Gato
+imprimir("-- Gato (heranca de Animal) --")
+seja gato = new Gato("Whiskers")
+imprimir(gato.falar())
+imprimir(gato.apresentar())
+imprimir(gato.ronronar())
+imprimir("")
+
+// Testando herança múltiplos níveis
+imprimir("-- Pastor Alemao (heranca de Cachorro) --")
+seja pastor = new PastorAlemao("Thor")
+imprimir(pastor.falar())
+imprimir(pastor.apresentar())
+imprimir(pastor.aprender("atacar"))
+imprimir(pastor.guardar())
+imprimir(pastor.mostrar_truques())
+imprimir("")
+
+// instanceof
+imprimir("-- instanceof --")
+imprimir("dog instanceof Cachorro: " + texto(dog instanceof Cachorro))
+imprimir("dog instanceof Animal: "   + texto(dog instanceof Animal))
+imprimir("gato instanceof Cachorro: " + texto(gato instanceof Cachorro))
+imprimir("pastor instanceof PastorAlemao: " + texto(pastor instanceof PastorAlemao))
+imprimir("pastor instanceof Cachorro: " + texto(pastor instanceof Cachorro))
+imprimir("pastor instanceof Animal: " + texto(pastor instanceof Animal))
+imprimir("")
+
+// Getters e Setters
+imprimir("-- Getters e Setters --")
+seja p1 = new Pessoa("João", 25)
+seja p2 = new Pessoa("Maria", 17)
+imprimir(p1.apresentar())
+imprimir(p2.apresentar())
+imprimir("p1 maior de idade: " + texto(p1.maior_de_idade))
+imprimir("p2 maior de idade: " + texto(p2.maior_de_idade))
+
+// Setter com validação
+p1.idade = 30
+imprimir("Após set: " + p1.apresentar())
+p2.idade = -5
+imprimir("Após set inválido: " + p2.apresentar())
+
+// Método estático
+imprimir(Pessoa.comparar(p1, p2))
+imprimir("")
+
+// Interface + Produto
+imprimir("-- Interface e Produto --")
+seja prod1 = new Produto("Arroz 5kg", 25.90, 3)
+seja prod2 = new Produto("Feijao 1kg", 8.50, 5)
+imprimir(prod1.resumo)
+imprimir(prod2.resumo)
+imprimir(prod1.aplicar_desconto(10))
+imprimir(prod2.aplicar_desconto(5))
+imprimir("Após desconto:")
+imprimir(prod1.resumo)
+imprimir(prod2.resumo)
+
+// Total do carrinho
+seja total = prod1.calcular_total() + prod2.calcular_total()
+imprimir("Total do carrinho: R$ " + texto(total))
+imprimir("")
+
+imprimir("=== Fim da demonstracao ===")
+
+// ── GUI para visualizar os resultados ────────────────────
+seja jan = gui.janela("Advak 4.0 — Classes e Herança", 800, 600)
+jan.centralizar()
+
+gui.label(jan, "Demonstração de Classes e Herança", negrito=verdadeiro)
+gui.separador(jan)
+
+seja abas = gui.abas(jan)
+seja aba_animais  = abas.adicionar("Animais")
+seja aba_pessoas  = abas.adicionar("Pessoas")
+seja aba_produtos = abas.adicionar("Produtos")
+
+// ── Aba Animais ──────────────────────────────────────────
+gui.label(aba_animais, "Hierarquia: Animal → Cachorro → PastorAlemao", negrito=verdadeiro)
+gui.separador(aba_animais)
+
+seja tab_animais = gui.tabela(aba_animais,
+    ["Tipo", "Nome", "Falar", "Apresentar"], altura=8)
+
+tab_animais.adicionar(["Animal",       bicho.nome,   bicho.falar(),   bicho.apresentar()])
+tab_animais.adicionar(["Animal",       passaro.nome, passaro.falar(), passaro.apresentar()])
+tab_animais.adicionar(["Cachorro",     dog.nome,     dog.falar(),     dog.apresentar()])
+tab_animais.adicionar(["Gato",         gato.nome,    gato.falar(),    gato.apresentar()])
+tab_animais.adicionar(["PastorAlemao", pastor.nome,  pastor.falar(),  pastor.apresentar()])
+
+gui.separador(aba_animais)
+gui.label(aba_animais, "Testar instanceof:")
+seja fr_inst = gui.frame_horizontal(aba_animais)
+gui.botao(fr_inst, "dog instanceof Animal?", (btn) => {
+    seja r = dog instanceof Animal
+    gui.toast("dog instanceof Animal: " + texto(r), tipo="info")
+}, estilo="primario")
+gui.botao(fr_inst, "gato instanceof Cachorro?", (btn) => {
+    seja r = gato instanceof Cachorro
+    gui.toast("gato instanceof Cachorro: " + texto(r), tipo="info")
+}, estilo="primario")
+gui.botao(fr_inst, "pastor instanceof Animal?", (btn) => {
+    seja r = pastor instanceof Animal
+    gui.toast("pastor instanceof Animal: " + texto(r), tipo="sucesso")
+}, estilo="primario")
+
+// ── Aba Pessoas ──────────────────────────────────────────
+gui.label(aba_pessoas, "Getters, Setters e Métodos Estáticos", negrito=verdadeiro)
+gui.separador(aba_pessoas)
+
+seja fr_p = gui.frame_horizontal(aba_pessoas)
+seja col_l = gui.frame(fr_p)
+col_l.posicionar(lado="left", preencher="both", expandir=verdadeiro, espaco_x=8)
+seja col_r = gui.frame(fr_p)
+col_r.posicionar(lado="left", preencher="both", expandir=verdadeiro, espaco_x=8)
+
+gui.label(col_l, "Criar nova Pessoa:")
+gui.label(col_l, "Nome:")
+seja f_pnome = gui.campo(col_l, "Digite o nome...", largura=20)
+gui.label(col_l, "Idade:")
+seja f_pidade = gui.campo(col_l, "0", largura=10)
+
+seja lbl_pessoa_result = gui.label(col_l, "")
+gui.botao(col_l, "Criar e Testar", (btn) => {
+    seja nm = f_pnome.valor()
+    seja id = numero(f_pidade.valor())
+    se (!nm) { gui.aviso("Digite o nome!"); retornar }
+    seja nova = new Pessoa(nm, id)
+    lbl_pessoa_result.texto(nova.apresentar())
+    gui.toast("Criado: " + nova.apresentar(), tipo="sucesso")
+}, estilo="sucesso")
+
+gui.label(col_r, "Comparar p1 e p2:")
+gui.label(col_r, "p1: " + p1.apresentar())
+gui.label(col_r, "p2: " + p2.apresentar())
+gui.separador(col_r)
+seja lbl_comp = gui.label(col_r, Pessoa.comparar(p1, p2))
+gui.botao(col_r, "Comparar", (btn) => {
+    lbl_comp.texto(Pessoa.comparar(p1, p2))
+}, estilo="primario")
+
+// ── Aba Produtos ─────────────────────────────────────────
+gui.label(aba_produtos, "Classe com Interface Pagavel", negrito=verdadeiro)
+gui.separador(aba_produtos)
+
+seja tab_prod = gui.tabela(aba_produtos,
+    ["Produto", "Preço Un.", "Qtd", "Desconto %", "Total"], altura=8)
+
+seja carrinho_cls = [prod1, prod2]
+
+função atualizar_tab_prod() {
+    tab_prod.limpar()
+    para (p em carrinho_cls) {
+        tab_prod.adicionar([
+            p.nome,
+            "R$ " + texto(p.preco),
+            texto(p.quantidade),
+            texto(p.desconto) + "%",
+            "R$ " + texto(p.calcular_total())
+        ])
+    }
+}
+
+atualizar_tab_prod()
+
+seja fr_add = gui.frame_horizontal(aba_produtos)
+gui.label(fr_add, "Produto:")
+seja f_prodname = gui.campo(fr_add, "Nome...", largura=15)
+gui.label(fr_add, "Preço:")
+seja f_prodpreco = gui.campo(fr_add, "0.00", largura=8)
+gui.label(fr_add, "Qtd:")
+seja f_prodqtd = gui.campo(fr_add, "1", largura=5)
+gui.botao(fr_add, "Adicionar", (btn) => {
+    seja nm = f_prodname.valor()
+    seja pr = numero(f_prodpreco.valor())
+    seja qt = numero(f_prodqtd.valor())
+    se (!nm || pr <= 0) { gui.aviso("Dados inválidos!"); retornar }
+    seja novo_prod = new Produto(nm, pr, qt)
+    carrinho_cls.adicionar(novo_prod)
+    atualizar_tab_prod()
+    gui.toast("Produto adicionado!", tipo="sucesso")
+}, estilo="sucesso")
+
+gui.iniciar()

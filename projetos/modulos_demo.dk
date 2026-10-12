@@ -1,0 +1,255 @@
+// ═══════════════════════════════════════════════════════════
+//  ADVAK 4.0 — Sistema de Módulos
+//  Demonstração de importar/exportar
+//  Execute: advak projetos run modulos_demo.dk
+// ═══════════════════════════════════════════════════════════
+
+// ── 1. Importar módulo de arquivo ────────────────────────
+importar { fatorial, fibonacci, eh_primo, media, PI_DUPLO } de "matematica_utils.dk"
+importar { validar_email, validar_senha, sanitizar } de "validacao.dk"
+
+// ── 2. Importar biblioteca padrão ────────────────────────
+importar Mat de "std:math"
+importar { formatar, maiusculo, minusculo, contar } de "std:texto"
+importar { ordenar, filtrar, mapear, unico } de "std:lista"
+importar { parsear, serializar } de "std:json"
+importar { hoje, agora } de "std:data"
+
+// ════════════════════════════════════════════════════════
+//  TESTES NO CONSOLE
+// ════════════════════════════════════════════════════════
+
+imprimir("=== ADVAK 4.0 — Módulos ===");
+imprimir("");
+
+// Funções do módulo matematica_utils.dk
+imprimir("-- Módulo: matematica_utils.dk --");
+imprimir("fatorial(10) = " + texto(fatorial(10)));
+imprimir("fibonacci(15) = " + texto(fibonacci(15)));
+imprimir("eh_primo(17) = " + texto(eh_primo(17)));
+imprimir("eh_primo(18) = " + texto(eh_primo(18)));
+imprimir("media([1,2,3,4,5]) = " + texto(media([1,2,3,4,5])));
+imprimir("PI_DUPLO = " + texto(PI_DUPLO));
+imprimir("");
+
+// Biblioteca std:math
+imprimir("-- std:math --");
+imprimir("Mat.PI = " + texto(Mat.PI));
+imprimir("Mat.raiz(144) = " + texto(Mat.raiz(144)));
+imprimir("Mat.sen(0) = " + texto(Mat.sen(0)));
+imprimir("Mat.inteiro_aleatorio(1, 100) = " + texto(Mat.inteiro_aleatorio(1, 100)));
+imprimir("");
+
+// Biblioteca std:texto
+imprimir("-- std:texto --");
+imprimir(maiusculo("hello world"));
+imprimir(minusculo("ADVAK 4.0"));
+imprimir("Contar 'a' em 'banana': " + texto(contar("banana", "a")));
+imprimir("");
+
+// Biblioteca std:lista
+imprimir("-- std:lista --");
+seja nums = [5, 3, 8, 1, 9, 2, 7, 4, 6];
+imprimir("Original: " + texto(nums));
+imprimir("Ordenado: " + texto(ordenar(nums)));
+seja pares = filtrar(nums, (x) => x % 2 == 0);
+imprimir("Pares: " + texto(pares));
+seja dobros = mapear(nums, (x) => x * 2);
+imprimir("Dobros: " + texto(dobros));
+seja com_dup = [1, 2, 2, 3, 3, 3, 4];
+imprimir("Únicos de " + texto(com_dup) + ": " + texto(unico(com_dup)));
+imprimir("");
+
+// Biblioteca std:json
+imprimir("-- std:json --");
+seja obj = {nome: "Advak", versao: 4, modulos: verdadeiro};
+seja json_str = serializar(obj);
+imprimir("Serializado: " + json_str);
+seja de_volta = parsear(json_str);
+imprimir("Parseado nome: " + de_volta.nome);
+imprimir("");
+
+// Biblioteca std:data
+imprimir("-- std:data --");
+imprimir("Hoje: " + hoje());
+imprimir("Agora: " + agora());
+imprimir("");
+
+// Validação
+imprimir("-- Módulo: validacao.dk --");
+imprimir("Email valido@teste.com: " + texto(validar_email("valido@teste.com")));
+imprimir("Email invalido: " + texto(validar_email("invalido")));
+seja senha_ok = validar_senha("minhasenha123");
+seja senha_nok = validar_senha("123");
+imprimir("Senha forte: ok=" + texto(senha_ok.ok));
+imprimir("Senha fraca: erro=" + senha_nok.erro);
+imprimir("sanitizar('  Advak  '): '" + sanitizar("  Advak  ") + "'");
+imprimir("");
+
+// ════════════════════════════════════════════════════════
+//  GUI
+// ════════════════════════════════════════════════════════
+
+seja jan = gui.janela("Advak 4.0 — Sistema de Módulos", 950, 650);
+jan.centralizar();
+
+seja menu = gui.menu_bar(jan);
+menu.adicionar("Tema", [
+    ["Claro",  (x) => { gui.tema("claro"); }],
+    ["Escuro", (x) => { gui.tema("escuro"); }]
+]);
+
+gui.label(jan, "Sistema de Módulos — Advak 4.0", negrito=verdadeiro);
+gui.separador(jan);
+
+seja abas = gui.abas(jan);
+seja aba_mat  = abas.adicionar("Matemática");
+seja aba_txt  = abas.adicionar("Texto");
+seja aba_lst  = abas.adicionar("Listas");
+seja aba_val  = abas.adicionar("Validação");
+seja aba_json = abas.adicionar("JSON");
+
+// ── Aba Matemática ───────────────────────────────────────
+gui.label(aba_mat, "Funções de matematica_utils.dk + std:math", negrito=verdadeiro);
+gui.separador(aba_mat);
+
+seja fr_mat = gui.frame_horizontal(aba_mat);
+seja col_m1 = gui.frame(fr_mat);
+col_m1.posicionar(lado="left", preencher="both", expandir=verdadeiro, espaco_x=8);
+seja col_m2 = gui.frame(fr_mat);
+col_m2.posicionar(lado="left", preencher="both", expandir=verdadeiro, espaco_x=8);
+
+gui.label(col_m1, "Fatorial:", negrito=verdadeiro);
+seja fr_fat = gui.frame_horizontal(col_m1);
+gui.label(fr_fat, "n =");
+seja f_fat_n = gui.campo(fr_fat, "10", largura=8);
+seja lbl_fat = gui.label(col_m1, "fatorial(10) = " + texto(fatorial(10)));
+gui.botao(col_m1, "Calcular", (btn) => {
+    seja n = numero(f_fat_n.valor());
+    se (n > 20) { gui.aviso("Max 20!"); retornar; }
+    lbl_fat.texto("fatorial(" + texto(n) + ") = " + texto(fatorial(n)));
+}, estilo="primario");
+
+gui.separador(col_m1);
+gui.label(col_m1, "Fibonacci:", negrito=verdadeiro);
+seja fr_fib = gui.frame_horizontal(col_m1);
+gui.label(fr_fib, "n =");
+seja f_fib_n = gui.campo(fr_fib, "10", largura=8);
+seja lbl_fib = gui.label(col_m1, "fibonacci(10) = " + texto(fibonacci(10)));
+gui.botao(col_m1, "Calcular", (btn) => {
+    seja n = numero(f_fib_n.valor());
+    lbl_fib.texto("fibonacci(" + texto(n) + ") = " + texto(fibonacci(n)));
+}, estilo="primario");
+
+gui.separador(col_m1);
+gui.label(col_m1, "Primos até N:", negrito=verdadeiro);
+seja f_primo_n = gui.campo(col_m1, "50", largura=8);
+seja lbl_primos = gui.label(col_m1, "");
+gui.botao(col_m1, "Listar Primos", (btn) => {
+    seja n = numero(f_primo_n.valor());
+    seja primos = [];
+    para (i em Lista.intervalo(2, n + 1)) {
+        se (eh_primo(i)) { primos.adicionar(i); }
+    }
+    lbl_primos.texto("Primos: " + texto(primos));
+}, estilo="primario");
+
+gui.label(col_m2, "std:math:", negrito=verdadeiro);
+seja tab_mat = gui.tabela(col_m2, ["Função", "Resultado"], altura=12);
+tab_mat.adicionar(["Mat.PI",           texto(Mat.PI)]);
+tab_mat.adicionar(["Mat.E",            texto(Mat.E)]);
+tab_mat.adicionar(["Mat.raiz(2)",      texto(Mat.raiz(2))]);
+tab_mat.adicionar(["Mat.sen(90°→PI/2)", texto(Mat.sen(1.5708))]);
+tab_mat.adicionar(["Mat.cos(0)",       texto(Mat.cos(0))]);
+tab_mat.adicionar(["Mat.log(Mat.E)",   texto(Mat.log(Mat.E))]);
+tab_mat.adicionar(["Mat.piso(3.9)",    texto(Mat.piso(3.9))]);
+tab_mat.adicionar(["Mat.teto(3.1)",    texto(Mat.teto(3.1))]);
+tab_mat.adicionar(["PI_DUPLO",         texto(PI_DUPLO)]);
+
+// ── Aba Texto ────────────────────────────────────────────
+gui.label(aba_txt, "Funções de std:texto", negrito=verdadeiro);
+gui.separador(aba_txt);
+
+gui.label(aba_txt, "Texto de entrada:");
+seja f_texto = gui.campo(aba_txt, "Hello, Advak World!", largura=40);
+seja lbl_txt_result = gui.label(aba_txt, "");
+
+seja fr_txt_btns = gui.frame_horizontal(aba_txt);
+gui.botao(fr_txt_btns, "MAIÚSCULO",  (btn) => { lbl_txt_result.texto(maiusculo(f_texto.valor())); }, estilo="primario");
+gui.botao(fr_txt_btns, "minúsculo",  (btn) => { lbl_txt_result.texto(minusculo(f_texto.valor())); }, estilo="primario");
+gui.botao(fr_txt_btns, "Contar 'a'", (btn) => { lbl_txt_result.texto("Ocorrências de 'a': " + texto(contar(f_texto.valor(), "a"))); }, estilo="secundario");
+gui.botao(fr_txt_btns, "Sanitizar",  (btn) => { lbl_txt_result.texto("'" + sanitizar(f_texto.valor()) + "'"); }, estilo="secundario");
+
+// ── Aba Listas ───────────────────────────────────────────
+gui.label(aba_lst, "Funções de std:lista", negrito=verdadeiro);
+gui.separador(aba_lst);
+
+seja lista_demo = [5, 3, 8, 1, 9, 2, 7, 4, 6, 3, 5];
+seja tab_lst = gui.tabela(aba_lst, ["Operação", "Resultado"], altura=10);
+tab_lst.adicionar(["Original",              texto(lista_demo)]);
+tab_lst.adicionar(["ordenar()",             texto(ordenar(lista_demo))]);
+tab_lst.adicionar(["filtrar(par)",          texto(filtrar(lista_demo, (x) => x % 2 == 0))]);
+tab_lst.adicionar(["filtrar(ímpar)",        texto(filtrar(lista_demo, (x) => x % 2 != 0))]);
+tab_lst.adicionar(["mapear(x*2)",           texto(mapear(lista_demo, (x) => x * 2))]);
+tab_lst.adicionar(["unico()",               texto(unico(lista_demo))]);
+tab_lst.adicionar(["filtrar(>5)",           texto(filtrar(lista_demo, (x) => x > 5))]);
+
+// ── Aba Validação ────────────────────────────────────────
+gui.label(aba_val, "Módulo validacao.dk", negrito=verdadeiro);
+gui.separador(aba_val);
+
+gui.label(aba_val, "Email:");
+seja f_email = gui.campo(aba_val, "teste@email.com", largura=30);
+seja lbl_email_r = gui.label(aba_val, "");
+gui.botao(aba_val, "Validar Email", (btn) => {
+    seja ok = validar_email(f_email.valor());
+    lbl_email_r.texto(ok ? "Email válido!" : "Email inválido!");
+    gui.toast(ok ? "Email válido!" : "Email inválido!", tipo=ok ? "sucesso" : "erro");
+}, estilo="primario");
+
+gui.separador(aba_val);
+gui.label(aba_val, "Senha:");
+seja f_senha = gui.campo(aba_val, "", largura=30, senha=verdadeiro);
+seja lbl_senha_r = gui.label(aba_val, "");
+gui.botao(aba_val, "Validar Senha", (btn) => {
+    seja r = validar_senha(f_senha.valor());
+    lbl_senha_r.texto(r.ok ? "Senha forte!" : "Erro: " + r.erro);
+    gui.toast(r.ok ? "Senha forte!" : r.erro, tipo=r.ok ? "sucesso" : "erro");
+}, estilo="primario");
+
+// ── Aba JSON ─────────────────────────────────────────────
+gui.label(aba_json, "std:json — Serialização e Parsing", negrito=verdadeiro);
+gui.separador(aba_json);
+
+seja fr_json = gui.frame_horizontal(aba_json);
+seja col_j1 = gui.frame(fr_json);
+col_j1.posicionar(lado="left", preencher="both", expandir=verdadeiro, espaco_x=8);
+seja col_j2 = gui.frame(fr_json);
+col_j2.posicionar(lado="left", preencher="both", expandir=verdadeiro, espaco_x=8);
+
+gui.label(col_j1, "Objeto Advak → JSON:");
+seja area_obj = gui.area_texto(col_j1, largura=35, altura=8,
+    valor_inicial="{ nome: 'Advak', versao: 4, modulos: verdadeiro }");
+seja area_json_out = gui.area_texto(col_j1, largura=35, altura=8,
+    valor_inicial="");
+gui.botao(col_j1, "Serializar →", (btn) => {
+    seja dados = {nome: "Advak", versao: 4.0, data: hoje(), modulos: ["math","texto","lista","json"]};
+    area_json_out.definir(serializar(dados));
+    gui.toast("Serializado!", tipo="sucesso");
+}, estilo="primario");
+
+gui.label(col_j2, "JSON → Objeto:");
+seja area_json_in = gui.area_texto(col_j2, largura=35, altura=8,
+    valor_inicial="{\"nome\":\"Advak\",\"versao\":4}");
+seja lbl_json_parsed = gui.label(col_j2, "");
+gui.botao(col_j2, "← Parsear", (btn) => {
+    tentar {
+        seja obj2 = parsear(area_json_in.valor());
+        lbl_json_parsed.texto("nome: " + obj2.nome + "\nversao: " + texto(obj2.versao));
+        gui.toast("Parseado!", tipo="sucesso");
+    } capturar (e) {
+        gui.erro("JSON inválido: " + texto(e));
+    }
+}, estilo="primario");
+
+gui.iniciar();

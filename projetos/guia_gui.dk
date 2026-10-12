@@ -1,0 +1,1055 @@
+// ═══════════════════════════════════════════════════════════════════════
+//  ADVAK 5.0 — GUIA DE CRIAÇÃO DE APLICAÇÕES COM GUI
+//  Execute: advak projetos\guia_gui.dk
+// ═══════════════════════════════════════════════════════════════════════
+
+gui.tema("escuro")
+seja jan = gui.janela("Advak 5.0 — Guia de Aplicações GUI", 1250, 820)
+
+// ═══════════════════════════════════════════════════════════════════════
+//  TEORIAS (multiline com backticks)
+// ═══════════════════════════════════════════════════════════════════════
+
+fixo T1 = `Todo app GUI em Advak segue esta estrutura:
+
+  1. Definir o tema (opcional)
+  2. Criar a janela principal
+  3. Adicionar widgets (label, botao, campo...)
+  4. Definir funcoes para os eventos
+  5. Iniciar o loop da interface
+
+JANELA — gui.janela()
+  gui.janela(titulo, largura, altura)
+  Parametros opcionais:
+    titulo  = 'Meu App'
+    largura = 900
+    altura  = 650
+
+TEMAS disponiveis:
+  gui.tema('escuro')   fundo escuro, texto claro
+  gui.tema('claro')    fundo branco, texto escuro
+  gui.tema('roxo')     tema violeta
+  gui.tema('verde')    tema verde
+
+  Tecla F11 alterna entre escuro/claro
+
+INICIAR — sempre a ultima linha:
+  gui.iniciar()   inicia o loop de eventos`
+
+fixo T2 = `Frames organizam os widgets em regioes.
+
+FRAME VERTICAL — gui.frame(pai)
+  Empilha widgets de cima para baixo
+  Parametros opcionais:
+    cor   = '#1E293B'   cor de fundo hex
+    borda = verdadeiro  mostra borda
+
+FRAME HORIZONTAL — gui.frame_horizontal(pai)
+  Alinha widgets da esquerda para direita
+  Nao aceita parametro cor=
+
+POSICIONAR — .posicionar()
+  Controla onde o frame aparece:
+    lado      = 'left' | 'right' | 'top' | 'bottom'
+    preencher = 'both' | 'x' | 'y' | 'none'
+    expandir  = verdadeiro | falso
+    padx      = espaco horizontal
+    pady      = espaco vertical
+
+LAYOUT 2 COLUNAS:
+  seja f_h  = gui.frame_horizontal(jan)
+  seja col1 = gui.frame(f_h)   // coluna esquerda
+  seja col2 = gui.frame(f_h)   // coluna direita
+
+LAYOUT COM SIDEBAR:
+  seja f_h      = gui.frame_horizontal(jan)
+  seja sidebar  = gui.frame(f_h, cor='#0F172A')
+  sidebar.posicionar(lado='left', preencher='y')
+  sidebar.configure(width=200)
+  sidebar.pack_propagate(falso)
+  seja conteudo = gui.frame(f_h)`
+
+fixo T3 = `Widgets para capturar dados do usuario:
+
+CAMPO — gui.campo(pai)
+  campo.get()         le o valor atual
+  campo.definir(v)    define um valor
+  campo.limpar()      apaga o conteudo
+  Parametros:
+    placeholder   = 'Digite...'
+    valor_inicial = 'texto'
+    senha         = verdadeiro  (oculta texto)
+    largura       = 35
+    ao_mudar      = funcao(v)
+
+AREA DE TEXTO — gui.area_texto(pai)
+  area.get('1.0','end-1c')   le todo o texto
+  area.insert('end', txt)    insere texto
+  area.delete('1.0','end')   apaga tudo
+  Parametros: largura=50, altura=10
+
+CHECKBOX — gui.checkbox(pai)
+  Parametros:
+    texto         = 'Ativar opcao'
+    valor_inicial = falso
+    ao_mudar      = funcao(v)
+
+SLIDER — gui.slider(pai)
+  slider.valor()    retorna numero atual
+  Parametros: minimo=0, maximo=100, valor=50
+
+SWITCH — gui.switch(pai, texto)
+  Toggle moderno on/off
+
+CAIXA DE SELECAO — gui.caixa_selecao(pai)
+  sel.get()    retorna opcao selecionada
+  Parametros: opcoes=['A','B'], valor_inicial='A'`
+
+fixo T4 = `Exibir colecoes de dados:
+
+TABELA SIMPLES — gui.tabela(pai, colunas)
+  tabela.adicionar([v1, v2, v3])
+  tabela.preencher([[v1,v2], [v3,v4]])
+  tabela.selecionado()   retorna linha selecionada
+  tabela.limpar()
+  Parametros:
+    colunas       = ['Col1', 'Col2']
+    altura        = 10
+    ao_selecionar = funcao(linha)
+
+LISTA — gui.lista(pai)
+  lista.adicionar(item)
+  lista.selecionado()    retorna item
+  lista.limpar()
+
+ARVORE HIERARQUICA — gui.arvore(pai)
+  Para dados com hierarquia pai/filho
+  dados = [{nome, filhos: [{nome}]}]
+
+DATAGRID EDITAVEL — gui.datagrid()
+  Tabela com edicao inline por duplo clique
+  colunas = [{nome:'Nome', largura:180}]
+
+  dg = gui.datagrid(pai, colunas,
+         dados=lista,
+         editavel=verdadeiro,
+         filtro=verdadeiro,
+         ao_mudar=funcao(linha,col,val))
+
+  dg.adicionar({nome:'X', valor:'Y'})
+  dg.remover()
+  dg.atualizar()
+  dg.selecionar()   retorna linha selecionada`
+
+fixo T5 = `Comunicar com o usuario:
+
+ALERTAS — bloqueiam a interface:
+  gui.alerta('Mensagem')      informacao
+  gui.erro('Mensagem')        erro em vermelho
+  gui.aviso('Mensagem')       aviso em amarelo
+  gui.confirmar('Pergunta')   retorna verdadeiro/falso
+  gui.pedir('Pergunta')       retorna texto digitado
+  gui.pedir_numero('Prompt')  retorna numero
+
+TOAST — notificacao flutuante (nao bloqueia):
+  gui.toast('Mensagem', tipo, duracao)
+  tipos:   'sucesso' | 'erro' | 'aviso' | 'info'
+  duracao: 3000 (milissegundos)
+
+DIALOGOS DE ARQUIVO:
+  gui.escolher_arquivo()   retorna caminho
+  gui.salvar_arquivo()     retorna caminho para salvar
+  gui.escolher_pasta()     retorna pasta
+  gui.escolher_cor()       retorna cor #hex
+
+BARRA DE STATUS — rodape informativo:
+  seja st = gui.barra_status(jan, 'Pronto')
+  st.mensagem('Novo texto')
+  st.ok('Operacao concluida')
+  st.erro_st('Algo deu errado')`
+
+fixo T6 = `Componentes visuais modernos:
+
+CARD — gui.card(pai, titulo, corpo)
+  Painel elevado com titulo e conteudo
+  cor_borda = '#hex'  (opcional)
+
+ABAS — gui.abas(pai)
+  seja abas = gui.abas(jan)
+  seja aba1 = abas.adicionar('Nome da Aba')
+  // widgets vao dentro de aba1
+
+SLIDER — gui.slider(pai)
+  slider.valor()    le o valor atual
+  Parametros:
+    minimo   = 0
+    maximo   = 100
+    valor    = 50
+    ao_mudar = funcao(v)
+    label    = verdadeiro
+
+SWITCH — gui.switch(pai, texto)
+  Toggle moderno. ao_mudar=funcao(v)
+
+BADGE — gui.badge(pai, texto, cor)
+  Etiquetas coloridas para status
+  cores: 'azul' | 'verde' | 'vermelho' | 'roxo'
+
+SEPARADOR — gui.separador(pai)
+  Linha divisoria horizontal
+
+BUSCA — gui.busca(pai)
+  Campo com autocomplete
+  lista_itens   = ['A', 'B', 'C']
+  ao_selecionar = funcao(valor)`
+
+fixo T7 = `Animacoes fluidas estilo CSS transitions:
+
+ANIMAR — gui.animar(widget, prop, valor)
+  Anima qualquer propriedade suavemente
+
+  Propriedades suportadas:
+    'x'          move horizontal (via place)
+    'y'          move vertical   (via place)
+    'largura'    altera width
+    'altura'     altera height
+    'cor_fundo'  transicao de cor #hex
+    'opacidade'  fade in/out
+
+  Parametros:
+    duracao  = 300   (milissegundos)
+    easing   = 'ease_out'
+
+  Easings disponiveis:
+    'linear'       velocidade constante
+    'ease_in'      comeca devagar
+    'ease_out'     termina devagar
+    'ease_in_out'  devagar nas pontas
+    'bounce'       efeito elastico
+
+SEQUENCIA — gui.animar_sequencia(lista)
+  Executa animacoes em cadeia:
+  gui.animar_sequencia([
+    {widget:w, prop:'x',        valor:300, duracao:400},
+    {widget:w, prop:'cor_fundo', valor:'#verde', duracao:500}
+  ])
+
+LOOP — gui.animar_loop(w, prop, v1, v2)
+  Anima ida e volta infinitamente
+  widget._anim_loop_stop()   para o loop`
+
+fixo T8 = `MVVM separa dados (Model) da interface (View):
+
+CRIAR VIEWMODEL:
+  seja vm = gui.criar_viewmodel({
+      nome:  'Ana',
+      idade: 25,
+      ativo: verdadeiro
+  })
+
+VINCULAR campo ao dado (bidirecional):
+  vm.vincular(campo_entry, 'nome')
+  Digitar no campo atualiza vm.dados.nome
+  vm.definir('nome', 'X') atualiza o campo
+
+VINCULAR label ao dado (leitura):
+  vm.vincular_label(label, 'nome')
+  vm.vincular_label(lbl, 'idade',
+    formatar=funcao(v) { retornar v + ' anos' })
+
+VINCULAR checkbox a booleano:
+  vm.vincular_checkbox(check, 'ativo')
+
+OBSERVAR mudancas:
+  vm.ao_mudar('nome', funcao(v) {
+      imprimir('Nome mudou para: ' + v)
+  })
+
+PROPRIEDADE COMPUTADA:
+  vm.calcular('completo',
+      funcao(n, s) { retornar n + ' ' + s },
+      'nome', 'sobrenome')
+
+LEITURA E ESCRITA DIRETA:
+  vm.obter('nome')       le valor
+  vm.definir('x', val)   atualiza tudo`
+
+fixo T9 = `Drag and Drop para interfaces interativas:
+
+HABILITAR DRAG em qualquer widget:
+  gui.habilitar_drag(widget,
+      dados={item: 'tarefa 1', id: 1},
+      ao_iniciar=funcao(d) { },
+      cursor='hand2')
+
+HABILITAR DROP em area de destino:
+  gui.habilitar_drop(frame,
+      ao_soltar=funcao(dados, evento) {
+          imprimir(dados.item)
+      },
+      realce=verdadeiro)   // azul ao passar
+
+KANBAN COMPLETO — gui.kanban()
+  Painel de cards arrastavel entre colunas:
+
+  seja kb = gui.kanban(pai,
+    colunas_config=[
+      {titulo:'A Fazer', itens:['T1','T2'], cor:'#1e293b'},
+      {titulo:'Fazendo', itens:[],          cor:'#1e3a5f'},
+      {titulo:'Pronto',  itens:['T0'],      cor:'#14532d'}
+    ],
+    ao_mover=funcao(item, origem, destino) { }
+  )
+
+  API do Kanban:
+    kb.adicionar(coluna_idx, 'novo item')
+    kb.obter_colunas()   retorna [[itens]]
+    kb.remover(col_idx, item)`
+
+fixo T10 = `Padrao para um app CRUD completo:
+
+ESTRUTURA RECOMENDADA:
+
+  1. gui.tema() e gui.janela()
+
+  2. DADOS (Model)
+     seja registros = []
+
+  3. LAYOUT (View)
+     sidebar + area principal
+     formulario + tabela/datagrid
+
+  4. FUNCOES (ViewModel/Controller)
+     funcao adicionar() { }
+     funcao editar() { }
+     funcao remover() { }
+     funcao buscar(txt) { }
+
+  5. EVENTOS
+     botao → chama funcao
+     tabela.ao_selecionar → preenche formulario
+
+  6. gui.iniciar()   ← sempre por ultimo!
+
+BOAS PRATICAS:
+  Sempre validar antes de salvar
+  Mostrar toast de feedback ao usuario
+  Atualizar barra de status com contagem
+  Confirmar antes de deletar
+  Usar DataGrid para listas editaveis
+  Usar MVVM para formularios reativos`
+
+// ═══════════════════════════════════════════════════════════════════════
+//  CODIGOS DE EXEMPLO
+// ═══════════════════════════════════════════════════════════════════════
+
+fixo C1 = `gui.tema("escuro")
+seja jan = gui.janela("Meu Primeiro App", 600, 400)
+
+gui.label(jan, "Ola, Mundo!", tamanho=24, negrito=verdadeiro, cor="#3B82F6")
+gui.label(jan, "Este e meu primeiro app Advak GUI", tamanho=11)
+gui.separador(jan)
+
+seja campo = gui.campo(jan, placeholder="Digite algo...")
+
+gui.botao(jan, "Mostrar mensagem",
+    ao_clicar=() => {
+        seja txt = campo.get()
+        se (txt) {
+            gui.alerta("Voce digitou: " + txt)
+        } senao {
+            gui.aviso("Campo vazio!")
+        }
+    }, estilo="sucesso")
+
+seja status = gui.barra_status(jan, "Pronto")
+gui.iniciar()`
+
+fixo C2 = `gui.tema("escuro")
+seja jan = gui.janela("Layout Demo", 700, 450)
+
+// Barra de topo
+seja f_topo = gui.frame(jan, cor="#1E293B")
+gui.label(f_topo, "  Minha Aplicacao", negrito=verdadeiro, tamanho=13, cor="#3B82F6")
+
+gui.separador(jan)
+
+// Area principal: sidebar + conteudo
+seja f_main = gui.frame_horizontal(jan)
+
+seja sidebar = gui.frame(f_main, cor="#0F172A")
+sidebar.posicionar(lado="left", preencher="y", expandir=falso)
+sidebar.configure(width=180)
+sidebar.pack_propagate(falso)
+
+gui.label(sidebar, "  MENU", tamanho=9, negrito=verdadeiro, cor="#64748B")
+gui.botao(sidebar, "  Inicio",    estilo="secundario", largura=22)
+gui.botao(sidebar, "  Relatorio", estilo="secundario", largura=22)
+gui.botao(sidebar, "  Config",    estilo="secundario", largura=22)
+
+seja conteudo = gui.frame(f_main)
+gui.label(conteudo, "Area de conteudo principal",
+    negrito=verdadeiro, tamanho=14)
+gui.label(conteudo, "Aqui ficam os dados e formularios da tela",
+    cor="#64748B")
+
+gui.barra_status(jan, "Layout com sidebar pronto!")
+gui.iniciar()`
+
+fixo C3 = `gui.tema("escuro")
+seja jan = gui.janela("Formulario Completo", 650, 580)
+
+gui.label(jan, "Cadastro de Usuario", negrito=verdadeiro, tamanho=14)
+gui.separador(jan)
+
+gui.label(jan, "Nome completo:")
+seja c_nome = gui.campo(jan, placeholder="Digite o nome...", largura=40)
+
+gui.label(jan, "Email:")
+seja c_email = gui.campo(jan, placeholder="usuario@email.com", largura=40)
+
+gui.label(jan, "Senha:")
+seja c_senha = gui.campo(jan, placeholder="senha secreta", senha=verdadeiro, largura=40)
+
+gui.label(jan, "Perfil:")
+seja sel_perfil = gui.caixa_selecao(jan,
+    opcoes=["Administrador", "Editor", "Leitor"],
+    valor_inicial="Leitor")
+
+seja chk_news = gui.checkbox(jan, "Receber newsletter", valor_inicial=verdadeiro)
+seja sw_ativo = gui.switch(jan, "Conta ativa")
+
+gui.label(jan, "Nivel de acesso (0-10):")
+seja sl_nivel = gui.slider(jan, minimo=0, maximo=10, valor=5)
+
+gui.separador(jan)
+gui.botao(jan, "Cadastrar",
+    ao_clicar=() => {
+        seja nome  = c_nome.get()
+        seja email = c_email.get()
+        seja perfil= sel_perfil.get()
+        gui.alerta("Cadastrado: " + nome)
+    }, estilo="sucesso")
+
+gui.iniciar()`
+
+fixo C4 = `gui.tema("escuro")
+seja jan = gui.janela("Tabelas Demo", 750, 550)
+seja abas = gui.abas(jan)
+
+// Tabela simples
+seja aba1 = abas.adicionar("Tabela")
+seja tb = gui.tabela(aba1,
+    colunas=["Nome", "Cargo", "Salario"],
+    altura=10,
+    ao_selecionar=(linha) => {
+        gui.toast("Selecionado: " + linha[0], "info")
+    })
+
+tb.adicionar(["Ana Silva",   "Engenheira", "R$ 12.000"])
+tb.adicionar(["Bruno Costa", "Designer",   "R$ 8.500"])
+tb.adicionar(["Carla Matos", "Gerente",    "R$ 15.000"])
+
+// DataGrid editavel
+seja aba2 = abas.adicionar("DataGrid")
+
+seja cols = [
+    {nome: "produto", largura: 200},
+    {nome: "preco",   largura: 120},
+    {nome: "estoque", largura: 100}
+]
+seja produtos = [
+    {produto: "Notebook", preco: "3500", estoque: "15"},
+    {produto: "Monitor",  preco: "1200", estoque: "28"},
+    {produto: "Teclado",  preco: "350",  estoque: "50"}
+]
+
+seja dg = gui.datagrid(aba2, cols,
+    dados=produtos,
+    editavel=verdadeiro,
+    filtro=verdadeiro,
+    ao_mudar=(linha, col, val) => {
+        gui.toast(col + " alterado para '" + val + "'", "info")
+    })
+
+gui.iniciar()`
+
+fixo C5 = `gui.tema("escuro")
+seja jan = gui.janela("Notificacoes Demo", 600, 500)
+
+gui.label(jan, "Dialogos e Notificacoes", negrito=verdadeiro, tamanho=14)
+gui.separador(jan)
+
+seja st = gui.barra_status(jan, "Aguardando acao...")
+
+// Toast - diferentes tipos
+seja f1 = gui.frame_horizontal(jan)
+gui.botao(f1, "Sucesso",
+    ao_clicar=() => {
+        gui.toast("Operacao realizada!", "sucesso")
+        st.ok("Sucesso!")
+    }, estilo="sucesso")
+gui.botao(f1, "Erro",
+    ao_clicar=() => {
+        gui.toast("Algo deu errado!", "erro")
+        st.erro_st("Erro")
+    }, estilo="perigo")
+gui.botao(f1, "Aviso",
+    ao_clicar=() => gui.toast("Atencao necessaria", "aviso"), estilo="aviso")
+
+gui.separador(jan)
+
+gui.botao(jan, "Alerta simples",
+    ao_clicar=() => gui.alerta("Este e um alerta informativo"))
+
+gui.botao(jan, "Confirmacao",
+    ao_clicar=() => {
+        seja resp = gui.confirmar("Deseja continuar?")
+        se (resp) { gui.toast("Confirmado!", "sucesso") }
+        senao { gui.toast("Cancelado", "aviso") }
+    })
+
+gui.botao(jan, "Pedir texto",
+    ao_clicar=() => {
+        seja nome = gui.pedir("Qual e o seu nome?")
+        se (nome) { gui.alerta("Ola, " + nome + "!") }
+    })
+
+gui.botao(jan, "Escolher arquivo",
+    ao_clicar=() => {
+        seja arq = gui.escolher_arquivo()
+        se (arq) { gui.toast("Arquivo: " + arq, "info", 5000) }
+    })
+
+gui.iniciar()`
+
+fixo C6 = `gui.tema("escuro")
+seja jan = gui.janela("Componentes Visuais", 800, 600)
+
+seja abas = gui.abas(jan)
+
+// Aba 1: Cards
+seja aba1 = abas.adicionar("Cards")
+
+seja f_cards = gui.frame_horizontal(aba1)
+gui.card(f_cards, titulo="Usuarios",  corpo="1.234 cadastrados")
+gui.card(f_cards, titulo="Receita",   corpo="R$ 45.678")
+gui.card(f_cards, titulo="Pedidos",   corpo="567 hoje")
+
+// Aba 2: Controles
+seja aba2 = abas.adicionar("Controles")
+
+gui.label(aba2, "Volume:", negrito=verdadeiro)
+seja sl = gui.slider(aba2, minimo=0, maximo=100, valor=70,
+    ao_mudar=(v) => {
+        gui.toast("Volume: " + v + "%", "info", 800)
+    })
+
+gui.label(aba2, "Modo escuro:")
+seja sw = gui.switch(aba2, "Ativar",
+    ao_mudar=(v) => {
+        se (v) { gui.tema("escuro") }
+        senao  { gui.tema("claro")  }
+    })
+
+gui.separador(aba2)
+seja f_badges = gui.frame_horizontal(aba2)
+gui.badge(f_badges, "Novo",    "azul")
+gui.badge(f_badges, "Urgente", "vermelho")
+gui.badge(f_badges, "Pago",    "verde")
+gui.badge(f_badges, "Beta",    "roxo")
+
+// Aba 3: Busca
+seja aba3 = abas.adicionar("Busca")
+gui.label(aba3, "Busca com autocomplete:")
+gui.busca(aba3,
+    lista_itens=["Python", "JavaScript", "Advak", "Rust", "Go", "Java"],
+    ao_selecionar=(v) => {
+        gui.toast("Selecionado: " + v, "sucesso")
+    })
+
+gui.iniciar()`
+
+fixo C7 = `gui.tema("escuro")
+seja jan = gui.janela("Animacoes Demo", 700, 450)
+
+gui.label(jan, "Animacoes CSS no Advak 5.0", negrito=verdadeiro, tamanho=14)
+gui.separador(jan)
+
+// Widget que sera animado
+seja caixa = gui.frame(jan, cor="#2563EB", borda=verdadeiro)
+caixa.place(x=50, y=120)
+caixa.configure(width=100, height=50)
+gui.label(caixa, "  Caixa  ", cor="#FFFFFF")
+
+// Botoes de controle
+seja f_btns = gui.frame_horizontal(jan)
+
+gui.botao(f_btns, "Mover X",
+    ao_clicar=() => gui.animar(caixa, "x", 450, duracao=600, easing="ease_out"), estilo="primario")
+
+gui.botao(f_btns, "Mover Y",
+    ao_clicar=() => gui.animar(caixa, "y", 250, duracao=400, easing="bounce"), estilo="primario")
+
+gui.botao(f_btns, "Mudar Cor",
+    ao_clicar=() => gui.animar(caixa, "cor_fundo", "#16A34A", duracao=800), estilo="sucesso")
+
+gui.botao(f_btns, "Reset",
+    ao_clicar=() => {
+        gui.animar_sequencia([
+            {widget: caixa, prop: "x",         valor: 50,        duracao: 400},
+            {widget: caixa, prop: "y",         valor: 120,       duracao: 400},
+            {widget: caixa, prop: "cor_fundo", valor: "#2563EB", duracao: 500}
+        ])
+    }, estilo="secundario")
+
+gui.botao(f_btns, "Loop Infinito",
+    ao_clicar=() => gui.animar_loop(caixa, "x", 50, 500, duracao=900, easing="ease_in_out"), estilo="aviso")
+
+gui.botao(f_btns, "Parar",
+    ao_clicar=() => {
+        se (caixa._anim_loop_stop) { caixa._anim_loop_stop() }
+    }, estilo="perigo")
+
+gui.iniciar()`
+
+fixo C8 = `gui.tema("escuro")
+seja jan = gui.janela("MVVM Demo", 750, 500)
+
+gui.label(jan, "MVVM — Binding Reativo", negrito=verdadeiro, tamanho=14)
+gui.separador(jan)
+
+// Criar ViewModel com dados iniciais
+seja vm = gui.criar_viewmodel({
+    nome:      "Maria",
+    sobrenome: "Silva",
+    email:     "maria@email.com",
+    ativo:     verdadeiro
+})
+
+// Propriedade computada automatica
+vm.calcular("completo",
+    (n, s) => { retornar n + " " + s },
+    "nome", "sobrenome")
+
+seja f_h = gui.frame_horizontal(jan)
+
+// Coluna esquerda: formulario
+seja col1 = gui.frame(f_h)
+col1.posicionar(lado="left", preencher="both", expandir=verdadeiro)
+
+gui.label(col1, "Formulario (View)", negrito=verdadeiro, cor="#3B82F6")
+gui.separador(col1)
+
+gui.label(col1, "Nome:")
+seja c_nome = gui.campo(col1, placeholder="Nome")
+vm.vincular(c_nome, "nome")
+
+gui.label(col1, "Sobrenome:")
+seja c_sob = gui.campo(col1, placeholder="Sobrenome")
+vm.vincular(c_sob, "sobrenome")
+
+gui.label(col1, "Email:")
+seja c_email = gui.campo(col1, placeholder="Email")
+vm.vincular(c_email, "email")
+
+gui.label(col1, "Ativo:")
+seja chk = gui.checkbox(col1, "Usuario ativo")
+vm.vincular_checkbox(chk, "ativo")
+
+// Coluna direita: preview em tempo real
+seja col2 = gui.frame(f_h, cor="#1E293B")
+col2.posicionar(lado="left", preencher="both", expandir=verdadeiro)
+
+gui.label(col2, "Preview em tempo real", negrito=verdadeiro, cor="#22C55E")
+gui.separador(col2)
+
+gui.label(col2, "Nome completo:")
+seja lbl_nome = gui.label(col2, "", tamanho=13, negrito=verdadeiro)
+vm.vincular_label(lbl_nome, "completo")
+
+gui.label(col2, "Email:")
+seja lbl_email = gui.label(col2, "", cor="#3B82F6")
+vm.vincular_label(lbl_email, "email")
+
+gui.iniciar()`
+
+fixo C9 = `gui.tema("escuro")
+seja jan = gui.janela("Kanban — Drag e Drop", 900, 600)
+
+gui.label(jan, "Kanban Board", negrito=verdadeiro, tamanho=14)
+gui.label(jan, "Arraste os cards entre as colunas", tamanho=10, cor="#64748B")
+gui.separador(jan)
+
+seja lbl_log = gui.label(jan, "Aguardando movimentacao...", cor="#64748B", tamanho=9)
+
+seja colunas = [
+    {titulo: "A Fazer",  itens: ["Design UI", "API Login", "Banco de dados"], cor: "#1e293b"},
+    {titulo: "Fazendo",  itens: ["Parser Advak", "GUI moderna"],               cor: "#1e3a5f"},
+    {titulo: "Revisao",  itens: ["Lexer v2"],                                  cor: "#2d1b69"},
+    {titulo: "Pronto",   itens: ["Documentacao", "Deploy"],                    cor: "#14532d"}
+]
+
+seja nomes = ["A Fazer", "Fazendo", "Revisao", "Pronto"]
+
+seja kb = gui.kanban(jan,
+    colunas_config=colunas,
+    ao_mover=(item, origem, destino) => {
+        lbl_log.configure(
+            text="Movido: " + item + " — " + nomes[origem] + " para " + nomes[destino]
+        )
+    })
+
+// Adicionar nova tarefa
+seja f_add = gui.frame_horizontal(jan)
+seja c_nova = gui.campo(f_add, placeholder="Nova tarefa...", largura=30)
+gui.botao(f_add, "Adicionar em A Fazer",
+    ao_clicar=() => {
+        seja txt = c_nova.get()
+        se (txt.aparar()) {
+            kb.adicionar(0, txt)
+            c_nova.limpar()
+        }
+    }, estilo="primario")
+
+gui.iniciar()`
+
+fixo C10 = `// App CRUD completo — Gestao de Contatos
+gui.tema("escuro")
+seja jan = gui.janela("Contatos — Advak App", 900, 600)
+
+// Dados
+seja contatos = [
+    {nome: "Ana Silva",   email: "ana@email.com",   fone: "(11) 99999-1111"},
+    {nome: "Bruno Lima",  email: "bruno@email.com",  fone: "(21) 98888-2222"},
+    {nome: "Carla Matos", email: "carla@email.com",  fone: "(31) 97777-3333"}
+]
+
+// Layout
+seja f_topo = gui.frame(jan, cor="#1E293B")
+gui.label(f_topo, "  Gestao de Contatos", negrito=verdadeiro, tamanho=13, cor="#3B82F6")
+
+gui.separador(jan)
+
+seja f_main = gui.frame_horizontal(jan)
+
+// Formulario lateral
+seja f_form = gui.frame(f_main, cor="#0F172A")
+f_form.posicionar(lado="left", preencher="y", expandir=falso)
+f_form.configure(width=280)
+f_form.pack_propagate(falso)
+
+gui.label(f_form, "  Nome:", negrito=verdadeiro)
+seja c_nome  = gui.campo(f_form, placeholder="Nome completo", largura=32)
+gui.label(f_form, "  Email:", negrito=verdadeiro)
+seja c_email = gui.campo(f_form, placeholder="Email", largura=32)
+gui.label(f_form, "  Fone:", negrito=verdadeiro)
+seja c_fone  = gui.campo(f_form, placeholder="(00) 00000-0000", largura=32)
+
+gui.separador(f_form)
+gui.botao(f_form, "  Adicionar", ao_clicar=() => adicionar(), estilo="sucesso",    largura=30)
+gui.botao(f_form, "  Remover",   ao_clicar=() => remover(), estilo="perigo",     largura=30)
+gui.botao(f_form, "  Limpar",    ao_clicar=() => limpar(), estilo="secundario", largura=30)
+
+// DataGrid
+seja f_grid = gui.frame(f_main)
+seja cols = [
+    {nome: "nome",  largura: 200},
+    {nome: "email", largura: 220},
+    {nome: "fone",  largura: 160}
+]
+seja dg = gui.datagrid(f_grid, cols,
+    dados=contatos, editavel=verdadeiro, filtro=verdadeiro,
+    ao_selecionar=(linha) => {
+        c_nome.definir(linha.nome)
+        c_email.definir(linha.email)
+        c_fone.definir(linha.fone)
+    })
+
+seja st = gui.barra_status(jan, "  3 contatos carregados")
+
+// Funcoes CRUD
+funcao adicionar() {
+    seja nome  = c_nome.get().aparar()
+    seja email = c_email.get().aparar()
+    seja fone  = c_fone.get().aparar()
+    se (!nome || !email) {
+        gui.aviso("Nome e email sao obrigatorios!")
+        retornar
+    }
+    dg.adicionar({nome: nome, email: email, fone: fone})
+    limpar()
+    gui.toast("Contato adicionado!", "sucesso")
+    st.mensagem("  " + texto(dg.dados.tamanho) + " contatos")
+}
+
+funcao remover() {
+    seja sel = dg.selecionar()
+    se (!sel) { gui.aviso("Selecione um contato"); retornar }
+    seja ok = gui.confirmar("Remover " + sel.nome + "?")
+    se (ok) { dg.remover(); gui.toast("Removido!", "aviso") }
+}
+
+funcao limpar() {
+    c_nome.limpar(); c_email.limpar(); c_fone.limpar()
+}
+
+gui.iniciar()`
+
+// ═══════════════════════════════════════════════════════════════════════
+//  DADOS DAS SEÇÕES
+// ═══════════════════════════════════════════════════════════════════════
+
+fixo SECOES = [
+    {icone: "🏗️", titulo: "Estrutura Basica",        descricao: "Como montar qualquer app GUI em Advak",          teoria: T1,  codigo: C1},
+    {icone: "🧱", titulo: "Layout com Frames",        descricao: "Organizar widgets em colunas e linhas",          teoria: T2,  codigo: C2},
+    {icone: "🎛️", titulo: "Widgets de Entrada",       descricao: "Campo, area de texto, checkbox, slider, switch", teoria: T3,  codigo: C3},
+    {icone: "📊", titulo: "Tabelas e Listas",          descricao: "Tabela, lista, arvore e DataGrid editavel",      teoria: T4,  codigo: C4},
+    {icone: "📢", titulo: "Dialogos e Notificacoes",   descricao: "Alertas, toast, modal e confirmacoes",          teoria: T5,  codigo: C5},
+    {icone: "🎨", titulo: "Cards, Abas e Visuais",     descricao: "Card, abas, slider, badge, busca",              teoria: T6,  codigo: C6},
+    {icone: "✨", titulo: "Animacoes CSS",             descricao: "Mover, colorir e animar widgets",               teoria: T7,  codigo: C7},
+    {icone: "🔗", titulo: "MVVM - Binding Reativo",    descricao: "Sincronizar dados e interface automaticamente",  teoria: T8,  codigo: C8},
+    {icone: "🔄", titulo: "Drag e Drop — Kanban",      descricao: "Arrastar e soltar, painel Kanban",              teoria: T9,  codigo: C9},
+    {icone: "📱", titulo: "App Completo — CRUD",       descricao: "Aplicacao completa de cadastro",                teoria: T10, codigo: C10}
+]
+
+// ═══════════════════════════════════════════════════════════════════════
+//  LAYOUT PRINCIPAL
+// ═══════════════════════════════════════════════════════════════════════
+
+seja f_principal = gui.frame_horizontal(jan)
+
+// ── SIDEBAR ──────────────────────────────────────────────────────────
+seja sidebar = gui.frame(f_principal, cor="#0F172A")
+sidebar.posicionar(lado="left", preencher="y", expandir=falso)
+sidebar.configure(width=230)
+sidebar.pack_propagate(falso)
+
+gui.label(sidebar, "  GUI Advak 5.0", negrito=verdadeiro, tamanho=12, cor="#3B82F6")
+gui.label(sidebar, "  Guia de Aplicacoes", tamanho=9, cor="#64748B")
+gui.separador(sidebar)
+gui.label(sidebar, "  SECOES", tamanho=8, cor="#64748B", negrito=verdadeiro)
+
+seja botoes_sec = []
+seja _sec_atual = [0]
+
+função criar_btn_sec(sec, idx) {
+    seja txt = "  " + sec.icone + "  " + sec.titulo
+    seja _fn = função() { carregar_secao(idx) }
+    seja btn = gui.botao(sidebar, txt,
+        ao_clicar=_fn,
+        estilo="secundario", largura=30)
+    botoes_sec.adicionar(btn)
+}
+
+para (i em [0,1,2,3,4,5,6,7,8,9]) {
+    criar_btn_sec(SECOES[i], i)
+}
+
+// ── CONTEÚDO ──────────────────────────────────────────────────────────
+seja f_conteudo = gui.frame(f_principal, cor="#0F172A")
+
+// Header
+seja f_hdr = gui.frame(f_conteudo, cor="#1E293B")
+seja f_hdr_h = gui.frame_horizontal(f_hdr)
+
+seja lbl_icone = gui.label(f_hdr_h, "🏗️", tamanho=18)
+lbl_icone.pack(lado="esquerda", espaco_x=10, espaco_y=8)
+
+seja f_hdr_txt = gui.frame(f_hdr_h, cor="#1E293B")
+f_hdr_txt.pack(lado="esquerda", preencher="ambos", expandir=verdadeiro)
+seja lbl_titulo = gui.label(f_hdr_txt, "Selecione uma secao", negrito=verdadeiro, tamanho=15, cor="#3B82F6")
+seja lbl_desc   = gui.label(f_hdr_txt, "Clique em uma secao na barra lateral", tamanho=9, cor="#64748B")
+
+seja f_nav_h = gui.frame_horizontal(f_hdr_h)
+f_nav_h.pack(lado="direita", espaco_x=12)
+seja btn_ant  = gui.botao(f_nav_h, "Anterior", ao_clicar=() => navegar(-1), estilo="secundario")
+btn_ant.pack(lado="esquerda", espaco_x=2)
+seja btn_prox = gui.botao(f_nav_h, "Proximo",  ao_clicar=() => navegar(1),  estilo="primario")
+btn_prox.pack(lado="esquerda", espaco_x=2)
+
+gui.separador(f_conteudo)
+
+// Abas de conteudo
+seja abas = gui.abas(f_conteudo)
+
+// Teoria
+seja tab_t = abas.adicionar("  Teoria  ")
+seja area_t = gui.area_texto(tab_t, largura=95, altura=32)
+area_t.configure(estado="desabilitado", bg="#0D1117", fg="#E6EDF3",
+    relief="flat", espaco_x=20, espaco_y=16, wrap="word")
+
+// Codigo
+seja tab_c = abas.adicionar("  Codigo Completo  ")
+seja f_cc = gui.frame_horizontal(tab_c)
+
+seja f_ed = gui.frame(f_cc, cor="#0F172A")
+f_ed.posicionar(lado="left", preencher="both", expandir=verdadeiro)
+seja f_ed_h = gui.frame_horizontal(f_ed)
+gui.label(f_ed_h, " Copie e salve como arquivo.dk para executar", negrito=verdadeiro, cor="#3B82F6", tamanho=9)
+seja editor = gui.area_texto(f_ed, largura=60, altura=28)
+editor.configure(bg="#0D1117", fg="#E6EDF3", relief="flat", espaco_x=12, espaco_y=12, wrap="none")
+
+seja f_sa = gui.frame(f_cc, cor="#0F172A")
+f_sa.posicionar(lado="left", preencher="both", expandir=verdadeiro)
+seja f_sa_h = gui.frame_horizontal(f_sa)
+gui.label(f_sa_h, " Saida", negrito=verdadeiro, cor="#22C55E", tamanho=9)
+seja saida = gui.area_texto(f_sa, largura=38, altura=28)
+saida.configure(estado="desabilitado", bg="#0D1117", fg="#4EC9B0", relief="flat", espaco_x=10, espaco_y=10)
+
+seja f_run = gui.frame_horizontal(tab_c)
+gui.label(f_run, " Ctrl+Enter para executar  |  O codigo da aba e executado e a saida aparece ao lado", tamanho=9, cor="#64748B")
+seja btn_exec = gui.botao(f_run, "  Executar  ", ao_clicar=() => executar(), estilo="sucesso")
+btn_exec.pack(lado="direita", espaco_x=8, espaco_y=5)
+
+// Referencia
+seja tab_r = abas.adicionar("  Referencia Rapida  ")
+seja area_r = gui.area_texto(tab_r, largura=95, altura=32)
+area_r.configure(estado="desabilitado", bg="#0D1117", fg="#E6EDF3", relief="flat", espaco_x=16, espaco_y=10)
+area_r.configure(estado="habilitado")
+area_r.insert("1.0", `ADVAK 5.0 — REFERENCIA DE GUI
+══════════════════════════════════════════════════════════
+
+JANELA E TEMA
+  gui.tema('escuro'|'claro'|'roxo'|'verde')
+  gui.janela(titulo, largura, altura)
+  gui.iniciar()    <- sempre a ultima linha!
+
+LAYOUT
+  gui.frame(pai, cor='#hex', borda=falso)
+  gui.frame_horizontal(pai)        <- sem parametro cor=!
+  frame.posicionar(lado, preencher, expandir, padx, pady)
+  frame.configure(width=200)       <- fixar largura
+  frame.pack_propagate(falso)      <- impedir resize
+
+TEXTO E BOTAO
+  gui.label(pai, texto, tamanho, cor, negrito)
+  gui.botao(pai, texto, ao_clicar, estilo, largura)
+    estilos: primario | secundario | sucesso | perigo | aviso | roxo
+  gui.separador(pai)
+
+ENTRADAS
+  gui.campo(pai, placeholder, valor_inicial, senha, largura, ao_mudar)
+    campo.get()  campo.definir(v)  campo.limpar()
+  gui.area_texto(pai, largura, altura)
+    area.get('1.0','end-1c')  area.insert('end',txt)  area.delete('1.0','end')
+  gui.checkbox(pai, texto, valor_inicial, ao_mudar)
+  gui.caixa_selecao(pai, opcoes, valor_inicial, ao_mudar)
+  gui.slider(pai, minimo, maximo, valor, ao_mudar)
+  gui.switch(pai, texto, valor_inicial, ao_mudar)
+
+TABELAS
+  gui.tabela(pai, colunas, altura, ao_selecionar)
+    tabela.adicionar([v1,v2])  tabela.preencher([[]])  tabela.limpar()
+  gui.datagrid(pai, colunas, dados, editavel, filtro, ao_mudar)
+    dg.adicionar({})  dg.remover()  dg.selecionar()  dg.atualizar()
+
+ABAS E VISUAIS
+  gui.abas(pai) -> abas.adicionar('Nome') -> retorna frame
+  gui.card(pai, titulo, corpo, cor_borda)
+  gui.badge(pai, texto, cor)   cores: azul|verde|vermelho|roxo
+  gui.busca(pai, lista_itens, ao_selecionar)
+
+DIALOGOS
+  gui.alerta(msg)  gui.erro(msg)  gui.aviso(msg)
+  gui.confirmar(msg)  ->  verdadeiro/falso
+  gui.pedir(msg)  ->  texto digitado
+  gui.toast(msg, tipo, duracao)
+  gui.escolher_arquivo()  gui.salvar_arquivo()  gui.escolher_pasta()
+
+BARRA DE STATUS
+  seja st = gui.barra_status(jan, msg)
+  st.mensagem('txt')   st.ok('msg')   st.erro_st('msg')
+
+ANIMACOES
+  gui.animar(w, prop, valor, duracao, easing)
+    props: 'x' | 'y' | 'largura' | 'altura' | 'cor_fundo'
+    easings: linear | ease_in | ease_out | ease_in_out | bounce
+  gui.animar_sequencia([{widget,prop,valor,duracao}])
+  gui.animar_loop(w, prop, v_inicio, v_fim, duracao)
+
+MVVM
+  seja vm = gui.criar_viewmodel({prop: valor})
+  vm.vincular(campo, 'prop')
+  vm.vincular_label(label, 'prop', formatar=fn)
+  vm.vincular_checkbox(check, 'prop')
+  vm.ao_mudar('prop', funcao(v) { })
+  vm.calcular('comp', fn, 'dep1', 'dep2')
+  vm.definir('prop', val)   vm.obter('prop')
+
+DRAG E DROP
+  gui.habilitar_drag(widget, dados, ao_iniciar)
+  gui.habilitar_drop(widget, ao_soltar, realce)
+  gui.kanban(pai, colunas_config, ao_mover)
+
+TEMPO
+  gui.apos(ms, funcao)       executa 1x apos delay
+  gui.repetir(ms, funcao)    executa repetidamente
+  gui.atualizar()            forca redesenho
+`)
+area_r.configure(estado="desabilitado")
+
+// Status bar
+seja status = gui.barra_status(jan, "Selecione uma secao para comecar — Guia GUI Advak 5.0")
+
+// ═══════════════════════════════════════════════════════════════════════
+//  FUNCOES
+// ═══════════════════════════════════════════════════════════════════════
+
+função carregar_secao(idx) {
+    _sec_atual[0] = idx
+    seja sec = SECOES[idx]
+
+    lbl_icone.configure(text=sec.icone)
+    lbl_titulo.configure(text=sec.icone + "  " + sec.titulo)
+    lbl_desc.configure(text=sec.descricao + "  |  Secao " + texto(idx+1) + " de 10")
+
+    area_t.configure(estado="habilitado")
+    area_t.delete("1.0", "end")
+    area_t.insert("1.0", sec.teoria)
+    area_t.configure(estado="desabilitado")
+
+    editor.delete("1.0", "end")
+    editor.insert("1.0", sec.codigo)
+
+    saida.configure(estado="habilitado")
+    saida.delete("1.0", "end")
+    saida.configure(estado="desabilitado")
+
+    para (i em [0,1,2,3,4,5,6,7,8,9]) {
+        seja btn = botoes_sec[i]
+        se (i == idx) { btn.configure(bg="#2563EB") }
+        senão          { btn.configure(bg="#1E293B") }
+    }
+
+    status.mensagem("  Secao " + texto(idx+1) + "/10: " + sec.titulo)
+}
+
+função navegar(dir) {
+    seja prox = _sec_atual[0] + dir
+    se (prox >= 0 && prox < 10) { carregar_secao(prox) }
+}
+
+função executar() {
+    seja codigo = editor.get("1.0", "end-1c")
+    saida.configure(estado="habilitado")
+    saida.delete("1.0", "end")
+    se (codigo.aparar() == "") {
+        saida.insert("end", "  Digite ou cole um codigo acima e clique Executar")
+        saida.configure(estado="desabilitado")
+        retornar
+    }
+    saida.insert("end", "  Executando...")
+    saida.configure(estado="desabilitado")
+    gui.atualizar()
+    seja output = advak_executar(codigo)
+    saida.configure(estado="habilitado")
+    saida.delete("1.0", "end")
+    saida.insert("end", output)
+    saida.configure(estado="desabilitado")
+    status.mensagem("  Codigo executado!")
+}
+
+editor.bind("<Control-Return>", (e) => executar())
+carregar_secao(0)
+gui.iniciar()

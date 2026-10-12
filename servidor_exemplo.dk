@@ -1,0 +1,139 @@
+// ═══════════════════════════════════════════════════════
+//  Advak 3.0 — Servidor HTTP Completo
+//  Execute: python advak.py run servidor_exemplo.dk --db
+//  Acesse:  http://localhost:8080
+// ═══════════════════════════════════════════════════════
+
+banco.usar("postgres");
+banco.criar_banco("loja_advak");
+banco.usar("loja_advak");
+
+banco.tabela("produtos", {
+    "id":      "autonum",
+    "nome":    "texto obrigatorio",
+    "preco":   "decimal",
+    "estoque": "inteiro padrao 0",
+    "ativo":   "booleano padrao verdadeiro"
+});
+
+se (banco.buscar("produtos").contar() == 0) {
+    banco.inserir_varios("produtos", [
+        {"nome": "Notebook",  "preco": 2999.99, "estoque": 5},
+        {"nome": "Mouse",     "preco": 89.90,   "estoque": 20},
+        {"nome": "Teclado",   "preco": 149.90,  "estoque": 15},
+        {"nome": "Monitor",   "preco": 899.00,  "estoque": 8}
+    ]);
+}
+
+// ── Página inicial (HTML) ─────────────────────────────
+servidor.rota("/", "GET", (req) => {
+    seja prods = banco.buscar("produtos").executar();
+    seja linhas = "";
+    seja td_open = "<td>";
+    seja td_close = "</td>";
+    seja tr_open = "<tr>";
+    seja tr_close = "</tr>";
+    para (p em prods) {
+        seja status = "Sim";
+        se (!p.ativo) { status = "Nao"; }
+        seja linha = tr_open + td_open + texto(p.id) + td_close
+            + td_open + p.nome + td_close
+            + td_open + "R$ " + texto(p.preco) + td_close
+            + td_open + texto(p.estoque) + td_close
+            + td_open + status + td_close
+            + tr_close;
+        linhas = linhas + linha;
+    }
+    seja estilo = "<style>body{font-family:Arial,sans-serif;max-width:900px;margin:40px auto;padding:0 20px}h1{color:#4c8bf5}table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid #eee}th{background:#f5f5f5}.btn{padding:8px 16px;background:#4c8bf5;color:white;border:none;border-radius:4px;text-decoration:none;margin-right:8px}</style>";
+    seja thead = "<tr><th>ID</th><th>Nome</th><th>Preco</th><th>Estoque</th><th>Ativo</th></tr>";
+    seja page = "<!DOCTYPE html><html><head><meta charset=UTF-8><title>Loja Advak</title>" + estilo + "</head>"
+        + "<body><h1>Loja Advak 3.0</h1><p>API REST + PostgreSQL com Advak</p>"
+        + "<table>" + thead + linhas + "</table><br>"
+        + "<a href=/api/produtos class=btn>API JSON</a>"
+        + "<a href=/status class=btn style=background:#43a047>Status</a>"
+        + "</body></html>";
+    retornar servidor.html(page);
+});
+
+// ── Status ────────────────────────────────────────────
+servidor.rota("/status", "GET", (req) => {
+    retornar servidor.json({
+        status: "online", versao: "3.0", banco: "loja_advak"
+    });
+});
+
+// ── GET /api/produtos ─────────────────────────────────
+servidor.rota("/api/produtos", "GET", (req) => {
+    seja pagina = 1;
+    seja limite = 10;
+    seja busca  = "";
+    se (req.query.pagina) { pagina = numero(req.query.pagina); }
+    se (req.query.limite) { limite = numero(req.query.limite); }
+    se (req.query.busca)  { busca  = req.query.busca; }
+
+    seja itens = [];
+    se (busca) {
+        seja filtro = "%" + busca + "%";
+        itens = banco.buscar("produtos")
+            .onde("nome ILIKE %s AND ativo = %s", filtro, verdadeiro)
+            .ordenar("nome").pagina(pagina, limite).executar();
+    } senão {
+        itens = banco.buscar("produtos")
+            .onde("ativo = %s", verdadeiro)
+            .ordenar("nome").pagina(pagina, limite).executar();
+    }
+    seja total = banco.buscar("produtos").onde("ativo = %s", verdadeiro).contar();
+    retornar servidor.json({dados: itens, total: total, pagina: pagina});
+});
+
+// ── GET /api/produtos/:id ─────────────────────────────
+servidor.rota("/api/produtos/:id", "GET", (req) => {
+    seja produto = banco.buscar_id("produtos", numero(req.params.id));
+    se (produto) {
+        retornar servidor.json(produto);
+    } senão {
+        retornar servidor.json({erro: "Produto nao encontrado"}, 404);
+    }
+});
+
+// ── POST /api/produtos ────────────────────────────────
+servidor.rota("/api/produtos", "POST", (req) => {
+    seja dados = req.corpo;
+    se (!dados.nome) {
+        retornar servidor.json({erro: "nome obrigatorio"}, 400);
+    }
+    tentar {
+        seja estoque_val = 0;
+        se (dados.estoque) { estoque_val = numero(dados.estoque); }
+        seja novo = banco.inserir("produtos", {
+            nome: dados.nome,
+            preco: numero(dados.preco),
+            estoque: estoque_val
+        });
+        retornar servidor.json(novo, 201);
+    } capturar (e) {
+        retornar servidor.json({erro: texto(e)}, 500);
+    }
+});
+
+// ── PUT /api/produtos/:id ─────────────────────────────
+servidor.rota("/api/produtos/:id", "PUT", (req) => {
+    seja id = numero(req.params.id);
+    seja atualizado = banco.atualizar("produtos", req.corpo)
+        .onde("id = %s", id).executar();
+    se (atualizado.tamanho > 0) {
+        retornar servidor.json(atualizado[0]);
+    } senão {
+        retornar servidor.json({erro: "Produto nao encontrado"}, 404);
+    }
+});
+
+// ── DELETE /api/produtos/:id ──────────────────────────
+servidor.rota("/api/produtos/:id", "DELETE", (req) => {
+    seja resultado = banco.deletar("produtos")
+        .onde("id = %s", numero(req.params.id)).executar();
+    retornar servidor.json({mensagem: resultado});
+});
+
+// ── Inicia servidor ───────────────────────────────────
+servidor.iniciar(8080);

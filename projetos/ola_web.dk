@@ -1,0 +1,587 @@
+// ═══════════════════════════════════════════════════════════════════════
+//  ADVAK 5.0 — Servidor Web em PORTUGUÊS COMPLETO
+//  Execute: advak projetos\ola_web.dk
+//  Acesse:  http://localhost:8080
+//
+//  SINTAXE ADVAK WEB:
+//    servidor.obter("/rota",    (req) => { ... })   ← GET
+//    servidor.publicar("/rota", (req) => { ... })   ← POST
+//    servidor.atualizar("/rota",(req) => { ... })   ← PUT
+//    servidor.deletar("/rota",  (req) => { ... })   ← DELETE
+//    retornar html("<h1>Olá!</h1>")                 ← resposta HTML
+//    retornar resposta_json({chave: "valor"})       ← resposta JSON
+//    retornar redirecionar("/outra-pagina")         ← redirecionamento
+//    req.consulta.campo    ← parâmetro ?campo=valor
+//    req.parametros.id     ← parâmetro de rota /:id
+//    req.dados.campo       ← campo do corpo JSON (POST)
+//    req.metodo            ← "GET", "POST", etc
+//    req.caminho           ← "/api/usuarios"
+// ═══════════════════════════════════════════════════════════════════════
+
+servidor.porta(8080)
+
+// ── Página inicial ───────────────────────────────────────────────────
+servidor.obter("/", (req) => {
+    seja hora = data_agora("%H:%M:%S")
+    retornar html(`
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Advak Web 5.0</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0F172A 0%, #1E3A5F 50%, #0F172A 100%);
+      min-height: 100vh;
+      color: #F1F5F9;
+    }
+    header {
+      background: rgba(15,23,42,0.8);
+      border-bottom: 2px solid #3B82F6;
+      padding: 18px 32px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .logo { font-size: 28px; font-weight: 900; color: #60A5FA }
+    .badge {
+      background: #3B82F6; color: white;
+      padding: 4px 14px; border-radius: 999px;
+      font-size: 12px; font-weight: 700; letter-spacing: 1px;
+    }
+    .hora { margin-left: auto; color: #64748B; font-size: 14px }
+    main { max-width: 900px; margin: 48px auto; padding: 0 24px }
+    h1 { font-size: 42px; font-weight: 800; margin-bottom: 8px }
+    h1 span { color: #60A5FA }
+    .sub { color: #94A3B8; font-size: 18px; margin-bottom: 40px }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 16px }
+    .card {
+      background: rgba(30,41,59,0.8);
+      border: 1px solid #334155;
+      border-radius: 14px; padding: 24px;
+      transition: all .2s;
+    }
+    .card:hover { border-color: #3B82F6; transform: translateY(-3px); box-shadow: 0 8px 24px rgba(59,130,246,.2) }
+    .card-icon { font-size: 28px; margin-bottom: 12px }
+    .card h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px }
+    .card p { color: #94A3B8; font-size: 13px; margin-bottom: 14px; line-height: 1.5 }
+    .card a {
+      display: inline-block; padding: 7px 16px;
+      background: #1D4ED8; color: white; border-radius: 8px;
+      font-size: 13px; font-weight: 600; text-decoration: none;
+    }
+    .card a:hover { background: #2563EB }
+    .code-box {
+      background: #0F172A; border: 1px solid #334155;
+      border-radius: 12px; padding: 24px; margin-top: 40px;
+      font-family: 'Courier New', monospace; font-size: 13px;
+    }
+    .code-box h3 { color: #60A5FA; font-size: 14px; margin-bottom: 16px; font-family: sans-serif }
+    .kw { color: #818CF8 }      /* keywords */
+    .fn { color: #34D399 }      /* functions */
+    .str { color: #FCD34D }     /* strings */
+    .cm { color: #64748B }      /* comments */
+    .nm { color: #F87171 }      /* numbers */
+    pre { line-height: 1.7 }
+    footer { text-align:center; padding:32px; color:#475569; font-size:13px; margin-top:40px }
+  </style>
+</head>
+<body>
+<header>
+  <span class="logo">⚡ Advak</span>
+  <span class="badge">WEB 5.0</span>
+  <span class="hora">🕐 ${hora}</span>
+</header>
+
+<main>
+  <h1>🌐 Olá, <span>Web</span>!</h1>
+  <p class="sub">Servidor web em Português — simples, rápido e elegante.</p>
+
+  <div class="grid">
+    <div class="card">
+      <div class="card-icon">📡</div>
+      <h3>API JSON</h3>
+      <p>Dados do servidor em formato JSON. Perfeito para integrar com apps.</p>
+      <a href="/api/oi">Testar →</a>
+    </div>
+    <div class="card">
+      <div class="card-icon">🧮</div>
+      <h3>Calculadora</h3>
+      <p>Exemplo com parâmetros de consulta via URL (?a=10&b=3&op=+).</p>
+      <a href="/calculadora?a=10&b=3&op=+">Testar →</a>
+    </div>
+    <div class="card">
+      <div class="card-icon">👥</div>
+      <h3>Lista de Usuários</h3>
+      <p>Exemplo de rota com parâmetro dinâmico /usuarios/:id.</p>
+      <a href="/usuarios">Ver lista →</a>
+    </div>
+    <div class="card">
+      <div class="card-icon">🔌</div>
+      <h3>API REST</h3>
+      <p>API completa com GET e POST. Use o formulário para criar usuários.</p>
+      <a href="/api/usuarios">Ver API →</a>
+    </div>
+    <div class="card">
+      <div class="card-icon">📝</div>
+      <h3>Formulário POST</h3>
+      <p>Exemplo de envio de dados via formulário HTML com método POST.</p>
+      <a href="/formulario">Abrir →</a>
+    </div>
+    <div class="card">
+      <div class="card-icon">ℹ️</div>
+      <h3>Sintaxe Advak</h3>
+      <p>Veja como o servidor é escrito em português com sintaxe Advak.</p>
+      <a href="/sintaxe">Ver código →</a>
+    </div>
+  </div>
+
+  <div class="code-box">
+    <h3>📄 Como criar este servidor em Advak</h3>
+    <pre>
+<span class="cm">// Sintaxe 100% em Português!</span>
+<span class="kw">servidor</span>.<span class="fn">porta</span>(<span class="nm">8080</span>)
+
+<span class="cm">// GET — obtém dados</span>
+<span class="kw">servidor</span>.<span class="fn">obter</span>(<span class="str">"/api/oi"</span>, (req) =&gt; {
+    <span class="kw">retornar</span> <span class="fn">resposta_json</span>({
+        mensagem: <span class="str">"Olá da API!"</span>,
+        hora:     <span class="fn">data_agora</span>(<span class="str">"%H:%M:%S"</span>)
+    })
+})
+
+<span class="cm">// POST — recebe dados JSON</span>
+<span class="kw">servidor</span>.<span class="fn">publicar</span>(<span class="str">"/api/usuario"</span>, (req) =&gt; {
+    <span class="kw">seja</span> dados = req.dados        <span class="cm">// corpo JSON</span>
+    <span class="kw">seja</span> nome  = req.dados.nome   <span class="cm">// campo específico</span>
+    <span class="kw">retornar</span> <span class="fn">resposta_json</span>({criado: nome}, <span class="nm">201</span>)
+})
+
+<span class="cm">// Parâmetro na URL: /usuario/:id</span>
+<span class="kw">servidor</span>.<span class="fn">obter</span>(<span class="str">"/usuario/:id"</span>, (req) =&gt; {
+    <span class="kw">seja</span> uid = req.parametros.id   <span class="cm">// pega o :id</span>
+    <span class="kw">retornar</span> <span class="fn">html</span>(<span class="str">"&lt;h1&gt;Usuário " + uid + "&lt;/h1&gt;"</span>)
+})
+
+<span class="cm">// Parâmetro de consulta: ?nome=Ana</span>
+<span class="kw">servidor</span>.<span class="fn">obter</span>(<span class="str">"/buscar"</span>, (req) =&gt; {
+    <span class="kw">seja</span> nm = req.consulta.nome    <span class="cm">// ?nome=Ana</span>
+    <span class="kw">retornar</span> <span class="fn">html</span>(<span class="str">"Buscando: " + nm</span>)
+})
+
+<span class="kw">servidor</span>.<span class="fn">iniciar</span>(<span class="nm">8080</span>)
+    </pre>
+  </div>
+</main>
+
+<footer>⚡ Advak 5.0 Web Server — Linguagem de Programação em Português</footer>
+</body></html>
+    `)
+})
+
+// ── API JSON ─────────────────────────────────────────────────────────
+servidor.obter("/api/oi", (req) => {
+    retornar resposta_json({
+        mensagem:  "Olá da API Advak!",
+        versao:    "5.0",
+        hora:      data_agora("%H:%M:%S"),
+        data:      data_hoje(),
+        linguagem: "Advak — 100% Português"
+    })
+})
+
+// ── Calculadora com parâmetros de consulta ───────────────────────────
+servidor.obter("/calculadora", (req) => {
+    seja a  = numero(req.consulta.a  ?? "0")
+    seja b  = numero(req.consulta.b  ?? "0")
+    seja op = req.consulta.op ?? "+"
+
+    seja resultado = 0
+    combinar op {
+        caso "+"  => resultado = a + b
+        caso "-"  => resultado = a - b
+        caso "*"  => resultado = a * b
+        caso "/"  => resultado = b != 0 ? arred(a/b, 4) : "Divisão por zero!"
+        caso "%"  => resultado = a % b
+        caso "**" => resultado = arred(a ** b, 4)
+        caso _    => resultado = "Operação inválida"
+    }
+
+    retornar html(`
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"><title>Calculadora Web</title>
+  <style>
+    body{font-family:'Segoe UI',sans-serif;background:#0F172A;color:#F1F5F9;
+         display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
+    .card{background:#1E293B;border:1px solid #334155;border-radius:16px;
+          padding:36px 44px;min-width:400px;box-shadow:0 20px 40px rgba(0,0,0,.5)}
+    h2{color:#60A5FA;margin-bottom:24px;font-size:22px}
+    form{display:flex;flex-direction:column;gap:14px}
+    label{font-size:12px;color:#94A3B8;font-weight:700;letter-spacing:1px;margin-bottom:4px}
+    input,select{width:100%;background:#0F172A;border:1px solid #334155;color:#F1F5F9;
+      padding:11px 14px;border-radius:8px;font-size:15px;box-sizing:border-box}
+    input:focus,select:focus{outline:none;border-color:#3B82F6}
+    .linha{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    button{background:#3B82F6;color:white;border:none;padding:13px;
+      border-radius:8px;font-size:16px;font-weight:700;cursor:pointer;margin-top:4px}
+    button:hover{background:#2563EB}
+    .resultado{background:#0F172A;border:1px solid #334155;border-radius:12px;
+      padding:20px;text-align:center;margin-top:20px}
+    .res-expr{color:#64748B;font-size:14px;margin-bottom:6px}
+    .res-valor{font-size:36px;font-weight:900;color:#22C55E}
+    a{color:#475569;font-size:13px;display:block;text-align:center;margin-top:16px;text-decoration:none}
+    a:hover{color:#94A3B8}
+  </style>
+</head>
+<body>
+<div class="card">
+  <h2>🧮 Calculadora Web</h2>
+  <form method="GET">
+    <div class="linha">
+      <div>
+        <label>NÚMERO A</label>
+        <input name="a" type="number" step="any" value="${texto(a)}">
+      </div>
+      <div>
+        <label>OPERAÇÃO</label>
+        <select name="op">
+          <option ${op=="+"?"selected":""} value="+">+ Adição</option>
+          <option ${op=="-"?"selected":""} value="-">− Subtração</option>
+          <option ${op=="*"?"selected":""} value="*">× Multiplicação</option>
+          <option ${op=="/"?"selected":""} value="/">÷ Divisão</option>
+          <option ${op=="%"?"selected":""} value="%">% Módulo</option>
+          <option ${op=="**"?"selected":""} value="**">^ Potência</option>
+        </select>
+      </div>
+    </div>
+    <div>
+      <label>NÚMERO B</label>
+      <input name="b" type="number" step="any" value="${texto(b)}">
+    </div>
+    <button type="submit">Calcular →</button>
+  </form>
+  <div class="resultado">
+    <div class="res-expr">${texto(a)} ${op} ${texto(b)} =</div>
+    <div class="res-valor">${texto(resultado)}</div>
+  </div>
+  <a href="/">← Início</a>
+</div>
+</body></html>
+    `)
+})
+
+// ── Lista de usuários ────────────────────────────────────────────────
+seja _usuarios = [
+    {id:1, nome:"Ana Silva",   email:"ana@escola.br",  turma:"3A", nota:9.5},
+    {id:2, nome:"Bruno Costa", email:"bruno@escola.br", turma:"2B", nota:7.0},
+    {id:3, nome:"Carla Lima",  email:"carla@escola.br", turma:"3A", nota:8.5},
+    {id:4, nome:"Diego Melo",  email:"diego@escola.br", turma:"1C", nota:6.0},
+]
+
+servidor.obter("/usuarios", (req) => {
+    seja turma = req.consulta.turma
+    seja lista = turma != nulo e turma != ""
+        ? _usuarios.filtrar((u) => u.turma == turma)
+        : _usuarios
+
+    seja cards = lista.mapear((u) => {
+        seja cor_nota = u.nota >= 7 ? "#22C55E" : "#EF4444"
+        seja sit = u.nota >= 7 ? "Aprovado" : "Reprovado"
+        retornar `
+        <div class="card" onclick="location='/usuarios/${u.id}'">
+          <div class="avatar">👤</div>
+          <div class="nome">${u.nome}</div>
+          <div class="email">${u.email}</div>
+          <div class="turma">Turma ${u.turma}</div>
+          <div class="nota" style="color:${cor_nota}">${texto(u.nota)} — ${sit}</div>
+        </div>`
+    }).unir("")
+
+    seja filtros = ["3A","2B","1C"].mapear((t) =>
+        `<a href="/usuarios?turma=${t}" class="${turma==t?"ativo":""}">${t}</a>`
+    ).unir("")
+
+    retornar html(`
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"><title>Usuários</title>
+  <style>
+    body{font-family:'Segoe UI',sans-serif;background:#0F172A;color:#F1F5F9;
+         max-width:1000px;margin:0 auto;padding:32px 20px}
+    .topo{display:flex;align-items:center;gap:16px;margin-bottom:32px}
+    h1{font-size:28px;flex:1}
+    .filtros{display:flex;gap:8px}
+    .filtros a{padding:6px 14px;border-radius:8px;border:1px solid #334155;
+               color:#94A3B8;text-decoration:none;font-size:13px;font-weight:600}
+    .filtros a:hover,.filtros a.ativo{background:#3B82F6;color:white;border-color:#3B82F6}
+    .filtros a:first-child{border-color:#64748B}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+    .card{background:#1E293B;border:1px solid #334155;border-radius:12px;
+          padding:22px;cursor:pointer;transition:.2s}
+    .card:hover{border-color:#3B82F6;transform:translateY(-2px)}
+    .avatar{font-size:36px;margin-bottom:10px}
+    .nome{font-weight:700;font-size:16px;margin-bottom:4px}
+    .email{color:#64748B;font-size:12px;margin-bottom:8px}
+    .turma{background:#1E3A5F;color:#60A5FA;padding:2px 10px;border-radius:6px;
+           font-size:11px;font-weight:700;display:inline-block;margin-bottom:8px}
+    .nota{font-size:13px;font-weight:600}
+    a{color:#3B82F6;text-decoration:none}
+  </style>
+</head>
+<body>
+  <div class="topo">
+    <h1>👥 Usuários (${texto(lista.tamanho)})</h1>
+    <div class="filtros">
+      <a href="/usuarios">Todos</a>
+      ${filtros}
+    </div>
+  </div>
+  <div class="grid">${cards}</div>
+  <p style="margin-top:24px"><a href="/">← Início</a></p>
+</body></html>
+    `)
+})
+
+// ── Perfil de usuário com parâmetro :id ─────────────────────────────
+servidor.obter("/usuarios/:id", (req) => {
+    seja id = inteiro(req.parametros.id)
+    seja usuario = _usuarios.encontrar((u) => u.id == id)
+
+    se (usuario == nulo) {
+        retornar html(`
+<html><body style="font-family:sans-serif;background:#0F172A;color:#F1F5F9;
+  display:flex;align-items:center;justify-content:center;height:100vh;margin:0">
+<div style="text-align:center">
+  <div style="font-size:64px">🔍</div>
+  <h2 style="color:#EF4444">Usuário #${texto(id)} não encontrado</h2>
+  <a href="/usuarios" style="color:#3B82F6">← Voltar</a>
+</div></body></html>`, 404)
+    }
+
+    seja cor_nota = usuario.nota >= 7 ? "#22C55E" : "#EF4444"
+    seja sit = usuario.nota >= 7 ? "✅ Aprovado" : "❌ Reprovado"
+
+    retornar html(`
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"><title>${usuario.nome}</title>
+  <style>
+    body{font-family:'Segoe UI',sans-serif;background:#0F172A;color:#F1F5F9;
+         display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
+    .perfil{background:#1E293B;border:1px solid #334155;border-radius:20px;
+            padding:48px 56px;text-align:center;min-width:360px;
+            box-shadow:0 20px 60px rgba(0,0,0,.5)}
+    .avatar{width:88px;height:88px;border-radius:50%;background:#3B82F6;
+            display:flex;align-items:center;justify-content:center;
+            font-size:40px;margin:0 auto 20px}
+    h2{font-size:26px;font-weight:800;margin-bottom:6px}
+    .email{color:#64748B;margin-bottom:20px;font-size:14px}
+    .badges{display:flex;gap:8px;justify-content:center;margin-bottom:20px;flex-wrap:wrap}
+    .badge{padding:6px 16px;border-radius:8px;font-size:12px;font-weight:700}
+    .turma{background:#1E3A5F;color:#60A5FA}
+    .nota{background:#0F2740;color:${cor_nota}}
+    .sit{background:#0F2740;color:${cor_nota}}
+    .id{background:#1E293B;color:#64748B;border:1px solid #334155}
+    a{color:#3B82F6;font-size:13px;display:block;margin-top:20px;text-decoration:none}
+  </style>
+</head>
+<body>
+<div class="perfil">
+  <div class="avatar">👤</div>
+  <h2>${usuario.nome}</h2>
+  <div class="email">${usuario.email}</div>
+  <div class="badges">
+    <span class="badge turma">Turma ${usuario.turma}</span>
+    <span class="badge nota">Nota: ${texto(usuario.nota)}</span>
+    <span class="badge sit">${sit}</span>
+    <span class="badge id">ID #${texto(usuario.id)}</span>
+  </div>
+  <a href="/usuarios">← Todos os usuários</a>
+  <a href="/">← Início</a>
+</div>
+</body></html>
+    `)
+})
+
+// ── API REST de usuários ──────────────────────────────────────────────
+servidor.obter("/api/usuarios", (req) => {
+    retornar resposta_json(_usuarios)
+})
+
+servidor.obter("/api/usuarios/:id", (req) => {
+    seja id = inteiro(req.parametros.id)
+    seja u = _usuarios.encontrar((u) => u.id == id)
+    se (u == nulo) {
+        retornar resposta_json({erro: "Usuário não encontrado", id: id}, 404)
+    }
+    retornar resposta_json(u)
+})
+
+servidor.publicar("/api/usuarios", (req) => {
+    seja dados = req.dados
+    se (dados == nulo ou dados.nome == nulo) {
+        retornar resposta_json({erro: "Campo 'nome' obrigatório"}, 400)
+    }
+    seja novo = {
+        id:    _usuarios.tamanho + 1,
+        nome:  dados.nome,
+        email: dados.email ?? "",
+        turma: dados.turma ?? "1A",
+        nota:  numero(dados.nota ?? 0)
+    }
+    _usuarios.adicionar(novo)
+    retornar resposta_json({mensagem: "Usuário criado!", usuario: novo}, 201)
+})
+
+// ── Formulário POST ───────────────────────────────────────────────────
+servidor.obter("/formulario", (req) => {
+    retornar html(`
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"><title>Formulário</title>
+  <style>
+    body{font-family:'Segoe UI',sans-serif;background:#0F172A;color:#F1F5F9;
+         display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
+    .card{background:#1E293B;border:1px solid #334155;border-radius:16px;
+          padding:36px 44px;min-width:420px;box-shadow:0 20px 40px rgba(0,0,0,.5)}
+    h2{color:#60A5FA;margin-bottom:24px}
+    label{display:block;font-size:11px;color:#94A3B8;font-weight:700;
+          letter-spacing:1px;margin:14px 0 4px}
+    input,select{width:100%;background:#0F172A;border:1px solid #334155;
+      color:#F1F5F9;padding:11px 14px;border-radius:8px;font-size:14px;box-sizing:border-box}
+    input:focus,select:focus{outline:none;border-color:#3B82F6}
+    button{width:100%;background:#3B82F6;color:white;border:none;
+      padding:13px;border-radius:8px;font-size:16px;font-weight:700;
+      cursor:pointer;margin-top:20px}
+    button:hover{background:#2563EB}
+    .resultado{display:none;background:#0F172A;border:1px solid #334155;
+      border-radius:10px;padding:16px;margin-top:16px;
+      font-family:monospace;font-size:13px;color:#34D399;white-space:pre}
+    a{color:#475569;font-size:13px;display:block;text-align:center;margin-top:14px;text-decoration:none}
+  </style>
+  <script>
+async function enviar() {
+  const dados = {
+    nome:  document.getElementById('nome').value,
+    email: document.getElementById('email').value,
+    turma: document.getElementById('turma').value,
+    nota:  parseFloat(document.getElementById('nota').value) || 0
+  }
+  try {
+    const r = await fetch('/api/usuarios', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(dados)
+    })
+    const json = await r.json()
+    const res = document.getElementById('resultado')
+    res.style.display = 'block'
+    res.textContent = JSON.stringify(json, null, 2)
+  } catch(e) {
+    alert('Erro: ' + e.message)
+  }
+}
+  </script>
+</head>
+<body>
+<div class="card">
+  <h2>📝 Criar Novo Usuário</h2>
+  <label>NOME COMPLETO</label>
+  <input id="nome" placeholder="Ex: Maria Santos" value="Maria Santos">
+  <label>EMAIL</label>
+  <input id="email" type="email" placeholder="maria@escola.br" value="maria@escola.br">
+  <label>TURMA</label>
+  <select id="turma">
+    <option value="1A">1A</option>
+    <option value="2B" selected>2B</option>
+    <option value="3A">3A</option>
+    <option value="1C">1C</option>
+  </select>
+  <label>NOTA (0 a 10)</label>
+  <input id="nota" type="number" step="0.1" min="0" max="10" value="8.5">
+  <button onclick="enviar()">📤 Enviar via POST</button>
+  <pre id="resultado" class="resultado"></pre>
+  <a href="/usuarios">👥 Ver Usuários</a>
+  <a href="/">← Início</a>
+</div>
+</body></html>
+    `)
+})
+
+// ── Página de sintaxe ─────────────────────────────────────────────────
+servidor.obter("/sintaxe", (req) => {
+    retornar html(`
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"><title>Sintaxe Advak Web</title>
+  <style>
+    body{font-family:'Segoe UI',sans-serif;background:#0F172A;color:#F1F5F9;
+         max-width:780px;margin:0 auto;padding:32px 20px}
+    h1{color:#60A5FA;margin-bottom:8px}
+    .sub{color:#64748B;margin-bottom:32px}
+    .bloco{background:#1E293B;border:1px solid #334155;border-radius:12px;
+           padding:24px;margin-bottom:20px;border-left:3px solid #3B82F6}
+    .bloco h3{color:#94A3B8;font-size:12px;letter-spacing:2px;
+              text-transform:uppercase;margin-bottom:12px}
+    pre{font-family:'Courier New',monospace;font-size:13px;line-height:1.7;
+        color:#E2E8F0;margin:0}
+    .kw{color:#818CF8}.fn{color:#34D399}.str{color:#FCD34D}.cm{color:#64748B}.nm{color:#F87171}
+    a{color:#3B82F6;display:inline-block;margin-bottom:20px;text-decoration:none}
+  </style>
+</head>
+<body>
+  <a href="/">← Início</a>
+  <h1>📘 Sintaxe Advak Web</h1>
+  <p class="sub">100% em Português — sem uma palavra de inglês</p>
+
+  <div class="bloco">
+    <h3>Rotas HTTP</h3>
+    <pre><span class="kw">servidor</span>.<span class="fn">obter</span>(<span class="str">"/rota"</span>, (req) =&gt; { ... })     <span class="cm">← GET</span>
+<span class="kw">servidor</span>.<span class="fn">publicar</span>(<span class="str">"/rota"</span>, (req) =&gt; { ... })  <span class="cm">← POST</span>
+<span class="kw">servidor</span>.<span class="fn">atualizar</span>(<span class="str">"/rota"</span>, (req) =&gt; { ... }) <span class="cm">← PUT</span>
+<span class="kw">servidor</span>.<span class="fn">deletar</span>(<span class="str">"/rota"</span>, (req) =&gt; { ... })   <span class="cm">← DELETE</span>
+<span class="kw">servidor</span>.<span class="fn">qualquer</span>(<span class="str">"/rota"</span>, (req) =&gt; { ... })  <span class="cm">← TODOS</span></pre>
+  </div>
+
+  <div class="bloco">
+    <h3>Respostas</h3>
+    <pre><span class="kw">retornar</span> <span class="fn">html</span>(<span class="str">"&lt;h1&gt;Olá!&lt;/h1&gt;"</span>)              <span class="cm">← página HTML</span>
+<span class="kw">retornar</span> <span class="fn">html</span>(<span class="str">"&lt;h1&gt;Erro&lt;/h1&gt;"</span>, <span class="nm">404</span>)         <span class="cm">← com status</span>
+<span class="kw">retornar</span> <span class="fn">resposta_json</span>({chave: <span class="str">"valor"</span>})     <span class="cm">← JSON 200</span>
+<span class="kw">retornar</span> <span class="fn">resposta_json</span>({}, <span class="nm">201</span>)             <span class="cm">← JSON 201</span>
+<span class="kw">retornar</span> <span class="fn">redirecionar</span>(<span class="str">"/outra-pagina"</span>)       <span class="cm">← redirect</span></pre>
+  </div>
+
+  <div class="bloco">
+    <h3>Objeto de Requisição (req)</h3>
+    <pre>req.metodo          <span class="cm">← "GET", "POST", etc</span>
+req.caminho         <span class="cm">← "/api/usuarios"</span>
+req.consulta.campo  <span class="cm">← ?campo=valor na URL</span>
+req.parametros.id   <span class="cm">← /rota/:id</span>
+req.dados.campo     <span class="cm">← corpo JSON (POST)</span>
+req.corpo           <span class="cm">← corpo bruto (string)</span>
+req.cabecalhos      <span class="cm">← cabeçalhos HTTP</span>
+req.eh_get          <span class="cm">← verdadeiro se GET</span>
+req.eh_post         <span class="cm">← verdadeiro se POST</span></pre>
+  </div>
+
+  <div class="bloco">
+    <h3>Configuração</h3>
+    <pre><span class="kw">servidor</span>.<span class="fn">porta</span>(<span class="nm">8080</span>)
+<span class="kw">servidor</span>.<span class="fn">estatico</span>(<span class="str">"/css"</span>, <span class="str">"./pasta"</span>)  <span class="cm">← arquivos estáticos</span>
+<span class="kw">servidor</span>.<span class="fn">iniciar</span>(<span class="nm">8080</span>)                <span class="cm">← inicia e abre navegador</span>
+<span class="kw">servidor</span>.<span class="fn">parar</span>()                      <span class="cm">← encerra servidor</span></pre>
+  </div>
+</body></html>
+    `)
+})
+
+// Iniciar
+imprimir("🌐 Servidor Advak iniciando na porta 8080...")
+servidor.iniciar(8080)

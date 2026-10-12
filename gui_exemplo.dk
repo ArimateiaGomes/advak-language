@@ -1,0 +1,219 @@
+// ═══════════════════════════════════════════════════════
+//  Advak 3.0 — App Desktop GUI
+//  Execute: python advak.py run gui_exemplo.dk --db
+//  Requer:  sudo apt install python3-tk (Linux)
+// ═══════════════════════════════════════════════════════
+
+banco.usar("postgres");
+banco.criar_banco("escola_gui");
+banco.usar("escola_gui");
+banco.tabela("alunos", {
+    "id":    "autonum",
+    "nome":  "texto obrigatorio",
+    "email": "texto",
+    "turma": "varchar",
+    "nota":  "decimal padrao 0",
+    "ativo": "booleano padrao verdadeiro"
+});
+
+// ── Janela principal ─────────────────────────────────
+seja jan = gui.janela("Gestao de Alunos — Advak 3.0", 900, 600);
+jan.centralizar();
+
+// ── Menu ──────────────────────────────────────────────
+seja menu = gui.menu_bar(jan);
+menu.adicionar("Arquivo", [
+    ["Novo Aluno",   (x) => { limpar_form(); }],
+    "---",
+    ["Exportar CSV", (x) => { exportar_csv(); }],
+    "---",
+    ["Sair",         (x) => { gui.parar(); }]
+]);
+menu.adicionar("Ajuda", [
+    ["Sobre", (x) => { gui.alerta("Gestao de Alunos\nAdvak 3.0"); }]
+]);
+
+// ── Abas ──────────────────────────────────────────────
+seja abas = gui.abas(jan);
+seja aba_lista = abas.adicionar("Lista de Alunos");
+seja aba_form  = abas.adicionar("Cadastrar / Editar");
+seja aba_relat = abas.adicionar("Relatorio");
+
+// ── ABA 1: Lista ──────────────────────────────────────
+gui.label(aba_lista, "Lista de Alunos", negrito=verdadeiro);
+
+seja fr_busca = gui.frame_horizontal(aba_lista);
+gui.label(fr_busca, "Buscar:");
+seja campo_busca = gui.campo(fr_busca, "Nome ou turma...", largura=30);
+gui.botao(fr_busca, "Buscar",  (x) => { carregar_lista(campo_busca.valor()); });
+gui.botao(fr_busca, "Limpar",  (x) => { campo_busca.limpar(); carregar_lista(""); }, estilo="secundario");
+
+seja tabela_alunos = gui.tabela(
+    aba_lista,
+    ["ID", "Nome", "Email", "Turma", "Nota", "Ativo"],
+    altura=15,
+    ao_selecionar=(linha) => { preencher_form(linha); }
+);
+
+seja fr_acoes = gui.frame_horizontal(aba_lista);
+gui.botao(fr_acoes, "Editar",    (x) => { ir_para_edicao(); });
+gui.botao(fr_acoes, "Excluir",   (x) => { excluir_selecionado(); }, estilo="perigo");
+gui.botao(fr_acoes, "Atualizar", (x) => { carregar_lista(""); },    estilo="secundario");
+
+// ── ABA 2: Formulário ─────────────────────────────────
+gui.label(aba_form, "Dados do Aluno", negrito=verdadeiro);
+gui.separador(aba_form);
+
+seja campo_id    = gui.campo(aba_form, "");
+seja campo_nome  = gui.campo(aba_form, "Nome completo *", largura=40);
+seja campo_email = gui.campo(aba_form, "Email", largura=40);
+seja campo_turma = gui.campo(aba_form, "Turma (ex: 3A)", largura=20);
+seja campo_nota  = gui.campo(aba_form, "Nota (0-10)", largura=10);
+seja check_ativo = gui.checkbox(aba_form, "Aluno ativo", valor_inicial=verdadeiro);
+
+seja fr_form_btns = gui.frame_horizontal(aba_form);
+gui.botao(fr_form_btns, "Salvar",   (x) => { salvar_aluno(); },  estilo="sucesso");
+gui.botao(fr_form_btns, "Limpar",   (x) => { limpar_form(); },   estilo="secundario");
+
+// ── ABA 3: Relatório ──────────────────────────────────
+gui.label(aba_relat, "Relatorio Geral", negrito=verdadeiro);
+gui.separador(aba_relat);
+seja area_relat = gui.area_texto(aba_relat, largura=70, altura=20);
+gui.botao(aba_relat, "Gerar Relatorio", (x) => { gerar_relatorio(); });
+
+// ── Funções ───────────────────────────────────────────
+
+função carregar_lista(busca) {
+    seja alunos = [];
+    se (busca) {
+        alunos = banco.buscar("alunos")
+            .onde("nome ILIKE %s OR turma ILIKE %s",
+                  `%${busca}%`, `%${busca}%`)
+            .ordenar("nome").executar();
+    } senão {
+        alunos = banco.buscar("alunos").ordenar("nome").executar();
+    }
+    tabela_alunos.limpar();
+    para (a em alunos) {
+        seja status = "Sim";
+        se (!a.ativo) { status = "Nao"; }
+        tabela_alunos.adicionar([
+            a.id, a.nome, a.email, a.turma, a.nota, status
+        ]);
+    }
+}
+
+função preencher_form(linha) {
+    se (!linha) { retornar; }
+    campo_id.definir(texto(linha[0]));
+    campo_nome.definir(texto(linha[1]));
+    campo_email.definir(texto(linha[2]));
+    campo_turma.definir(texto(linha[3]));
+    campo_nota.definir(texto(linha[4]));
+}
+
+função ir_para_edicao() {
+    seja sel = tabela_alunos.selecionado();
+    se (!sel) { gui.aviso("Selecione um aluno primeiro!"); retornar; }
+    preencher_form([sel["ID"], sel["Nome"], sel["Email"], sel["Turma"], sel["Nota"]]);
+}
+
+função limpar_form() {
+    campo_id.limpar();
+    campo_nome.limpar();
+    campo_email.limpar();
+    campo_turma.limpar();
+    campo_nota.limpar();
+    check_ativo.marcar();
+}
+
+função salvar_aluno() {
+    seja nome = campo_nome.valor();
+    se (!nome) { gui.erro("O nome e obrigatorio!"); retornar; }
+
+    seja nota = 0;
+    tentar {
+        nota = numero(campo_nota.valor() ?? "0");
+    } capturar (e) {
+        gui.erro("Nota invalida!"); retornar;
+    }
+
+    seja dados = {
+        nome:  nome,
+        email: campo_email.valor(),
+        turma: campo_turma.valor(),
+        nota:  nota,
+        ativo: check_ativo.valor()
+    };
+
+    seja id_str = campo_id.valor();
+    tentar {
+        se (id_str) {
+            banco.atualizar("alunos", dados)
+                .onde("id = %s", numero(id_str)).executar();
+            gui.alerta(`Aluno "${nome}" atualizado!`);
+        } senão {
+            seja novo = banco.inserir("alunos", dados);
+            gui.alerta(`Aluno "${nome}" cadastrado! ID: ${novo.id}`);
+        }
+        limpar_form();
+        carregar_lista("");
+    } capturar (e) {
+        gui.erro(`Erro ao salvar: ${e}`);
+    }
+}
+
+função excluir_selecionado() {
+    seja sel = tabela_alunos.selecionado();
+    se (!sel) { gui.aviso("Selecione um aluno!"); retornar; }
+    seja id   = sel["ID"];
+    seja nome = sel["Nome"];
+    se (gui.confirmar(`Excluir o aluno "${nome}"?`)) {
+        banco.deletar("alunos").onde("id = %s", numero(id)).executar();
+        gui.alerta("Aluno excluido!");
+        carregar_lista("");
+    }
+}
+
+função gerar_relatorio() {
+    seja total    = banco.buscar("alunos").contar();
+    seja ativos   = banco.buscar("alunos").onde("ativo = %s", verdadeiro).contar();
+    seja aprovados= banco.buscar("alunos")
+        .onde("nota >= %s AND ativo = %s", 7.0, verdadeiro).contar();
+    seja media_res= banco.sql("SELECT AVG(nota) as m FROM alunos WHERE ativo = true");
+    seja media    = media_res[0].m;
+
+    seja por_turma = banco.sql(
+        "SELECT turma, COUNT(*) as total, AVG(nota) as media FROM alunos GROUP BY turma ORDER BY turma"
+    );
+
+    seja rel = `RELATORIO DE ALUNOS — ADVAK 3.0
+══════════════════════════════════
+Total:    ${total}
+Ativos:   ${ativos}
+Aprovados:${aprovados}
+Media:    ${media}
+
+POR TURMA:
+`;
+    para (t em por_turma) {
+        rel = rel + `  Turma ${t.turma}: ${t.total} alunos, media ${t.media}\n`;
+    }
+    area_relat.definir(rel);
+}
+
+função exportar_csv() {
+    seja caminho = gui.salvar_arquivo("Exportar CSV", [["CSV", "*.csv"]]);
+    se (!caminho) { retornar; }
+    seja alunos = banco.buscar("alunos").ordenar("nome").executar();
+    seja csv = "ID,Nome,Email,Turma,Nota,Ativo\n";
+    para (a em alunos) {
+        csv = csv + `${a.id},${a.nome},${a.email},${a.turma},${a.nota},${a.ativo}\n`;
+    }
+    Arquivo.escrever(caminho, csv);
+    gui.alerta(`Exportado para ${caminho}`);
+}
+
+// ── Inicia ────────────────────────────────────────────
+carregar_lista("");
+gui.iniciar();

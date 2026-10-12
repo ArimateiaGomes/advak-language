@@ -1,0 +1,309 @@
+// ═══════════════════════════════════════════════════════════
+//  ADVAK 4.0 — Demonstração de GUI Avançada
+//  Todos os widgets modernos em um só lugar
+//  Execute: advak projetos run gui_avancada_demo.dk
+// ═══════════════════════════════════════════════════════════
+
+const jan = gui.janela("Advak 4.0 — GUI Avançada", 1100, 750);
+jan.centralizar();
+
+// ── Menu completo ─────────────────────────────────────────
+const menu = gui.menu_bar(jan);
+menu.adicionar("Tema", [
+    ["Claro",   (x) => { gui.tema("claro"); }],
+    ["Escuro",  (x) => { gui.tema("escuro"); }],
+    ["Roxo",    (x) => { gui.tema("roxo"); }],
+    ["Verde",   (x) => { gui.tema("verde"); }]
+]);
+menu.adicionar("Ajuda", [
+    ["Sobre", (x) => { gui.alerta("Advak 4.0 — GUI Avançada\nDemonstração de todos os widgets."); }]
+]);
+
+// ── Barra de status ───────────────────────────────────────
+const status = gui.barra_status(jan, "Advak 4.0 — GUI Avançada");
+
+// ── ABAS PRINCIPAIS ───────────────────────────────────────
+const abas = gui.abas(jan);
+const aba_dash    = abas.adicionar("Dashboard");
+const aba_form    = abas.adicionar("Formulário");
+const aba_dados   = abas.adicionar("Dados");
+const aba_misc    = abas.adicionar("Widgets");
+
+// ════════════════════════════════════════════════════════
+//  ABA 1 — DASHBOARD (gráficos + cards)
+// ════════════════════════════════════════════════════════
+gui.label(aba_dash, "Dashboard de Vendas", negrito=verdadeiro);
+gui.separador(aba_dash);
+
+// Cards de métricas no topo
+const fr_cards = gui.frame_horizontal(aba_dash);
+gui.card(fr_cards, "Vendas Hoje",    "R$ 12.450,00");
+gui.card(fr_cards, "Clientes",       "348 ativos");
+gui.card(fr_cards, "Produtos",       "1.204 itens");
+gui.card(fr_cards, "Ticket Médio",   "R$ 35,78");
+
+gui.separador(aba_dash);
+
+// Gráficos lado a lado
+const fr_graficos = gui.frame_horizontal(aba_dash);
+
+const fr_g1 = gui.frame(fr_graficos);
+fr_g1.posicionar(lado="left", preencher="both", expandir=verdadeiro, espaco_x=4);
+const grafico_barras = gui.grafico(fr_g1, {
+    "labels":  ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun"],
+    "valores": [4200, 5800, 4900, 7200, 6100, 8400]
+}, "barras", "Vendas por Mês (R$)");
+
+const fr_g2 = gui.frame(fr_graficos);
+fr_g2.posicionar(lado="left", preencher="both", expandir=verdadeiro, espaco_x=4);
+const grafico_pizza = gui.grafico(fr_g2, {
+    "labels":  ["Alimentos", "Bebidas", "Limpeza", "Higiene", "Outros"],
+    "valores": [35, 22, 18, 15, 10]
+}, "pizza", "Categorias (%)");
+
+gui.separador(aba_dash);
+
+// Gráfico de linha em baixo
+const grafico_linha = gui.grafico(aba_dash, {
+    "labels":  ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"],
+    "valores": [1200, 1800, 1500, 2200, 2800, 3400, 1900]
+}, "linha", "Vendas da Semana (R$)", 10, 2);
+
+// Botão para atualizar gráfico com dados aleatórios
+gui.botao(aba_dash, "Atualizar Dados", (btn) => {
+    grafico_barras.atualizar({
+        "labels":  ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun"],
+        "valores": [numero(Matematica.aleatorio(3000, 9000)),
+                  numero(Matematica.aleatorio(3000, 9000)),
+                  numero(Matematica.aleatorio(3000, 9000)),
+                  numero(Matematica.aleatorio(3000, 9000)),
+                  numero(Matematica.aleatorio(3000, 9000)),
+                  numero(Matematica.aleatorio(3000, 9000))]
+    });
+    gui.toast("Gráfico atualizado!", tipo="sucesso");
+    status.texto("Dados atualizados em " + texto(OS.agora()));
+}, estilo="primario");
+
+// ════════════════════════════════════════════════════════
+//  ABA 2 — FORMULÁRIO AVANÇADO
+// ════════════════════════════════════════════════════════
+gui.label(aba_form, "Cadastro Avançado", negrito=verdadeiro);
+gui.separador(aba_form);
+
+// Splitter: esquerda = form, direita = preview
+const sp = gui.splitter(aba_form, orientacao="horizontal");
+const painel_form    = sp.adicionar(peso=2);
+const painel_preview = sp.adicionar(peso=1);
+
+// Campos do formulário
+gui.label(painel_form, "Nome completo:");
+const f_nome = gui.campo(painel_form, "Digite o nome...", largura=35);
+
+gui.label(painel_form, "Email:");
+const f_email = gui.campo(painel_form, "email@exemplo.com", largura=35);
+
+gui.label(painel_form, "Telefone:");
+const f_tel = gui.campo(painel_form, "(00) 00000-0000", largura=20);
+
+gui.label(painel_form, "Data de Nascimento:");
+const f_data = gui.calendario(painel_form);
+
+gui.label(painel_form, "Categoria:");
+const f_cat = gui.caixa_selecao(painel_form,
+    ["Cliente VIP", "Cliente Regular", "Funcionário", "Fornecedor"]);
+
+gui.label(painel_form, "Ativo:");
+const campo_ativo = gui.switch(painel_form, "Conta ativa", valor_inicial=verdadeiro);
+
+gui.label(painel_form, "Nível de acesso (0-10):");
+const f_nivel = gui.slider(painel_form, minimo=0, maximo=10, valor=5);
+
+gui.separador(painel_form);
+
+const fr_btns_form = gui.frame_horizontal(painel_form);
+gui.botao(fr_btns_form, "Salvar", (btn) => {
+    const nome = f_nome.valor();
+    if (!nome) { gui.aviso("Nome obrigatório!"); return; }
+    gui.toast("Cadastro salvo: " + nome, tipo="sucesso");
+    status.texto("Salvo: " + nome);
+}, estilo="sucesso");
+
+gui.botao(fr_btns_form, "Limpar", (btn) => {
+    f_nome.limpar();
+    f_email.limpar();
+    f_tel.limpar();
+}, estilo="secundario");
+
+gui.botao(fr_btns_form, "Modal de confirmação", (btn) => {
+    gui.modal("Confirmar cadastro", (win) => {
+        gui.label(win, "Deseja salvar os dados?", negrito=verdadeiro);
+        gui.separador(win);
+        gui.label(win, "Nome: " + f_nome.valor());
+        gui.label(win, "Email: " + f_email.valor());
+        gui.label(win, "Data: " + f_data.valor());
+        gui.separador(win);
+        gui.botao(win, "Confirmar", (b) => {
+            gui.toast("Dados confirmados!", tipo="sucesso");
+        }, estilo="sucesso");
+    }, largura=400, altura=300);
+}, estilo="primario");
+
+// Preview à direita
+gui.label(painel_preview, "Preview", negrito=verdadeiro);
+gui.separador(painel_preview);
+gui.badge(painel_preview, "VIP",    cor="roxo");
+gui.badge(painel_preview, "Ativo",  cor="verde");
+gui.badge(painel_preview, "Nível 5", cor="azul");
+gui.separador(painel_preview);
+gui.card(painel_preview, "Perfil", "Preencha o formulário\npara ver o preview");
+
+// ════════════════════════════════════════════════════════
+//  ABA 3 — DADOS (árvore + busca)
+// ════════════════════════════════════════════════════════
+gui.label(aba_dados, "Explorador de Dados", negrito=verdadeiro);
+gui.separador(aba_dados);
+
+// Busca com autocomplete
+gui.label(aba_dados, "Busca rápida:");
+const campo_busca = gui.busca(aba_dados,
+    ["Produto A", "Produto B", "Produto C", "Cliente João",
+     "Cliente Maria", "Fornecedor XYZ", "Categoria Alimentos"],
+    ao_selecionar=(item) => {
+        gui.toast("Selecionado: " + item, tipo="info");
+    },
+    placeholder="Digite para buscar..."
+);
+
+gui.separador(aba_dados);
+
+// Árvore hierárquica
+gui.label(aba_dados, "Estrutura de categorias:", negrito=verdadeiro);
+const arvore = gui.arvore(aba_dados, [
+    {"texto": "Alimentos", "filhos": [
+        {"texto": "Frios", "filhos": [
+            {"texto": "Queijo"},
+            {"texto": "Presunto"},
+            {"texto": "Iogurte"}
+        ]},
+        {"texto": "Hortifruti", "filhos": [
+            {"texto": "Frutas"},
+            {"texto": "Verduras"},
+            {"texto": "Legumes"}
+        ]}
+    ]},
+    {"texto": "Bebidas", "filhos": [
+        {"texto": "Quentes", "filhos": [
+            {"texto": "Cafe"},
+            {"texto": "Cha"},
+            {"texto": "Chocolate"}
+        ]},
+        {"texto": "Frias", "filhos": [
+            {"texto": "Sucos"},
+            {"texto": "Refrigerantes"},
+            {"texto": "Agua"}
+        ]}
+    ]},
+    {"texto": "Limpeza", "filhos": [
+        {"texto": "Detergente"},
+        {"texto": "Sabao"},
+        {"texto": "Desinfetante"}
+    ]}
+], altura=12);
+
+// ════════════════════════════════════════════════════════
+//  ABA 4 — WIDGETS DIVERSOS
+// ════════════════════════════════════════════════════════
+gui.label(aba_misc, "Galeria de Widgets", negrito=verdadeiro);
+gui.separador(aba_misc);
+
+const fr_misc = gui.frame_horizontal(aba_misc);
+const col1 = gui.frame(fr_misc);
+col1.posicionar(lado="left", preencher="both", expandir=verdadeiro, espaco_x=8);
+const col2 = gui.frame(fr_misc);
+col2.posicionar(lado="left", preencher="both", expandir=verdadeiro, espaco_x=8);
+
+// Coluna 1
+gui.label(col1, "Barra de Progresso:", negrito=verdadeiro);
+const prog = gui.barra_progresso(col1, valor=65, maximo=100);
+
+gui.label(col1, "Slider:");
+const sl = gui.slider(col1, minimo=0, maximo=100, valor=30,
+    ao_mudar=(v) => {
+        prog.definir(v);
+        status.texto("Progresso: " + texto(v) + "%");
+    }
+);
+
+gui.separador(col1);
+gui.label(col1, "Checkboxes:", negrito=verdadeiro);
+const cb1 = gui.checkbox(col1, "Notificações por email", valor_inicial=verdadeiro);
+const cb2 = gui.checkbox(col1, "Notificações por SMS");
+const cb3 = gui.checkbox(col1, "Relatório semanal", valor_inicial=verdadeiro);
+
+gui.separador(col1);
+gui.label(col1, "Switches:", negrito=verdadeiro);
+const tog1 = gui.switch(col1, "Modo escuro");
+const tog2 = gui.switch(col1, "Som de notificações", valor_inicial=verdadeiro);
+const tog3 = gui.switch(col1, "Backup automático", valor_inicial=verdadeiro);
+
+// Coluna 2
+gui.label(col2, "Badges:", negrito=verdadeiro);
+const fr_badges = gui.frame_horizontal(col2);
+gui.badge(fr_badges, "Novo",      cor="verde");
+gui.badge(fr_badges, "Urgente",   cor="vermelho");
+gui.badge(fr_badges, "Pendente",  cor="laranja");
+gui.badge(fr_badges, "Aprovado",  cor="azul");
+gui.badge(fr_badges, "VIP",       cor="roxo");
+
+gui.separador(col2);
+gui.label(col2, "Toasts:", negrito=verdadeiro);
+const fr_toasts = gui.frame_horizontal(col2);
+gui.botao(fr_toasts, "Info",    (b) => { gui.toast("Mensagem informativa", tipo="info");    }, estilo="primario");
+gui.botao(fr_toasts, "Sucesso", (b) => { gui.toast("Operação realizada!",  tipo="sucesso"); }, estilo="sucesso");
+gui.botao(fr_toasts, "Erro",    (b) => { gui.toast("Algo deu errado!",     tipo="erro");    }, estilo="perigo");
+gui.botao(fr_toasts, "Aviso",   (b) => { gui.toast("Atenção necessária!",  tipo="aviso");   }, estilo="secundario");
+
+gui.separador(col2);
+gui.label(col2, "Diálogos:", negrito=verdadeiro);
+gui.botao(col2, "Escolher item da lista", (btn) => {
+    const idx = gui.escolher("Selecione uma fruta:", [
+        "Maçã", "Banana", "Laranja", "Uva", "Morango", "Abacaxi"
+    ]);
+    if (idx >= 0) {
+        gui.toast("Escolheu índice: " + texto(idx), tipo="sucesso");
+    }
+}, estilo="primario");
+
+gui.botao(col2, "Pedir texto", (btn) => {
+    const r = gui.pedir("Digite seu nome:", titulo="Identificação");
+    if (r) { gui.toast("Olá, " + r + "!", tipo="sucesso"); }
+}, estilo="secundario");
+
+gui.botao(col2, "Escolher cor", (btn) => {
+    const cor = gui.escolher_cor();
+    if (cor) { gui.toast("Cor escolhida: " + cor, tipo="info"); }
+}, estilo="secundario");
+
+gui.separador(col2);
+gui.label(col2, "Timer / Repetir:", negrito=verdadeiro);
+seja contador = 0;
+const lbl_timer = gui.label(col2, "Timer: 0s");
+const fr_timer = gui.frame_horizontal(col2);
+gui.botao(fr_timer, "Iniciar timer", (btn) => {
+    contador = 0;
+    gui.repetir(1000, () => {
+        contador = contador + 1;
+        lbl_timer.texto("Timer: " + texto(contador) + "s");
+        if (contador >= 10) { lbl_timer.texto("Timer: concluído!"); }
+    });
+}, estilo="sucesso");
+
+gui.botao(fr_timer, "Atraso 2s", (btn) => {
+    gui.toast("Executando em 2 segundos...", tipo="info");
+    gui.apos(2000, () => {
+        gui.toast("Executado após 2 segundos!", tipo="sucesso");
+    });
+}, estilo="secundario");
+
+// ── Inicia ────────────────────────────────────────────────
+gui.iniciar();

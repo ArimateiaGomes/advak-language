@@ -1,0 +1,171 @@
+// ═══════════════════════════════════════════════════════════
+//  ADVAK 5.0 — Módulo C/C++: Structs, Enums, Macros, Refs
+// ═══════════════════════════════════════════════════════════
+
+// ─── STRUCTS TIPADAS ────────────────────────────────────────
+
+estrutura Ponto {
+    x: Numero = 0,
+    y: Numero = 0
+}
+
+estrutura Retangulo {
+    origem: Ponto,
+    largura: Numero = 100,
+    altura: Numero = 50
+}
+
+estrutura Cor {
+    r: Numero = 0,
+    g: Numero = 0,
+    b: Numero = 0,
+    a: Numero = 255
+}
+
+// Criando instâncias de struct (como construtor)
+seja p1 = Ponto(10, 20)
+seja p2 = Ponto(30, 40)
+imprimir(p1)
+imprimir(`x=${p1.x}, y=${p1.y}`)
+
+// Modificando campos
+p1.x = 99
+imprimir(`após modificação: x=${p1.x}`)
+
+// Struct com struct embutida
+seja cor = Cor(255, 128, 0)
+imprimir(cor)
+
+// Função que usa struct
+função distancia(a, b) {
+    seja dx = b.x - a.x
+    seja dy = b.y - a.y
+    retornar (dx * dx + dy * dy) ** 0.5
+}
+imprimir(`distância: ${distancia(p1, p2)}`)
+
+// ─── ENUMS COM VALOR ────────────────────────────────────────
+
+enumeracao Direcao {
+    Norte = 0,
+    Sul   = 1,
+    Leste = 2,
+    Oeste = 3
+}
+
+enumeracao Status {
+    Ativo,
+    Inativo,
+    Pendente,
+    Bloqueado
+}
+
+// Enums algébricos com payload (estilo Rust/Haskell)
+enumeracao Forma {
+    Circulo(Numero),
+    Retangulo(Numero, Numero),
+    Triangulo(Numero, Numero, Numero)
+}
+
+// Acessando variantes
+seja dir = Direcao.Norte
+imprimir(dir)
+imprimir(`valor numérico: ${dir.valor}`)
+imprimir(`nome: ${dir.nome}`)
+
+seja status = Status.Pendente
+imprimir(status)
+
+// Enum com payload
+seja forma1 = Forma.Circulo(5)
+seja forma2 = Forma.Retangulo(10, 20)
+imprimir(forma1)
+imprimir(forma2)
+
+// Pattern matching em enums
+função area(forma) {
+    retornar combinar forma {
+        caso Circulo(r) => 3.14159 * r * r
+        caso Retangulo(l, a) => l * a
+        caso _ => 0
+    }
+}
+
+// Comparação de enums
+se (dir == Direcao.Norte) {
+    imprimir("Indo para o Norte!")
+}
+
+// Iterando sobre enum
+seja formas = [Forma.Circulo(3), Forma.Retangulo(4, 5), Forma.Circulo(7)]
+para (f em formas) {
+    imprimir(`Forma: ${f}`)
+}
+
+// ─── MACROS / INLINE ────────────────────────────────────────
+
+// Macro constante (avaliada imediatamente)
+macro PI_DUPLO => 3.14159265 * 2
+macro VERSAO => "Advak 5.0"
+
+imprimir(`PI*2 = ${PI_DUPLO}`)
+imprimir(`Versão: ${VERSAO}`)
+
+// Macro função (substituição inline)
+macro MAX(a, b) => a > b ? a : b
+macro MIN(a, b) => a < b ? a : b
+macro QUADRADO(x) => x * x
+macro CUBO(x) => x * x * x
+macro CLAMP(v, mn, mx) => MIN(MAX(v, mn), mx)
+macro ABS(x) => x < 0 ? -x : x
+
+imprimir(`MAX(3, 7) = ${MAX(3, 7)}`)
+imprimir(`MIN(3, 7) = ${MIN(3, 7)}`)
+imprimir(`QUADRADO(5) = ${QUADRADO(5)}`)
+imprimir(`CUBO(3) = ${CUBO(3)}`)
+imprimir(`CLAMP(15, 0, 10) = ${CLAMP(15, 0, 10)}`)
+imprimir(`ABS(-42) = ${ABS(-42)}`)
+
+// Macro para debug
+macro ASSERT(cond, msg) => cond ? "✅ " + msg : "❌ FALHA: " + msg
+
+imprimir(ASSERT(2 + 2 == 4, "soma básica"))
+imprimir(ASSERT(MAX(3, 7) == 7, "MAX funciona"))
+imprimir(ASSERT(QUADRADO(4) == 16, "quadrado funciona"))
+
+// Função inline (hint de inlining, executada normalmente)
+função inline somar(a, b) {
+    retornar a + b
+}
+imprimir(`inline somar(3, 4) = ${somar(3, 4)}`)
+
+// ─── PONTEIROS / REFS ───────────────────────────────────────
+
+seja contador = 0
+ref ptr_contador = contador
+
+imprimir(`antes: ${ptr_contador.valor}`)
+
+// Modificando via referência
+ptr_contador.valor = 42
+imprimir(`após ref: ${ptr_contador.valor}`)
+
+// Ref a struct
+seja ponto_ref = Ponto(5, 10)
+ref ptr_ponto = ponto_ref
+imprimir(`ponto via ref: x=${ptr_ponto.valor.x}`)
+
+// Função que recebe ref e modifica
+função incrementar(r, quantidade) {
+    r.valor = r.valor + quantidade
+}
+
+seja num = 10
+ref r = num
+incrementar(r, 5)
+imprimir(`após incrementar via ref: ${r.valor}`)
+
+// deref como operador unário
+imprimir(`deref direto: ${deref r}`)
+
+imprimir("✅ Módulo C/C++ — COMPLETO!")

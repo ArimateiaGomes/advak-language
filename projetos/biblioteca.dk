@@ -1,0 +1,1178 @@
+// ═══════════════════════════════════════════════════════════════════════════
+//  ADVAK 5.0 — Sistema de Biblioteca
+//  Cadastro, edição, exclusão e busca de livros
+//
+//  .env (PostgreSQL):
+//    ADVAK_DB_HOST=localhost
+//    ADVAK_DB_PORT=5432
+//    ADVAK_DB_USER=postgres
+//    ADVAK_DB_PASS=sua_senha
+//    ADVAK_DB_NAME=biblioteca
+//
+//  Execute: advak projetos\biblioteca.dk
+//  Acesse:  http://localhost:8080
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ════════════════════════════════════════════════════════════════
+// 1. BANCO DE DADOS
+// ════════════════════════════════════════════════════════════════
+
+seja db = banco_auto("biblioteca")
+
+seja t_livros = db.criar_tabela("livros", {
+    titulo:       "texto",
+    autor:        "texto",
+    isbn:         "texto",
+    editora:      "texto",
+    ano:          "inteiro",
+    genero:       "texto",
+    paginas:      "inteiro",
+    quantidade:   "inteiro",
+    disponivel:   "inteiro",
+    sinopse:      "texto",
+    capa_url:     "texto"
+})
+
+seja t_autores = db.criar_tabela("autores", {
+    nome:         "texto",
+    nacionalidade:"texto",
+    biografia:    "texto"
+})
+
+seja t_emprestimos = db.criar_tabela("emprestimos", {
+    livro_id:     "inteiro",
+    leitor:       "texto",
+    data_saida:   "texto",
+    data_prevista:"texto",
+    devolvido:    "booleano"
+})
+
+// Dados iniciais
+se (t_livros.contar() == 0) {
+    t_livros.inserir({titulo:"Dom Casmurro",            autor:"Machado de Assis",   isbn:"978-85-359-0277-4", editora:"Ática",           ano:1899, genero:"Romance",        paginas:256, quantidade:3, disponivel:3, sinopse:"Bentinho e Capitu vivem uma das histórias de amor mais controversas da literatura brasileira."})
+    t_livros.inserir({titulo:"O Cortiço",               autor:"Aluísio Azevedo",    isbn:"978-85-359-0278-1", editora:"Martin Claret",   ano:1890, genero:"Realismo",       paginas:288, quantidade:2, disponivel:2, sinopse:"A vida coletiva e os conflitos de um cortiço no Rio de Janeiro do século XIX."})
+    t_livros.inserir({titulo:"Grande Sertão: Veredas",  autor:"João Guimarães Rosa",isbn:"978-85-359-0279-8", editora:"Nova Fronteira",  ano:1956, genero:"Romance",        paginas:608, quantidade:4, disponivel:4, sinopse:"A história de Riobaldo, um ex-jagunço que narra sua vida no sertão mineiro."})
+    t_livros.inserir({titulo:"Memórias Póstumas",       autor:"Machado de Assis",   isbn:"978-85-359-0280-4", editora:"Ática",           ano:1881, genero:"Romance",        paginas:224, quantidade:2, disponivel:1, sinopse:"Narrado por um defunto, Brás Cubas conta sua vida de maneira irônica e satírica."})
+    t_livros.inserir({titulo:"O Alquimista",            autor:"Paulo Coelho",       isbn:"978-85-200-0800-4", editora:"HarperCollins",   ano:1988, genero:"Ficção",         paginas:208, quantidade:5, disponivel:5, sinopse:"A jornada de um jovem pastor espanhol em busca de seu tesouro pessoal."})
+    t_livros.inserir({titulo:"A Moreninha",             autor:"Joaquim Manuel de Macedo",isbn:"978-85-359-0281-1",editora:"Ática",      ano:1844, genero:"Romance",        paginas:160, quantidade:2, disponivel:2, sinopse:"Considerado o primeiro romance brasileiro, narra um romance de estudantes."})
+    t_livros.inserir({titulo:"Vidas Secas",             autor:"Graciliano Ramos",   isbn:"978-85-359-0282-8", editora:"Record",          ano:1938, genero:"Regionalismo",   paginas:176, quantidade:3, disponivel:3, sinopse:"A saga de uma família de retirantes nordestinos fugindo da seca."})
+    t_livros.inserir({titulo:"Iracema",                 autor:"José de Alencar",    isbn:"978-85-359-0283-5", editora:"Martin Claret",   ano:1865, genero:"Romantismo",     paginas:128, quantidade:2, disponivel:2, sinopse:"A lenda do Ceará, uma história de amor entre a índia Iracema e o guerreiro Martim."})
+    t_livros.inserir({titulo:"O Guarani",               autor:"José de Alencar",    isbn:"978-85-359-0284-2", editora:"Martin Claret",   ano:1857, genero:"Romantismo",     paginas:384, quantidade:3, disponivel:3, sinopse:"O índio Peri e seu amor pela jovem branca Ceci na floresta brasileira."})
+    t_livros.inserir({titulo:"Harry Potter e a Pedra Filosofal", autor:"J.K. Rowling", isbn:"978-85-325-2799-4", editora:"Rocco",      ano:1997, genero:"Fantasia",        paginas:264, quantidade:6, disponivel:4, sinopse:"O jovem Harry Potter descobre ser um bruxo e começa seus estudos em Hogwarts."})
+    t_livros.inserir({titulo:"1984",                    autor:"George Orwell",      isbn:"978-85-359-0285-9", editora:"Companhia das Letras", ano:1949, genero:"Distopia", paginas:416, quantidade:4, disponivel:4, sinopse:"Uma sociedade totalitária onde o Grande Irmão tudo vê e controla."})
+    t_livros.inserir({titulo:"Capitães da Areia",       autor:"Jorge Amado",        isbn:"978-85-359-0286-6", editora:"Companhia das Letras", ano:1937, genero:"Romance",  paginas:288, quantidade:3, disponivel:3, sinopse:"A vida de meninos abandonados nas ruas de Salvador nos anos 1930."})
+    imprimir("✅ " + texto(t_livros.contar()) + " livros inseridos")
+}
+
+seja GENEROS = ["Todos","Romance","Ficção","Fantasia","Distopia","Realismo","Regionalismo","Romantismo","Poesia","Terror","Biografia","História","Ciência","Autoajuda","Infantil","Outro"]
+
+// ════════════════════════════════════════════════════════════════
+// 2. HTML BASE (componente reutilizável)
+// ════════════════════════════════════════════════════════════════
+
+funcao pagina_base(titulo_pag, conteudo, aba_ativa) {
+    seja total_livros = t_livros.contar()
+    seja disponiveis  = t_livros.contar(db.eh_postgres ? "disponivel>0" : "disponivel>0")
+    seja emprestados  = total_livros - disponiveis
+
+    retornar html(`<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${titulo_pag} — Biblioteca Advak</title>
+  <style>
+    /* Reset & Base */
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box }
+    :root {
+      --bg:      #060D1F;
+      --bg2:     #0D1B2E;
+      --bg3:     #1A2D45;
+      --border:  #1E3A5F;
+      --accent:  #3B82F6;
+      --accent2: #60A5FA;
+      --green:   #22C55E;
+      --yellow:  #F59E0B;
+      --red:     #EF4444;
+      --purple:  #A78BFA;
+      --text:    #F1F5F9;
+      --text2:   #94A3B8;
+      --text3:   #64748B;
+    }
+    html, body { height:100%; font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text) }
+    a { color:var(--accent); text-decoration:none }
+    a:hover { color:var(--accent2) }
+    button, .btn { cursor:pointer; font-family:inherit }
+    input, select, textarea { font-family:inherit }
+
+    /* Layout */
+    .layout { display:flex; min-height:100vh }
+
+    /* Sidebar */
+    .sidebar {
+      width:250px; background:var(--bg2); border-right:1px solid var(--border);
+      display:flex; flex-direction:column; position:fixed; height:100vh; z-index:10;
+    }
+    .sidebar-head {
+      padding:24px 20px; border-bottom:1px solid var(--border);
+      background:linear-gradient(135deg, #0A1628, #1E3A5F);
+    }
+    .sidebar-head .logo { display:flex; align-items:center; gap:12px; margin-bottom:10px }
+    .sidebar-head .logo-icon { font-size:32px }
+    .sidebar-head h1 { font-size:18px; color:#fff; font-weight:800 }
+    .sidebar-head p  { font-size:11px; color:var(--text3); margin-top:2px }
+    .stats-mini { display:flex; gap:8px; margin-top:12px }
+    .stat-pill {
+      flex:1; background:rgba(255,255,255,.06); border-radius:8px;
+      padding:8px; text-align:center;
+    }
+    .stat-pill .n { font-size:18px; font-weight:800; color:var(--accent2) }
+    .stat-pill .l { font-size:10px; color:var(--text3); margin-top:2px }
+    .nav-section { padding:16px 12px 8px; font-size:10px; color:var(--text3);
+                   font-weight:700; letter-spacing:2px; text-transform:uppercase }
+    nav a {
+      display:flex; align-items:center; gap:10px; padding:10px 16px;
+      color:var(--text2); border-radius:10px; margin:2px 8px;
+      font-size:14px; font-weight:500; transition:.15s;
+    }
+    nav a:hover, nav a.ativo {
+      background:rgba(59,130,246,.15); color:var(--text); border-left:3px solid var(--accent);
+    }
+    nav a .badge {
+      margin-left:auto; background:var(--accent); color:white;
+      font-size:10px; font-weight:700; padding:1px 7px; border-radius:999px;
+    }
+    .sidebar-footer { margin-top:auto; padding:16px; border-top:1px solid var(--border) }
+    .db-badge {
+      display:flex; align-items:center; gap:6px; font-size:11px;
+      background:var(--bg3); border-radius:8px; padding:8px 10px; color:var(--text2);
+    }
+    .db-dot { width:7px; height:7px; border-radius:50%;
+              background:${db.eh_postgres ? 'var(--green)' : 'var(--yellow)'}; flex-shrink:0 }
+
+    /* Main */
+    .main { margin-left:250px; flex:1; display:flex; flex-direction:column; min-height:100vh }
+    .topbar {
+      background:var(--bg2); border-bottom:1px solid var(--border);
+      padding:14px 28px; display:flex; align-items:center; gap:16px; position:sticky; top:0; z-index:5;
+    }
+    .topbar h2 { font-size:18px; font-weight:800; flex:1 }
+    .topbar .search-wrap { display:flex; gap:8px; flex:1; max-width:400px }
+    .topbar input {
+      flex:1; background:var(--bg3); border:1px solid var(--border); color:var(--text);
+      padding:8px 14px; border-radius:9px; font-size:14px;
+    }
+    .topbar input:focus { outline:none; border-color:var(--accent) }
+    .topbar input::placeholder { color:var(--text3) }
+    .content { padding:24px 28px; flex:1 }
+
+    /* Botões */
+    .btn {
+      display:inline-flex; align-items:center; gap:6px; padding:8px 16px;
+      border-radius:9px; font-size:13px; font-weight:600; border:none; transition:.15s;
+    }
+    .btn:hover { filter:brightness(1.1); transform:translateY(-1px) }
+    .btn-primary   { background:var(--accent); color:white }
+    .btn-success   { background:#16A34A; color:white }
+    .btn-danger    { background:#B91C1C; color:#FCA5A5 }
+    .btn-warning   { background:#92400E; color:#FCD34D }
+    .btn-secondary { background:var(--bg3); color:var(--text2); border:1px solid var(--border) }
+    .btn-sm { padding:5px 10px; font-size:12px; border-radius:7px }
+
+    /* Cards de livros */
+    .livros-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:20px; margin-top:20px }
+    .livro-card {
+      background:var(--bg2); border:1px solid var(--border); border-radius:16px;
+      overflow:hidden; transition:.2s; display:flex; flex-direction:column;
+    }
+    .livro-card:hover { border-color:var(--accent); transform:translateY(-4px); box-shadow:0 12px 32px rgba(59,130,246,.2) }
+    .livro-capa {
+      height:180px; background:linear-gradient(135deg, var(--bg3), var(--border));
+      display:flex; align-items:center; justify-content:center; font-size:64px;
+      position:relative; overflow:hidden;
+    }
+    .livro-capa img { width:100%; height:100%; object-fit:cover }
+    .livro-capa-placeholder { font-size:56px; opacity:.6 }
+    .livro-disp {
+      position:absolute; top:10px; right:10px;
+      padding:3px 9px; border-radius:999px; font-size:11px; font-weight:700;
+    }
+    .disp-ok  { background:rgba(34,197,94,.2);  color:#22C55E; border:1px solid rgba(34,197,94,.3) }
+    .disp-no  { background:rgba(239,68,68,.2);   color:#EF4444; border:1px solid rgba(239,68,68,.3) }
+    .disp-few { background:rgba(245,158,11,.2);  color:#F59E0B; border:1px solid rgba(245,158,11,.3) }
+    .livro-body { padding:16px; flex:1; display:flex; flex-direction:column }
+    .livro-genero {
+      font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase;
+      color:var(--purple); background:rgba(167,139,250,.15); padding:2px 8px;
+      border-radius:5px; display:inline-block; margin-bottom:8px;
+    }
+    .livro-titulo { font-size:16px; font-weight:800; margin-bottom:4px; line-height:1.3 }
+    .livro-autor  { font-size:13px; color:var(--text2); margin-bottom:6px }
+    .livro-ano    { font-size:11px; color:var(--text3); margin-bottom:10px }
+    .livro-sinopse {
+      font-size:12px; color:var(--text3); line-height:1.5;
+      flex:1; overflow:hidden; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;
+    }
+    .livro-footer {
+      padding:12px 16px; background:rgba(0,0,0,.2);
+      display:flex; gap:6px; align-items:center; border-top:1px solid var(--border);
+    }
+
+    /* Tabela */
+    .table-wrap { background:var(--bg2); border:1px solid var(--border); border-radius:14px; overflow:hidden; margin-top:16px }
+    table { width:100%; border-collapse:collapse }
+    thead th { background:var(--bg3); padding:11px 16px; text-align:left; font-size:11px;
+               text-transform:uppercase; letter-spacing:1px; color:var(--text2); font-weight:700 }
+    tbody td { padding:12px 16px; border-bottom:1px solid var(--border); font-size:13px }
+    tbody tr:last-child td { border:none }
+    tbody tr:hover td { background:rgba(59,130,246,.04) }
+
+    /* Filtros */
+    .filtros { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px }
+    .filtro-btn {
+      padding:6px 14px; border-radius:8px; border:1px solid var(--border);
+      background:var(--bg2); color:var(--text2); font-size:12px; font-weight:600;
+      cursor:pointer; transition:.15s;
+    }
+    .filtro-btn:hover, .filtro-btn.ativo { background:var(--accent); color:white; border-color:var(--accent) }
+
+    /* Formulário */
+    .form-card {
+      background:var(--bg2); border:1px solid var(--border); border-radius:16px; padding:28px;
+    }
+    .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px }
+    .form-full  { grid-column:1/-1 }
+    .form-group { display:flex; flex-direction:column; gap:6px }
+    .form-group label { font-size:11px; font-weight:700; color:var(--text2);
+                        text-transform:uppercase; letter-spacing:1px }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      background:var(--bg3); border:1px solid var(--border); color:var(--text);
+      padding:10px 14px; border-radius:10px; font-size:14px;
+    }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus { outline:none; border-color:var(--accent); background:var(--bg2) }
+    .form-group input::placeholder,
+    .form-group textarea::placeholder { color:var(--text3) }
+    .form-group select option { background:var(--bg2) }
+    .form-group textarea { resize:vertical; min-height:90px }
+    .form-actions { display:flex; gap:10px; margin-top:24px; padding-top:18px;
+                    border-top:1px solid var(--border) }
+
+    /* Modal */
+    .modal-overlay {
+      display:none; position:fixed; inset:0; background:rgba(0,0,0,.7);
+      z-index:100; align-items:center; justify-content:center; padding:20px;
+    }
+    .modal-overlay.aberto { display:flex }
+    .modal {
+      background:var(--bg2); border:1px solid var(--border); border-radius:18px;
+      width:100%; max-width:680px; max-height:90vh; overflow-y:auto;
+    }
+    .modal-header {
+      padding:20px 24px; border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; background:var(--bg2);
+    }
+    .modal-header h3 { font-size:18px; font-weight:800 }
+    .modal-close { background:none; border:none; color:var(--text3); font-size:22px; cursor:pointer; line-height:1 }
+    .modal-close:hover { color:var(--text) }
+    .modal-body { padding:24px }
+    .modal-footer { padding:18px 24px; border-top:1px solid var(--border); display:flex; gap:10px; justify-content:flex-end }
+
+    /* Alertas */
+    .alerta {
+      padding:12px 18px; border-radius:10px; font-size:13px; font-weight:600;
+      margin-bottom:16px; display:flex; align-items:center; gap:8px;
+    }
+    .alerta-sucesso { background:rgba(34,197,94,.15); border:1px solid rgba(34,197,94,.3); color:#22C55E }
+    .alerta-erro    { background:rgba(239,68,68,.15);  border:1px solid rgba(239,68,68,.3);  color:#EF4444 }
+
+    /* Paginação */
+    .paginacao { display:flex; gap:6px; justify-content:center; margin-top:24px }
+    .paginacao a {
+      padding:6px 12px; border-radius:7px; background:var(--bg2); border:1px solid var(--border);
+      font-size:13px; font-weight:600; color:var(--text2);
+    }
+    .paginacao a.ativo, .paginacao a:hover { background:var(--accent); color:white; border-color:var(--accent) }
+
+    /* Detalhes livro */
+    .detalhe-capa {
+      width:180px; height:240px; background:linear-gradient(135deg, var(--bg3), var(--border));
+      border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:72px;
+      flex-shrink:0;
+    }
+    .detalhe-info { display:flex; gap:8px; flex-wrap:wrap; margin:14px 0 }
+    .info-tag {
+      background:var(--bg3); border:1px solid var(--border); border-radius:8px;
+      padding:6px 12px; font-size:12px; color:var(--text2);
+    }
+    .info-tag b { color:var(--text) }
+  </style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-head">
+      <div class="logo">
+        <div class="logo-icon">📚</div>
+        <div>
+          <h1>Biblioteca</h1>
+          <p>Sistema Advak 5.0</p>
+        </div>
+      </div>
+      <div class="stats-mini">
+        <div class="stat-pill">
+          <div class="n">${texto(total_livros)}</div>
+          <div class="l">Total</div>
+        </div>
+        <div class="stat-pill">
+          <div class="n" style="color:var(--green)">${texto(disponiveis)}</div>
+          <div class="l">Livres</div>
+        </div>
+        <div class="stat-pill">
+          <div class="n" style="color:var(--yellow)">${texto(emprestados)}</div>
+          <div class="l">Empr.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-section">Menu</div>
+    <nav>
+      <a href="/" class="${aba_ativa=='inicio'?'ativo':''}">
+        🏠 Início
+        <span class="badge">${texto(total_livros)}</span>
+      </a>
+      <a href="/livros" class="${aba_ativa=='livros'?'ativo':''}">📖 Acervo</a>
+      <a href="/cadastrar" class="${aba_ativa=='cadastrar'?'ativo':''}">➕ Cadastrar Livro</a>
+      <a href="/emprestimos" class="${aba_ativa=='emprestimos'?'ativo':''}">🔖 Empréstimos</a>
+      <a href="/relatorio" class="${aba_ativa=='relatorio'?'ativo':''}">📊 Relatório</a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="db-badge">
+        <div class="db-dot"></div>
+        ${db.eh_postgres ? 'PostgreSQL ativo' : 'SQLite (configure .env para PostgreSQL)'}
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTEÚDO -->
+  <div class="main">
+    ${conteudo}
+  </div>
+</div>
+</body>
+</html>`)
+}
+
+// ════════════════════════════════════════════════════════════════
+// 3. PÁGINAS
+// ════════════════════════════════════════════════════════════════
+
+// ── Início ─────────────────────────────────────────────────────
+servidor.obter("/", (req) => {
+    seja total   = t_livros.contar()
+    seja disponiveis = t_livros.contar("disponivel>0")
+    seja emprestados = total - disponiveis
+    seja recentes = t_livros.buscar(nulo, nulo, db.eh_postgres ? "id DESC" : "id DESC", 6)
+
+    seja cards = recentes.mapear((l) => {
+        seja status_cls = l.disponivel == 0 ? "disp-no" :
+                          l.disponivel <= 1  ? "disp-few" : "disp-ok"
+        seja status_txt = l.disponivel == 0 ? "Indisponível" :
+                          "Disponível: " + texto(l.disponivel)
+        retornar `<div class="livro-card">
+          <div class="livro-capa">
+            <div class="livro-capa-placeholder">📖</div>
+            <span class="livro-disp ${status_cls}">${status_txt}</span>
+          </div>
+          <div class="livro-body">
+            <span class="livro-genero">${l.genero ?? 'Geral'}</span>
+            <div class="livro-titulo">${l.titulo}</div>
+            <div class="livro-autor">✍️ ${l.autor}</div>
+            <div class="livro-ano">📅 ${texto(l.ano)}  •  📄 ${texto(l.paginas ?? 0)} págs</div>
+            <div class="livro-sinopse">${l.sinopse ?? ''}</div>
+          </div>
+          <div class="livro-footer">
+            <a href="/livro/${texto(l.id)}" class="btn btn-secondary btn-sm">👁 Ver</a>
+            <a href="/editar/${texto(l.id)}" class="btn btn-warning btn-sm">✏️ Editar</a>
+            <button onclick="confirmarExcluir(${texto(l.id)}, '${l.titulo}')"
+              class="btn btn-danger btn-sm">🗑</button>
+          </div>
+        </div>`
+    }).unir("")
+
+    seja generos_count = GENEROS.filtrar((g) => g != "Todos").mapear((g) => {
+        seja cnt = t_livros.contar("genero='" + g + "'")
+        se (cnt > 0) {
+            retornar `<div style="display:flex;align-items:center;justify-content:space-between;
+                       padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
+                <span>${g}</span>
+                <span style="background:var(--bg3);padding:2px 8px;border-radius:5px;
+                      font-size:11px;font-weight:700;color:var(--accent2)">${texto(cnt)}</span>
+              </div>`
+        }
+        retornar ""
+    }).unir("")
+
+    seja conteudo = `
+    <div class="topbar">
+      <h2>🏠 Início — Biblioteca Advak</h2>
+      <a href="/cadastrar" class="btn btn-primary">➕ Cadastrar Livro</a>
+    </div>
+    <div class="content">
+      <!-- Cards de métricas -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px">
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px">
+          <div style="font-size:32px;font-weight:900;color:var(--accent2)">${texto(total)}</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:4px;text-transform:uppercase;letter-spacing:1px">📚 Total de Livros</div>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px">
+          <div style="font-size:32px;font-weight:900;color:var(--green)">${texto(disponiveis)}</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:4px;text-transform:uppercase;letter-spacing:1px">✅ Disponíveis</div>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px">
+          <div style="font-size:32px;font-weight:900;color:var(--yellow)">${texto(emprestados)}</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:4px;text-transform:uppercase;letter-spacing:1px">🔖 Emprestados</div>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px">
+          <div style="font-size:32px;font-weight:900;color:var(--purple)">${texto(t_emprestimos.contar())}</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:4px;text-transform:uppercase;letter-spacing:1px">📋 Empréstimos</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 240px;gap:20px">
+        <div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <h3 style="font-size:17px">📖 Adições Recentes</h3>
+            <a href="/livros" style="font-size:13px;color:var(--accent)">Ver todos →</a>
+          </div>
+          <div class="livros-grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))">${cards}</div>
+        </div>
+        <div>
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px">
+            <h3 style="font-size:14px;margin-bottom:14px;font-weight:700">🏷️ Por Gênero</h3>
+            ${generos_count}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+    function confirmarExcluir(id, titulo) {
+      if(confirm('Excluir o livro:\\n"' + titulo + '"?\\nEsta ação não pode ser desfeita.')) {
+        fetch('/api/livros/' + id, {method:'DELETE'})
+          .then(r => r.json())
+          .then(d => { if(d.mensagem) location.reload() })
+      }
+    }
+    </script>`
+    retornar pagina_base("Início", conteudo, "inicio")
+})
+
+// ── Acervo completo ─────────────────────────────────────────────
+servidor.obter("/livros", (req) => {
+    seja busca  = req.consulta.busca  ?? ""
+    seja genero = req.consulta.genero ?? "Todos"
+    seja pg     = inteiro(req.consulta.pagina ?? "1")
+    seja por_pg = 12
+
+    // Busca e filtragem (sem paginação complexa para evitar conflito de parâmetros)
+    seja todos_livros = t_livros.buscar(nulo, nulo, "titulo")
+
+    // Aplica filtros em memória
+    se (busca != "") {
+        seja busca_lower = busca.minusculo()
+        todos_livros = todos_livros.filtrar((l) =>
+            texto(l.titulo).minusculo().contem(busca_lower) ou
+            texto(l.autor).minusculo().contem(busca_lower) ou
+            texto(l.isbn ?? "").minusculo().contem(busca_lower)
+        )
+    }
+
+    se (genero != "Todos" e genero != "") {
+        todos_livros = todos_livros.filtrar((l) => l.genero == genero)
+    }
+
+    seja total_filtrado = todos_livros.tamanho
+    seja total_pag = 1
+    seja por_pg = total_filtrado
+
+    // Paginação simples
+    seja inicio = (pg - 1) * 12
+    seja livros = todos_livros.fatia(inicio, inicio + 12)
+
+    seja cards = livros.mapear((l) => {
+        seja status_cls = l.disponivel == 0 ? "disp-no" :
+                          l.disponivel <= 1  ? "disp-few" : "disp-ok"
+        seja status_txt = l.disponivel == 0 ? "Indisponível" : "Disponível: " + texto(l.disponivel)
+        retornar `<div class="livro-card">
+          <div class="livro-capa">
+            <div class="livro-capa-placeholder">📖</div>
+            <span class="livro-disp ${status_cls}">${status_txt}</span>
+          </div>
+          <div class="livro-body">
+            <span class="livro-genero">${l.genero ?? 'Geral'}</span>
+            <div class="livro-titulo">${l.titulo}</div>
+            <div class="livro-autor">✍️ ${l.autor}</div>
+            <div class="livro-ano">📅 ${texto(l.ano)}  •  📄 ${texto(l.paginas ?? 0)}p</div>
+            <div class="livro-sinopse">${l.sinopse ?? ''}</div>
+          </div>
+          <div class="livro-footer">
+            <a href="/livro/${texto(l.id)}" class="btn btn-secondary btn-sm">👁 Ver</a>
+            <a href="/editar/${texto(l.id)}" class="btn btn-warning btn-sm">✏️ Editar</a>
+            <button onclick="confirmarExcluir(${texto(l.id)}, '${l.titulo}')" class="btn btn-danger btn-sm">🗑</button>
+          </div>
+        </div>`
+    }).unir("")
+
+    seja genero_opts = GENEROS.mapear((g) =>
+        "<button class=\"filtro-btn " + (genero==g ? "ativo" : "") + "\" onclick=\"filtrarGenero('" + g + "')\">" + g + "</button>"
+    ).unir("")
+
+    seja paginacao = ""
+    se (total_pag > 1) {
+        seja i = 1
+        enquanto (i <= total_pag) {
+            seja params_pag = "?pagina=" + texto(i) + (busca != "" ? "&busca=" + busca : "") + (genero != "Todos" ? "&genero=" + genero : "")
+            seja classe_pag = pg==i ? "ativo" : ""
+                        paginacao = paginacao + `<a href="/livros${params_pag}" class="${classe_pag}">${texto(i)}</a>`
+            i++
+        }
+    }
+
+    seja linhas_tabela = livros.mapear((l) => {
+        seja cor_d = l.disponivel==0 ? "var(--red)" : l.disponivel<=1 ? "var(--yellow)" : "var(--green)"
+        retornar "<tr><td><b>" + l.titulo + "</b></td><td>" + l.autor + "</td><td><span style='color:var(--purple);font-size:11px;font-weight:700'>" + (l.genero ?? "") + "</span></td><td>" + texto(l.ano) + "</td><td style='font-family:monospace;font-size:11px'>" + (l.isbn ?? "") + "</td><td style='text-align:center'>" + texto(l.quantidade ?? 0) + "</td><td style='text-align:center;color:" + cor_d + "'>" + texto(l.disponivel ?? 0) + "</td><td style='white-space:nowrap'><a href='/livro/" + texto(l.id) + "' class='btn btn-secondary btn-sm'>👁</a> <a href='/editar/" + texto(l.id) + "' class='btn btn-warning btn-sm'>✏️</a> <button onclick='confirmarExcluir(" + texto(l.id) + ",\'" + l.titulo + "\')' class='btn btn-danger btn-sm'>🗑</button></td></tr>"
+    }).unir("")
+
+    seja conteudo = `
+    <div class="topbar">
+      <h2>📖 Acervo</h2>
+      <div class="search-wrap">
+        <input id="busca-input" type="text" placeholder="🔍 Buscar título, autor ou ISBN..."
+          value="${busca}" onkeydown="if(event.key==='Enter')buscar()">
+        <button class="btn btn-primary" onclick="buscar()">Buscar</button>
+      </div>
+      <a href="/cadastrar" class="btn btn-success">➕ Novo</a>
+    </div>
+    <div class="content">
+      <div class="filtros">${genero_opts}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <span style="font-size:13px;color:var(--text2)">${texto(total_filtrado)} livros encontrados</span>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary btn-sm" onclick="setVista('cards')" id="btn-cards">🃏 Cards</button>
+          <button class="btn btn-secondary btn-sm" onclick="setVista('tabela')" id="btn-tabela">📋 Tabela</button>
+        </div>
+      </div>
+
+      <!-- Vista Cards -->
+      <div id="vista-cards">
+        <div class="livros-grid">${cards}</div>
+      </div>
+
+      <!-- Vista Tabela -->
+      <div id="vista-tabela" style="display:none">
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>Título</th><th>Autor</th><th>Gênero</th><th>Ano</th><th>ISBN</th><th>Qtd.</th><th>Disp.</th><th>Ações</th>
+            </tr></thead>
+            <tbody>
+              ${linhas_tabela}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="paginacao">${paginacao}</div>
+    </div>
+
+    <script>
+    function buscar() {
+      const v = document.getElementById('busca-input').value
+      const g = new URLSearchParams(location.search).get('genero') || 'Todos'
+      location.href = '/livros?busca='+encodeURIComponent(v)+'&genero='+g
+    }
+    function filtrarGenero(g) {
+      const b = new URLSearchParams(location.search).get('busca') || ''
+      location.href = '/livros?genero='+g+(b?'&busca='+encodeURIComponent(b):'')
+    }
+    function setVista(v) {
+      document.getElementById('vista-cards').style.display  = v==='cards' ?'block':'none'
+      document.getElementById('vista-tabela').style.display = v==='tabela'?'block':'none'
+    }
+    function confirmarExcluir(id, titulo) {
+      if(confirm('Excluir "' + titulo + '"?')) {
+        fetch('/api/livros/'+id, {method:'DELETE'})
+          .then(r=>r.json()).then(()=>location.reload())
+      }
+    }
+    </script>`
+    retornar pagina_base("Acervo", conteudo, "livros")
+})
+
+// ── Detalhe do livro ─────────────────────────────────────────────
+servidor.obter("/livro/:id", (req) => {
+    seja id = req.parametros.id
+    seja l = t_livros.buscar_um(db.eh_postgres ? "id=$1" : "id=?", [id])
+    se (l == nulo) { retornar redirecionar("/livros") }
+
+    seja emprestimos_livro = t_emprestimos.buscar(
+        db.eh_postgres ? "livro_id=$1" : "livro_id=?",
+        [id], "id DESC", 5)
+
+    seja hist = emprestimos_livro.tamanho > 0
+        ? emprestimos_livro.mapear((e) => {
+            seja dev = db.eh_postgres ? e.devolvido == verdadeiro : e.devolvido == 1
+            retornar `<div style="padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;display:flex;gap:12px;align-items:center">
+              <span>👤 ${e.leitor}</span>
+              <span style="color:var(--text3)">${e.data_saida ?? ''}</span>
+              <span style="margin-left:auto;color:${dev?'var(--green)':'var(--yellow)'}">${dev?'✅ Devolvido':'🔖 Em aberto'}</span>
+            </div>`
+          }).unir("")
+        : `<p style="color:var(--text3);font-size:13px">Nenhum empréstimo registrado.</p>`
+
+    seja status_cls = l.disponivel == 0 ? "disp-no" : l.disponivel <= 1 ? "disp-few" : "disp-ok"
+    seja status_txt = l.disponivel == 0 ? "❌ Indisponível" : "✅ " + texto(l.disponivel) + " disponível(is)"
+
+    seja conteudo = `
+    <div class="topbar">
+      <a href="/livros" style="color:var(--text3);font-size:13px">← Acervo</a>
+      <h2 style="flex:1;margin-left:16px">${l.titulo}</h2>
+      <a href="/editar/${texto(l.id)}" class="btn btn-warning">✏️ Editar</a>
+    </div>
+    <div class="content">
+      <div style="display:flex;gap:28px;align-items:flex-start">
+        <div class="detalhe-capa">📖</div>
+        <div style="flex:1">
+          <span class="livro-genero" style="font-size:12px;padding:4px 12px">${l.genero ?? 'Geral'}</span>
+          <h1 style="font-size:28px;margin:12px 0 6px;font-weight:900">${l.titulo}</h1>
+          <p style="font-size:16px;color:var(--text2);margin-bottom:16px">✍️ ${l.autor}</p>
+          <div class="detalhe-info">
+            <div class="info-tag">📅 Ano: <b>${texto(l.ano)}</b></div>
+            <div class="info-tag">🏢 Editora: <b>${l.editora ?? '—'}</b></div>
+            <div class="info-tag">📄 <b>${texto(l.paginas ?? 0)}</b> págs</div>
+            <div class="info-tag">🔢 ISBN: <b style="font-family:monospace">${l.isbn ?? '—'}</b></div>
+            <div class="info-tag">📦 Qtd: <b>${texto(l.quantidade ?? 0)}</b></div>
+            <div class="livro-disp ${status_cls}" style="position:static">${status_txt}</div>
+          </div>
+          <p style="font-size:14px;line-height:1.7;color:var(--text2);max-width:600px">${l.sinopse ?? ''}</p>
+        </div>
+      </div>
+
+      <div style="margin-top:28px;display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px">
+          <h3 style="font-size:15px;margin-bottom:14px;font-weight:700">🔖 Registrar Empréstimo</h3>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <input id="emp-leitor" placeholder="Nome do leitor" type="text"
+              style="background:var(--bg3);border:1px solid var(--border);color:var(--text);
+                     padding:10px 14px;border-radius:9px;font-size:14px">
+            <input id="emp-data" type="date"
+              style="background:var(--bg3);border:1px solid var(--border);color:var(--text);
+                     padding:10px 14px;border-radius:9px;font-size:14px">
+            <button class="btn btn-primary" onclick="registrarEmprestimo(${texto(l.id)})">
+              📤 Registrar Empréstimo
+            </button>
+            <div id="emp-msg"></div>
+          </div>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px">
+          <h3 style="font-size:15px;margin-bottom:14px;font-weight:700">📋 Histórico de Empréstimos</h3>
+          ${hist}
+        </div>
+      </div>
+    </div>
+
+    <script>
+    function registrarEmprestimo(livroId) {
+      const leitor = document.getElementById('emp-leitor').value.trim()
+      const data   = document.getElementById('emp-data').value
+      if(!leitor) { alert('Informe o nome do leitor!'); return }
+      fetch('/api/emprestimos', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({livro_id: livroId, leitor, data_saida: data})
+      }).then(r=>r.json()).then(d => {
+        const msg = document.getElementById('emp-msg')
+        if(d.mensagem) {
+          msg.innerHTML = '<div class="alerta alerta-sucesso">✅ ' + d.mensagem + '</div>'
+          setTimeout(()=>location.reload(), 1500)
+        } else {
+          msg.innerHTML = '<div class="alerta alerta-erro">❌ ' + (d.erro||'Erro') + '</div>'
+        }
+      })
+    }
+    </script>`
+    retornar pagina_base(l.titulo, conteudo, "livros")
+})
+
+// ── Formulário: Cadastrar ────────────────────────────────────────
+servidor.obter("/cadastrar", (req) => {
+    seja msg_sucesso = req.consulta.ok ?? ""
+    seja alerta = msg_sucesso != "" ?
+        `<div class="alerta alerta-sucesso">✅ Livro cadastrado com sucesso!</div>` : ""
+
+    seja genero_opts = GENEROS.filtrar((g) => g != "Todos").mapear((g) =>
+        `<option value="${g}">${g}</option>`
+    ).unir("")
+
+    seja conteudo = `
+    <div class="topbar">
+      <a href="/livros" style="color:var(--text3);font-size:13px">← Acervo</a>
+      <h2 style="margin-left:16px">➕ Cadastrar Livro</h2>
+    </div>
+    <div class="content">
+      ${alerta}
+      <div class="form-card">
+        <h3 style="font-size:17px;margin-bottom:20px;color:var(--accent2)">📚 Informações do Livro</h3>
+        <form id="form-livro" onsubmit="salvarLivro(event)">
+          <div class="form-grid">
+            <div class="form-group form-full">
+              <label>Título do Livro *</label>
+              <input name="titulo" placeholder="Ex: Dom Casmurro" required>
+            </div>
+            <div class="form-group">
+              <label>Autor *</label>
+              <input name="autor" placeholder="Ex: Machado de Assis" required>
+            </div>
+            <div class="form-group">
+              <label>ISBN</label>
+              <input name="isbn" placeholder="Ex: 978-85-359-0277-4">
+            </div>
+            <div class="form-group">
+              <label>Editora</label>
+              <input name="editora" placeholder="Ex: Companhia das Letras">
+            </div>
+            <div class="form-group">
+              <label>Ano de Publicação</label>
+              <input name="ano" type="number" min="1000" max="2099" placeholder="Ex: 2023">
+            </div>
+            <div class="form-group">
+              <label>Gênero</label>
+              <select name="genero">
+                ${genero_opts}
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Número de Páginas</label>
+              <input name="paginas" type="number" min="1" placeholder="Ex: 320">
+            </div>
+            <div class="form-group">
+              <label>Quantidade em Estoque</label>
+              <input name="quantidade" type="number" min="1" value="1">
+            </div>
+            <div class="form-group form-full">
+              <label>Sinopse</label>
+              <textarea name="sinopse" placeholder="Breve descrição do livro..."></textarea>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-success">💾 Salvar Livro</button>
+            <a href="/livros" class="btn btn-secondary">Cancelar</a>
+          </div>
+          <div id="form-msg" style="margin-top:12px"></div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+    async function salvarLivro(e) {
+      e.preventDefault()
+      const fd = new FormData(e.target)
+      const dados = Object.fromEntries(fd)
+      dados.ano      = parseInt(dados.ano)      || null
+      dados.paginas  = parseInt(dados.paginas)  || null
+      dados.quantidade = parseInt(dados.quantidade) || 1
+      dados.disponivel = dados.quantidade
+
+      const r = await fetch('/api/livros', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(dados)
+      })
+      const d = await r.json()
+      const msg = document.getElementById('form-msg')
+      if(d.id) {
+        msg.innerHTML = '<div class="alerta alerta-sucesso">✅ Livro cadastrado! <a href="/livro/'+d.id+'">Ver livro →</a></div>'
+        e.target.reset()
+      } else {
+        msg.innerHTML = '<div class="alerta alerta-erro">❌ ' + (d.erro||'Erro ao salvar') + '</div>'
+      }
+    }
+    </script>`
+    retornar pagina_base("Cadastrar Livro", conteudo, "cadastrar")
+})
+
+// ── Formulário: Editar ──────────────────────────────────────────
+servidor.obter("/editar/:id", (req) => {
+    seja id = req.parametros.id
+    seja l = t_livros.buscar_um(db.eh_postgres ? "id=$1" : "id=?", [id])
+    se (l == nulo) { retornar redirecionar("/livros") }
+
+    seja genero_opts = GENEROS.filtrar((g) => g != "Todos").mapear((g) =>
+        `<option value="${g}" ${l.genero == g ? 'selected' : ''}>${g}</option>`
+    ).unir("")
+
+    seja conteudo = `
+    <div class="topbar">
+      <a href="/livro/${id}" style="color:var(--text3);font-size:13px">← Voltar</a>
+      <h2 style="margin-left:16px">✏️ Editar Livro</h2>
+    </div>
+    <div class="content">
+      <div class="form-card">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+          <div style="font-size:36px">📖</div>
+          <div>
+            <h3 style="font-size:17px;color:var(--accent2)">${l.titulo}</h3>
+            <p style="color:var(--text3);font-size:13px">ID #${id} • Editando</p>
+          </div>
+        </div>
+        <form id="form-editar" onsubmit="atualizarLivro(event, ${id})">
+          <div class="form-grid">
+            <div class="form-group form-full">
+              <label>Título *</label>
+              <input name="titulo" value="${l.titulo}" required>
+            </div>
+            <div class="form-group">
+              <label>Autor *</label>
+              <input name="autor" value="${l.autor ?? ''}" required>
+            </div>
+            <div class="form-group">
+              <label>ISBN</label>
+              <input name="isbn" value="${l.isbn ?? ''}">
+            </div>
+            <div class="form-group">
+              <label>Editora</label>
+              <input name="editora" value="${l.editora ?? ''}">
+            </div>
+            <div class="form-group">
+              <label>Ano</label>
+              <input name="ano" type="number" value="${texto(l.ano ?? '')}">
+            </div>
+            <div class="form-group">
+              <label>Gênero</label>
+              <select name="genero">${genero_opts}</select>
+            </div>
+            <div class="form-group">
+              <label>Páginas</label>
+              <input name="paginas" type="number" value="${texto(l.paginas ?? '')}">
+            </div>
+            <div class="form-group">
+              <label>Quantidade</label>
+              <input name="quantidade" type="number" value="${texto(l.quantidade ?? 1)}" min="0">
+            </div>
+            <div class="form-group">
+              <label>Disponíveis</label>
+              <input name="disponivel" type="number" value="${texto(l.disponivel ?? 0)}" min="0">
+            </div>
+            <div class="form-group form-full">
+              <label>Sinopse</label>
+              <textarea name="sinopse">${l.sinopse ?? ''}</textarea>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-success">💾 Salvar Alterações</button>
+            <a href="/livro/${id}" class="btn btn-secondary">Cancelar</a>
+            <button type="button" onclick="confirmarExcluir(${id}, '${l.titulo}')"
+              class="btn btn-danger" style="margin-left:auto">🗑 Excluir Livro</button>
+          </div>
+          <div id="edit-msg" style="margin-top:12px"></div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+    async function atualizarLivro(e, id) {
+      e.preventDefault()
+      const fd = new FormData(e.target)
+      const dados = Object.fromEntries(fd)
+      dados.ano       = parseInt(dados.ano)       || null
+      dados.paginas   = parseInt(dados.paginas)   || null
+      dados.quantidade= parseInt(dados.quantidade)|| 0
+      dados.disponivel= parseInt(dados.disponivel)|| 0
+
+      const r = await fetch('/api/livros/'+id, {
+        method:'PUT', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(dados)
+      })
+      const d = await r.json()
+      const msg = document.getElementById('edit-msg')
+      if(d.mensagem) {
+        msg.innerHTML = '<div class="alerta alerta-sucesso">✅ ' + d.mensagem + '</div>'
+        setTimeout(()=>location.href='/livro/'+id, 1200)
+      } else {
+        msg.innerHTML = '<div class="alerta alerta-erro">❌ ' + (d.erro||'Erro') + '</div>'
+      }
+    }
+    function confirmarExcluir(id, titulo) {
+      if(confirm('Excluir "' + titulo + '"?\\nEsta ação não pode ser desfeita.')) {
+        fetch('/api/livros/'+id, {method:'DELETE'})
+          .then(r=>r.json()).then(()=>location.href='/livros')
+      }
+    }
+    </script>`
+    retornar pagina_base("Editar " + l.titulo, conteudo, "livros")
+})
+
+// ── Empréstimos ─────────────────────────────────────────────────
+servidor.obter("/emprestimos", (req) => {
+    seja emprestimos = t_emprestimos.buscar(nulo, nulo, "id DESC", 50)
+
+    seja linhas = emprestimos.mapear((e) => {
+        seja btn_devolver_str = '<button onclick="marcarDevolvido(' + texto(e.id) + ')" class="btn btn-success btn-sm">✅ Devolver</button>'
+        seja dev = db.eh_postgres ? e.devolvido == verdadeiro : e.devolvido == 1
+        seja livro = t_livros.buscar_um(db.eh_postgres ? "id=$1" : "id=?", [e.livro_id])
+        seja titulo_livro = livro != nulo ? livro.titulo : "#" + texto(e.livro_id)
+        retornar `<tr>
+          <td><a href="/livro/${texto(e.livro_id)}" style="color:var(--accent)">${titulo_livro}</a></td>
+          <td>👤 ${e.leitor}</td>
+          <td style="color:var(--text3)">${e.data_saida ?? '—'}</td>
+          <td style="color:var(--text3)">${e.data_prevista ?? '—'}</td>
+          <td>
+            <span style="color:${dev?'var(--green)':'var(--yellow)'};font-weight:700;font-size:12px">
+              ${dev?'✅ Devolvido':'🔖 Pendente'}
+            </span>
+          </td>
+          <td>
+            ${dev ? '' : btn_devolver_str}
+          </td>
+        </tr>`
+    }).unir("")
+
+    seja conteudo = `
+    <div class="topbar">
+      <h2>🔖 Empréstimos</h2>
+    </div>
+    <div class="content">
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th>Livro</th><th>Leitor</th><th>Saída</th><th>Prev. Devolução</th><th>Status</th><th>Ação</th>
+          </tr></thead>
+          <tbody>
+            r(--text3);padding:32px'>Nenhum empréstimo registrado.</td></tr>"}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <script>
+    function marcarDevolvido(id) {
+      fetch('/api/emprestimos/'+id+'/devolver', {method:'POST'})
+        .then(r=>r.json()).then(()=>location.reload())
+    }
+    </script>`
+    retornar pagina_base("Empréstimos", conteudo, "emprestimos")
+})
+
+// ── Relatório ───────────────────────────────────────────────────
+servidor.obter("/relatorio", (req) => {
+    seja total     = t_livros.contar()
+    seja disponiveis = t_livros.contar("disponivel>0")
+    seja sem_estoque = t_livros.contar("disponivel=0")
+    seja emp_abertos = t_emprestimos.contar(db.eh_postgres ? "devolvido=FALSE" : "devolvido=0")
+    seja emp_total   = t_emprestimos.contar()
+
+    seja por_genero = GENEROS.filtrar((g) => g != "Todos").mapear((g) => {
+        seja cnt = t_livros.contar("genero='" + g + "'")
+        se (cnt == 0) { retornar "" }
+        seja pct = inteiro(cnt / total * 100)
+        retornar `<div style="margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:13px">
+            <span>${g}</span>
+            <span style="color:var(--accent2);font-weight:700">${texto(cnt)} livros (${texto(pct)}%)</span>
+          </div>
+          <div style="background:var(--bg3);border-radius:999px;height:8px">
+            <div style="background:linear-gradient(90deg,var(--accent),var(--purple));
+                 width:${texto(pct)}%;height:100%;border-radius:999px;transition:.5s"></div>
+          </div>
+        </div>`
+    }).unir("")
+
+    seja conteudo = `
+    <div class="topbar">
+      <h2>📊 Relatório da Biblioteca</h2>
+    </div>
+    <div class="content">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:22px">
+          <div style="font-size:38px;font-weight:900;color:var(--accent2)">${texto(total)}</div>
+          <div style="color:var(--text3);font-size:12px;margin-top:4px;text-transform:uppercase;letter-spacing:1px">Total de Livros</div>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:22px">
+          <div style="font-size:38px;font-weight:900;color:var(--green)">${texto(disponiveis)}</div>
+          <div style="color:var(--text3);font-size:12px;margin-top:4px;text-transform:uppercase;letter-spacing:1px">Disponíveis</div>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:22px">
+          <div style="font-size:38px;font-weight:900;color:var(--red)">${texto(sem_estoque)}</div>
+          <div style="color:var(--text3);font-size:12px;margin-top:4px;text-transform:uppercase;letter-spacing:1px">Sem Estoque</div>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:22px">
+          <div style="font-size:38px;font-weight:900;color:var(--yellow)">${texto(emp_abertos)}</div>
+          <div style="color:var(--text3);font-size:12px;margin-top:4px;text-transform:uppercase;letter-spacing:1px">Empr. Abertos</div>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:22px">
+          <div style="font-size:38px;font-weight:900;color:var(--purple)">${texto(emp_total)}</div>
+          <div style="color:var(--text3);font-size:12px;margin-top:4px;text-transform:uppercase;letter-spacing:1px">Total Empréstimos</div>
+        </div>
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:22px">
+          <div style="font-size:38px;font-weight:900;color:${db.eh_postgres?'var(--green)':'var(--yellow)'}">
+            ${db.eh_postgres ? 'PG' : 'SQ'}
+          </div>
+          <div style="color:var(--text3);font-size:12px;margin-top:4px;text-transform:uppercase;letter-spacing:1px">
+            ${db.eh_postgres ? 'PostgreSQL' : 'SQLite'}
+          </div>
+        </div>
+      </div>
+
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:22px">
+        <h3 style="font-size:16px;margin-bottom:20px;font-weight:700">📊 Livros por Gênero</h3>
+        ${por_genero}
+      </div>
+    </div>`
+    retornar pagina_base("Relatório", conteudo, "relatorio")
+})
+
+// ════════════════════════════════════════════════════════════════
+// 4. API REST
+// ════════════════════════════════════════════════════════════════
+
+servidor.obter("/api/livros", (req) => {
+    seja livros = t_livros.buscar(nulo, nulo, "titulo")
+    retornar resposta_json({total: livros.tamanho, livros: livros})
+})
+
+servidor.obter("/api/livros/:id", (req) => {
+    seja l = t_livros.buscar_um(db.eh_postgres ? "id=$1" : "id=?", [req.parametros.id])
+    se (l == nulo) { retornar resposta_json({erro: "Não encontrado"}, 404) }
+    retornar resposta_json(l)
+})
+
+servidor.publicar("/api/livros", (req) => {
+    seja d = req.dados
+    se (d == nulo ou d.titulo == nulo) {
+        retornar resposta_json({erro: "Campo 'titulo' obrigatório"}, 400)
+    }
+    seja qtd = inteiro(d.quantidade ?? 1)
+    seja id = t_livros.inserir({
+        titulo:     d.titulo,
+        autor:      d.autor ?? "",
+        isbn:       d.isbn ?? "",
+        editora:    d.editora ?? "",
+        ano:        inteiro(d.ano ?? 0),
+        genero:     d.genero ?? "Outro",
+        paginas:    inteiro(d.paginas ?? 0),
+        quantidade: qtd,
+        disponivel: inteiro(d.disponivel ?? qtd),
+        sinopse:    d.sinopse ?? "",
+        capa_url:   d.capa_url ?? ""
+    })
+    retornar resposta_json({mensagem: "Livro cadastrado!", id: id}, 201)
+})
+
+servidor.atualizar("/api/livros/:id", (req) => {
+    seja id  = inteiro(req.parametros.id)
+    seja d   = req.dados
+    se (d == nulo) { retornar resposta_json({erro: "Dados inválidos"}, 400) }
+
+    // Prepara dados para atualização
+    seja dados_update = {}
+    se (d.titulo != nulo)     { dados_update.titulo     = d.titulo }
+    se (d.autor != nulo)      { dados_update.autor      = d.autor }
+    se (d.isbn != nulo)       { dados_update.isbn       = d.isbn }
+    se (d.editora != nulo)    { dados_update.editora    = d.editora }
+    se (d.ano != nulo)        { dados_update.ano        = inteiro(d.ano) }
+    se (d.genero != nulo)     { dados_update.genero     = d.genero }
+    se (d.paginas != nulo)    { dados_update.paginas    = inteiro(d.paginas) }
+    se (d.quantidade != nulo) { dados_update.quantidade = inteiro(d.quantidade) }
+    se (d.disponivel != nulo) { dados_update.disponivel = inteiro(d.disponivel) }
+    se (d.sinopse != nulo)    { dados_update.sinopse    = d.sinopse }
+
+    t_livros.atualizar(dados_update, db.eh_postgres ? "id=$1" : "id=?", [id])
+    retornar resposta_json({mensagem: "Livro atualizado!"})
+})
+
+servidor.deletar("/api/livros/:id", (req) => {
+    seja id = inteiro(req.parametros.id)
+    t_livros.excluir(db.eh_postgres ? "id=$1" : "id=?", [id])
+    retornar resposta_json({mensagem: "Livro excluído!"})
+})
+
+// API Empréstimos
+servidor.publicar("/api/emprestimos", (req) => {
+    seja d = req.dados
+    se (d == nulo ou d.livro_id == nulo) {
+        retornar resposta_json({erro: "livro_id obrigatório"}, 400)
+    }
+    seja livro = t_livros.buscar_um(db.eh_postgres ? "id=$1" : "id=?", [d.livro_id])
+    se (livro == nulo) { retornar resposta_json({erro: "Livro não encontrado"}, 404) }
+    se (inteiro(livro.disponivel) <= 0) {
+        retornar resposta_json({erro: "Livro indisponível para empréstimo"}, 400)
+    }
+
+    seja hoje = data_hoje()
+    seja id = t_emprestimos.inserir({
+        livro_id:      inteiro(d.livro_id),
+        leitor:        d.leitor ?? "Anônimo",
+        data_saida:    d.data_saida ?? hoje,
+        data_prevista: d.data_prevista ?? "",
+        devolvido:     falso
+    })
+
+    // Atualiza disponibilidade
+    t_livros.atualizar(
+        {disponivel: inteiro(livro.disponivel) - 1},
+        db.eh_postgres ? "id=$1" : "id=?", [d.livro_id])
+
+    retornar resposta_json({mensagem: "Empréstimo registrado!", id: id}, 201)
+})
+
+servidor.publicar("/api/emprestimos/:id/devolver", (req) => {
+    seja id = inteiro(req.parametros.id)
+    seja emp = t_emprestimos.buscar_um(db.eh_postgres ? "id=$1" : "id=?", [id])
+    se (emp == nulo) { retornar resposta_json({erro: "Não encontrado"}, 404) }
+
+    seja ja_devolvido = db.eh_postgres ? emp.devolvido == verdadeiro : emp.devolvido == 1
+    se (ja_devolvido) { retornar resposta_json({erro: "Já devolvido"}, 400) }
+
+    t_emprestimos.atualizar({devolvido: verdadeiro}, db.eh_postgres ? "id=$1" : "id=?", [id])
+
+    // Restaura disponibilidade
+    seja livro = t_livros.buscar_um(db.eh_postgres ? "id=$1" : "id=?", [emp.livro_id])
+    se (livro != nulo) {
+        t_livros.atualizar(
+            {disponivel: inteiro(livro.disponivel) + 1},
+            db.eh_postgres ? "id=$1" : "id=?", [emp.livro_id])
+    }
+    retornar resposta_json({mensagem: "Livro devolvido com sucesso!"})
+})
+
+// ════════════════════════════════════════════════════════════════
+// 5. INICIAR
+// ════════════════════════════════════════════════════════════════
+
+imprimir("")
+imprimir("═══════════════════════════════════════")
+imprimir("  📚 BIBLIOTECA ADVAK 5.0")
+imprimir("═══════════════════════════════════════")
+imprimir("  Banco:  " + (db.eh_postgres ? "🐘 PostgreSQL ✅" : "🗄️  SQLite (fallback)"))
+imprimir("  Livros: " + texto(t_livros.contar()) + " cadastrados")
+imprimir("  URL:    http://localhost:8080")
+imprimir("═══════════════════════════════════════")
+se (nao db.eh_postgres) {
+    imprimir("")
+    imprimir("  💡 Para usar PostgreSQL, configure o .env:")
+    imprimir("     Execute: CONFIGURAR_BANCO.bat")
+    imprimir("     Ou crie o arquivo .env com:")
+    imprimir("       ADVAK_DB_HOST=localhost")
+    imprimir("       ADVAK_DB_PORT=5432")
+    imprimir("       ADVAK_DB_USER=postgres")
+    imprimir("       ADVAK_DB_PASS=sua_senha")
+    imprimir("       ADVAK_DB_NAME=biblioteca")
+}
+imprimir("")
+
+servidor.iniciar(8080)

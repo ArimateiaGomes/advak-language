@@ -1,0 +1,34 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║              ADVAK 5.0 — GUIA DE INÍCIO RÁPIDO (WINDOWS)                   ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  INSTALAÇÃO DO COMANDO 'advak' (UMA VEZ SÓ)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Execute:   INSTALAR.bat   (clique duplo)
+  
+  Depois feche e reabra o terminal. Agora use apenas:
+
+    advak projetos\meu_app.dk       ✅ forma simples
+    advak                           ✅ modo REPL interativo
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  COMANDOS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  advak projetos\guia_gui.dk           Guia de GUI
+  advak projetos\estoque.dk            Sistema de estoque
+  advak projetos\avancado_demo.dk      Sistemas avançados
+  advak projetos\compilador_demo.dk    Compilação nativa
+  advak projetos\mobile_embarcado_demo.dk  Mobile + IoT
+  advak check projetos\meu_app.dk      Verificar sintaxe
+  advak compilar projetos\meu_app.dk   Compilar para .exe
+  advak --versao                       Ver versão
+  advak --help                         Ajuda completa
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  DEPENDÊNCIAS OPCIONAIS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  pip install ttkbootstrap psycopg2-binary pyserial paho-mqtt pyinstaller

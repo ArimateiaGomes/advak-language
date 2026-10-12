@@ -1,0 +1,291 @@
+// ═══════════════════════════════════════════════════════════
+//  ADVAK 5.0 — Módulo C# GUI: DataGrid, MVVM, Animações, Drag&Drop
+// ═══════════════════════════════════════════════════════════
+
+seja jan = gui.janela("Advak — C# GUI Demo", 1100, 720)
+
+// ─── SETUP ABAS ─────────────────────────────────────────────
+seja abas = gui.abas(jan)
+seja aba_datagrid  = abas.adicionar("📊 DataGrid")
+seja aba_mvvm      = abas.adicionar("🔗 MVVM / Binding")
+seja aba_animacoes = abas.adicionar("✨ Animações CSS")
+seja aba_kanban    = abas.adicionar("📋 Drag & Drop Kanban")
+
+// ═══════════════════════════════════════════════════════════
+//  1. DATAGRID VINCULADO
+// ═══════════════════════════════════════════════════════════
+
+seja f_dg = gui.frame(aba_datagrid)
+f_dg.pos(preencher="both", expandir=verdadeiro)
+
+gui.label(f_dg, "DataGrid com binding, ordenação, filtro e edição inline",
+          negrito=verdadeiro, tamanho=12)
+
+// Dados iniciais
+seja funcionarios = [
+    {nome: "Ana Silva",    cargo: "Engenheira",   salario: "12000", ativo: "sim"},
+    {nome: "Bruno Costa",  cargo: "Designer",      salario: "8500",  ativo: "sim"},
+    {nome: "Carla Mendes", cargo: "Gerente",       salario: "15000", ativo: "sim"},
+    {nome: "Diego Rocha",  cargo: "Analista",      salario: "9000",  ativo: "não"},
+    {nome: "Elena Faria",  cargo: "Desenvolvedora",salario: "11000", ativo: "sim"},
+    {nome: "Felipe Lima",  cargo: "DevOps",        salario: "13000", ativo: "sim"},
+    {nome: "Gabi Torres",  cargo: "QA Engineer",   salario: "9500",  ativo: "sim"},
+    {nome: "Hugo Neves",   cargo: "Scrum Master",  salario: "14000", ativo: "não"},
+]
+
+// Colunas com larguras personalizadas
+seja colunas_dg = [
+    {nome: "nome",    largura: 180},
+    {nome: "cargo",   largura: 160},
+    {nome: "salario", largura: 100},
+    {nome: "ativo",   largura: 80},
+]
+
+seja log_lbl = gui.label(f_dg, "Edite uma célula com duplo clique...",
+                          cor="#64748b", tamanho=9)
+
+função ao_mudar_celula(linha, coluna, valor) {
+    log_lbl.configure(text=`Editado: ${linha.nome} → ${coluna} = "${valor}"`)
+}
+
+função ao_selecionar_linha(linha) {
+    log_lbl.configure(text=`Selecionado: ${linha.nome} — ${linha.cargo} (R$ ${linha.salario})`)
+}
+
+seja dg = gui.datagrid(f_dg,
+    colunas=colunas_dg,
+    dados_grid=funcionarios,
+    editavel=verdadeiro,
+    com_filtro=verdadeiro,
+    ao_mudar=ao_mudar_celula,
+    ao_selecionar=ao_selecionar_linha,
+    altura=12
+)
+
+// Botões de ação abaixo do grid
+seja f_btns_dg = gui.frame_horizontal(f_dg)
+f_btns_dg.pos(espaco_y=8)
+
+gui.botao(f_btns_dg, "＋ Novo Funcionário",
+    ao_clicar=função() {
+        dg.adicionar({nome: "Novo", cargo: "Cargo", salario: "0", ativo: "sim"})
+    }, cor="azul")
+
+gui.botao(f_btns_dg, "✕ Remover Selecionado",
+    ao_clicar=função() { dg.remover() }, cor="vermelho")
+
+gui.botao(f_btns_dg, "↺ Recarregar",
+    ao_clicar=função() { dg.atualizar() }, cor="cinza")
+
+// ═══════════════════════════════════════════════════════════
+//  2. MVVM / BINDING REATIVO
+// ═══════════════════════════════════════════════════════════
+
+seja f_vm = gui.frame(aba_mvvm)
+f_vm.pos(preencher="both", expandir=verdadeiro, espaco_x=20, espaco_y=20)
+
+gui.label(f_vm, "MVVM — Model-View-ViewModel com binding bidirecional",
+          negrito=verdadeiro, tamanho=12)
+gui.separador(f_vm)
+
+// Criar ViewModel
+seja vm = gui.criar_viewmodel({
+    nome:       "Maria",
+    sobrenome:  "Santos",
+    idade:      28,
+    email:      "maria@exemplo.com",
+    ativo:      verdadeiro,
+    nivel:      50,
+    nome_completo: ""
+})
+
+// Propriedade computada — nome_completo = nome + " " + sobrenome
+vm.calcular("nome_completo",
+    função(n, s) { retornar n + " " + s },
+    "nome", "sobrenome"
+)
+
+// ── Layout em duas colunas ──
+seja f_esq = gui.frame_horizontal(f_vm)
+f_esq.pos(preencher="both", expandir=verdadeiro, espaco_y=10)
+
+seja col1 = gui.frame(f_esq)
+col1.pos(preencher="both", expandir=verdadeiro, espaco_x=20)
+
+seja col2 = gui.frame(f_esq)
+col2.pos(preencher="both", expandir=verdadeiro)
+
+// Coluna 1 — Formulário (View)
+gui.label(col1, "📝 Formulário (View)", negrito=verdadeiro)
+gui.separador(col1)
+
+gui.label(col1, "Nome:")
+seja campo_nome = gui.campo(col1, placeholder="Nome")
+vm.vincular(campo_nome, "nome")
+
+gui.label(col1, "Sobrenome:")
+seja campo_sob = gui.campo(col1, placeholder="Sobrenome")
+vm.vincular(campo_sob, "sobrenome")
+
+gui.label(col1, "Idade:")
+seja campo_idade = gui.campo(col1, placeholder="Idade")
+vm.vincular(campo_idade, "idade")
+
+gui.label(col1, "Email:")
+seja campo_email = gui.campo(col1, placeholder="Email")
+vm.vincular(campo_email, "email")
+
+gui.label(col1, "Ativo:")
+seja chk_ativo = gui.checkbox(col1, "Usuário ativo")
+vm.vincular_checkbox(chk_ativo, "ativo")
+
+gui.label(col1, "Nível de acesso:")
+seja sldr = gui.slider(col1, minimo=0, maximo=100, valor=50)
+vm.ao_mudar("nivel", função(v) {
+    vm.definir("nivel", v)
+})
+
+// Coluna 2 — Preview em tempo real (ViewModel → View)
+gui.label(col2, "👁️ Preview em tempo real", negrito=verdadeiro)
+gui.separador(col2)
+
+gui.label(col2, "Nome completo:")
+seja lbl_nome = gui.label(col2, "", tamanho=14, negrito=verdadeiro)
+vm.vincular_label(lbl_nome, "nome_completo")
+
+gui.label(col2, "Email:")
+seja lbl_email = gui.label(col2, "", cor="#3b82f6")
+vm.vincular_label(lbl_email, "email")
+
+gui.label(col2, "Idade:")
+seja lbl_idade = gui.label(col2, "")
+vm.vincular_label(lbl_idade, "idade",
+    função(v) { retornar v + " anos" })
+
+gui.label(col2, "Status:")
+seja lbl_status = gui.label(col2, "")
+vm.ao_mudar("ativo", função(v) {
+    se (v) {
+        lbl_status.configure(text="✅ Ativo", foreground="#22c55e")
+    } senão {
+        lbl_status.configure(text="❌ Inativo", foreground="#ef4444")
+    }
+})
+
+gui.label(col2, "Nível:")
+seja lbl_nivel = gui.label(col2, "")
+vm.vincular_label(lbl_nivel, "nivel",
+    função(v) { retornar "Nível: " + v + "/100" })
+
+gui.separador(col2)
+gui.botao(col2, "Salvar modelo",
+    ao_clicar=função() {
+        seja d = vm.dados
+        gui.alerta(`Salvo: ${d.nome_completo}, ${d.email}`)
+    }, cor="verde")
+
+// ═══════════════════════════════════════════════════════════
+//  3. ANIMAÇÕES CSS
+// ═══════════════════════════════════════════════════════════
+
+seja f_anim = gui.frame(aba_animacoes)
+f_anim.pos(preencher="both", expandir=verdadeiro, espaco_x=20, espaco_y=20)
+
+gui.label(f_anim, "Animações estilo CSS Transitions",
+          negrito=verdadeiro, tamanho=12)
+gui.separador(f_anim)
+
+seja f_demo = gui.frame(f_anim)
+f_demo.pos(preencher="both", expandir=verdadeiro)
+
+// Caixa animável
+seja caixa_anim = gui.frame(f_demo, cor="#2563eb", borda=verdadeiro)
+caixa_anim.pos(x=50, y=50, largura=120, altura=60)
+gui.label(caixa_anim, "Animar")
+
+// Botões de animação
+seja f_btns_anim = gui.frame_horizontal(f_anim)
+f_btns_anim.pos(espaco_y=12)
+
+gui.botao(f_btns_anim, "→ Mover X",
+    ao_clicar=função() {
+        gui.animar(caixa_anim, "x", 400, duracao=600, easing="ease_out")
+    }, cor="azul")
+
+gui.botao(f_btns_anim, "↕ Mover Y",
+    ao_clicar=função() {
+        gui.animar(caixa_anim, "y", 200, duracao=400, easing="bounce")
+    }, cor="roxo")
+
+gui.botao(f_btns_anim, "🎨 Cor",
+    ao_clicar=função() {
+        gui.animar(caixa_anim, "cor_fundo", "#16a34a", duracao=800, easing="ease_in_out")
+    }, cor="verde")
+
+gui.botao(f_btns_anim, "↩ Reset",
+    ao_clicar=função() {
+        gui.animar_sequencia([
+            {widget: caixa_anim, prop: "x",        valor: 50,       duracao: 400, easing: "ease_in_out"},
+            {widget: caixa_anim, prop: "y",        valor: 50,       duracao: 400, easing: "ease_in_out"},
+            {widget: caixa_anim, prop: "cor_fundo", valor: "#2563eb", duracao: 500, easing: "ease_out"}
+        ])
+    }, cor="cinza")
+
+gui.botao(f_btns_anim, "∞ Loop ping-pong",
+    ao_clicar=função() {
+        gui.animar_loop(caixa_anim, "x", 50, 500, duracao=800, easing="ease_in_out")
+    }, cor="amarelo")
+
+gui.botao(f_btns_anim, "⏹ Parar loop",
+    ao_clicar=função() {
+        se (caixa_anim._anim_loop_stop) { caixa_anim._anim_loop_stop() }
+    }, cor="vermelho")
+
+// ═══════════════════════════════════════════════════════════
+//  4. DRAG AND DROP — KANBAN
+// ═══════════════════════════════════════════════════════════
+
+seja f_kb = gui.frame(aba_kanban)
+f_kb.pos(preencher="both", expandir=verdadeiro, espaco_x=10, espaco_y=10)
+
+gui.label(f_kb, "Kanban com Drag & Drop — arraste os cards entre colunas",
+          negrito=verdadeiro, tamanho=12)
+gui.separador(f_kb)
+
+seja log_kanban = gui.label(f_kb, "Arraste um card para outra coluna...",
+                             cor="#64748b", tamanho=9)
+
+seja colunas_kb = [
+    {titulo: "📋 A Fazer",   itens: ["Design do banco", "API de auth", "Testes E2E", "CI/CD pipeline"], cor: "#1e293b"},
+    {titulo: "⚡ Em Progresso", itens: ["Parser Advak", "GUI moderna"],                                  cor: "#1e3a5f"},
+    {titulo: "🔍 Revisão",   itens: ["Lexer v2"],                                                        cor: "#2d1b69"},
+    {titulo: "✅ Concluído", itens: ["Documentação", "Deploy staging"],                                   cor: "#14532d"},
+]
+
+função ao_mover_card(item, origem, destino) {
+    seja nomes = ["A Fazer", "Em Progresso", "Revisão", "Concluído"]
+    log_kanban.configure(text=`"${item}" movido de ${nomes[origem]} → ${nomes[destino]}`)
+}
+
+seja kb = gui.kanban(f_kb,
+    cols=colunas_kb,
+    ao_mover=ao_mover_card
+)
+
+// Botão para adicionar card
+seja f_add_kb = gui.frame_horizontal(f_kb)
+f_add_kb.pos(espaco_y=8)
+
+seja campo_novo_card = gui.campo(f_add_kb, placeholder="Nova tarefa...", largura=30)
+
+gui.botao(f_add_kb, "＋ Adicionar em A Fazer",
+    ao_clicar=função() {
+        seja txt = campo_novo_card.get()
+        se (txt) {
+            kb.adicionar(0, txt)
+            campo_novo_card.delete(0, "end")
+        }
+    }, cor="azul")
+
+// ───────────────────────────────────────────────────────────
+gui.iniciar()

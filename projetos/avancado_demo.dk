@@ -1,0 +1,310 @@
+// ═══════════════════════════════════════════════════════════════
+//  ADVAK 5.0 — DEMO DE RECURSOS ULTRA AVANÇADOS
+//  Execute: advak projetos\avancado_demo.dk
+// ═══════════════════════════════════════════════════════════════
+
+imprimir("╔══════════════════════════════════════════════════════╗")
+imprimir("║   ADVAK 5.0 — SISTEMAS ULTRA AVANÇADOS              ║")
+imprimir("╚══════════════════════════════════════════════════════╝")
+
+// ─────────────────────────────────────────────────────────────
+//  1. SISTEMA DE TIPOS EM RUNTIME
+// ─────────────────────────────────────────────────────────────
+imprimir("")
+imprimir("═══ 1. TIPOS EM RUNTIME (TypeScript-like) ═══")
+
+// Verificação básica
+imprimir(tipos.e_numero(42))        // verdadeiro
+imprimir(tipos.e_texto("ola"))      // verdadeiro
+imprimir(tipos.e_lista([1,2,3]))    // verdadeiro
+imprimir(tipos.inferir(3.14))       // Float
+imprimir(tipos.inferir("Advak"))    // Texto
+
+// Schema de validação
+seja schema_usuario = tipos.schema({
+    nome:  "Texto",
+    idade: "Numero",
+    email: "Texto"
+})
+
+tentar {
+    schema_usuario({nome: "Ana", idade: 28, email: "ana@ok.com"})
+    imprimir("✅ Schema válido!")
+} capturar (e) {
+    imprimir("❌ " + e)
+}
+
+tentar {
+    schema_usuario({nome: "Bia", idade: "trinta"})  // erro: idade não é Numero
+    imprimir("Schema passou (inesperado)")
+} capturar (e) {
+    imprimir("✅ Schema detectou erro de tipo corretamente!")
+}
+
+// Converter tipos
+seja n = tipos.converter("42", "Inteiro")
+imprimir("Convertido: " + texto(n) + " (tipo: " + tipos.inferir(n) + ")")
+
+// ─────────────────────────────────────────────────────────────
+//  2. CANAIS ASSÍNCRONOS
+// ─────────────────────────────────────────────────────────────
+imprimir("")
+imprimir("═══ 2. CANAIS ASSÍNCRONOS (Go-like) ═══")
+
+seja ch = canal.criar(10, "mensagens")
+ch.enviar("Olá do canal!")
+ch.enviar(42)
+ch.enviar({tipo: "evento", dados: "algo"})
+
+imprimir(`Tamanho do canal: ${ch.tamanho()}`)
+imprimir(`Mensagem 1: ${ch.receber()}`)
+imprimir(`Mensagem 2: ${ch.receber()}`)
+
+seja todos = ch.receber_todos()
+imprimir(`Restantes: ${todos}`)
+
+// ─────────────────────────────────────────────────────────────
+//  3. SISTEMA DE EVENTOS / SIGNALS
+// ─────────────────────────────────────────────────────────────
+imprimir("")
+imprimir("═══ 3. EVENTOS REATIVOS (Event Bus) ═══")
+
+// Registra listeners
+seja log_eventos = []
+eventos.on("usuario:criado", função(dados) {
+    log_eventos.adicionar("CRIADO: " + dados.nome)
+})
+
+eventos.on("usuario:*", função(dados) {
+    log_eventos.adicionar("WILDCARD: " + texto(dados))
+})
+
+eventos.once("app:pronto", função(dados) {
+    log_eventos.adicionar("APP PRONTO!")
+})
+
+// Dispara eventos
+eventos.emit("usuario:criado", {nome: "Ana", email: "ana@ok.com"})
+eventos.emit("usuario:deletado", {nome: "Bia"})
+eventos.emit("app:pronto", verdadeiro)
+eventos.emit("app:pronto", verdadeiro)  // once — não dispara segunda vez
+
+imprimir("Log de eventos:")
+para (e em log_eventos) {
+    imprimir("  " + e)
+}
+imprimir(`Total de tipos registrados: ${texto(eventos.listar())}`)
+
+// ─────────────────────────────────────────────────────────────
+//  4. STREAMS LAZY
+// ─────────────────────────────────────────────────────────────
+imprimir("")
+imprimir("═══ 4. STREAMS LAZY (Pipeline de Dados) ═══")
+
+// Pipeline básico
+seja resultado = stream.de([1,2,3,4,5,6,7,8,9,10])
+    .filtrar((x) => x % 2 == 0)
+    .map((x) => x * x)
+    .take(4)
+    .coletar()
+imprimir(`Quadrados dos 4 primeiros pares: ${resultado}`)
+
+// Agrupamento
+seja pessoas = [
+    {nome: "Ana",   dept: "TI"},
+    {nome: "Bia",   dept: "RH"},
+    {nome: "Carlos",dept: "TI"},
+    {nome: "Diana", dept: "RH"},
+    {nome: "Edu",   dept: "TI"}
+]
+
+seja por_dept = stream.de(pessoas)
+    .agrupar((p) => p.dept)
+imprimir(`Por departamento: ${texto(por_dept)}`)
+
+// Reduzir
+seja soma = stream.de_range(1, 101)
+    .reduzir((acc, x) => acc + x, 0)
+imprimir(`Soma de 1 a 100: ${soma}`)
+
+// Stream infinito com take
+seja fibonacci_stream = stream.infinito((n) => n)
+    .take(10)
+    .coletar()
+imprimir(`Range infinito (take 10): ${fibonacci_stream}`)
+
+// Estatísticas
+seja dados = stream.de([15, 8, 42, 3, 27, 6, 99, 14])
+seja maximo = dados.max()
+imprimir(`Máximo: ${maximo}`)
+
+// ─────────────────────────────────────────────────────────────
+//  5. DECORADORES / MIDDLEWARES
+// ─────────────────────────────────────────────────────────────
+imprimir("")
+imprimir("═══ 5. DECORADORES (Higher-Order Functions) ═══")
+
+// Memoização
+função fib_lento(n) {
+    se (n <= 1) { retornar n }
+    retornar fib_lento(n-1) + fib_lento(n-2)
+}
+
+seja fib_memo = deco.memoizar(fib_lento)
+imprimir(`fib(20) = ${fib_memo(20)}`)
+imprimir(`fib(20) cached = ${fib_memo(20)}`)  // da cache
+
+// Com log
+função somar_lento(a, b) {
+    retornar a + b
+}
+seja somar_logado = deco.com_log(somar_lento, "somar")
+somar_logado(10, 32)
+
+// Medição de tempo
+seja calcular = deco.medir_tempo(fib_lento, "fibonacci")
+calcular(25)
+imprimir(`Tempo médio: ${calcular._media()} ms`)
+
+// Composição de funções
+seja dobrar  = (x) => x * 2
+seja somar1  = (x) => x + 1
+seja quadrado = (x) => x * x
+
+seja pipeline_fn = deco.pipeline(dobrar, somar1, quadrado)
+imprimir(`pipeline(3): 3→dobrar=6→+1=7→²=49: ${pipeline_fn(3)}`)
+
+seja composicao = deco.compor(quadrado, somar1, dobrar)
+imprimir(`compor(3) (mesma ordem, direita-esquerda): ${composicao(3)}`)
+
+// ─────────────────────────────────────────────────────────────
+//  6. MÁQUINA DE ESTADOS FINITOS
+// ─────────────────────────────────────────────────────────────
+imprimir("")
+imprimir("═══ 6. MÁQUINA DE ESTADOS FINITOS (FSM) ═══")
+
+// Modelar ciclo de vida de um pedido
+seja maquina = fsm.criar("rascunho")
+maquina.transicao("rascunho",  "enviar",   "pendente")
+maquina.transicao("pendente",  "aprovar",  "ativo")
+maquina.transicao("pendente",  "rejeitar", "rascunho")
+maquina.transicao("ativo",     "concluir", "concluido")
+maquina.transicao("ativo",     "cancelar", "cancelado")
+maquina.transicao("concluido", "arquivar", "arquivado")
+
+// Callbacks de estado
+maquina.ao_entrar("ativo", função(de, ev, para) {
+    imprimir(`  → Pedido ativado! (${de} --${ev}--> ${para})`)
+})
+
+maquina.ao_transicionar(função(de, ev, para) {
+    imprimir(`  FSM: ${de} --[${ev}]--> ${para}`)
+})
+
+// Navegar pelos estados
+imprimir(`Estado inicial: ${maquina.obter_estado()}`)
+imprimir(`Pode enviar? ${maquina.pode("enviar")}`)
+
+maquina.disparar("enviar")
+maquina.disparar("aprovar")
+maquina.disparar("concluir")
+
+imprimir(`Estado final: ${maquina.obter_estado()}`)
+imprimir(`Histórico: ${maquina.obter_historico().tamanho} transições`)
+
+// Tentar transição inválida
+tentar {
+    maquina.disparar("enviar")  // inválido em 'concluido'
+} capturar (e) {
+    imprimir(`✅ FSM bloqueou corretamente: ${e}`)
+}
+
+// ─────────────────────────────────────────────────────────────
+//  7. OBSERVÁVEIS (Reactive Programming)
+// ─────────────────────────────────────────────────────────────
+imprimir("")
+imprimir("═══ 7. OBSERVÁVEIS (RxJS-like) ═══")
+
+// Observable básico
+seja valores_obs = []
+obs.de([10, 20, 30, 40, 50])
+    .filtrar((x) => x > 15)
+    .map((x) => x * 2)
+    .subscribir(
+        proximo=função(v) { valores_obs.adicionar(v) }
+    )
+imprimir(`Observável coletou: ${valores_obs}`)
+
+// Coletar diretamente
+seja coletado = obs.de([1,2,3,4,5,6])
+    .map((x) => x * x)
+    .filtrar((x) => x > 9)
+    .coletar()
+imprimir(`Quadrados > 9: ${coletado}`)
+
+// ─────────────────────────────────────────────────────────────
+//  8. CONTRATOS / DESIGN BY CONTRACT
+// ─────────────────────────────────────────────────────────────
+imprimir("")
+imprimir("═══ 8. CONTRATOS (Design by Contract) ═══")
+
+// Função com pré e pós-condições
+função dividir(a, b) {
+    retornar a / b
+}
+
+seja dividir_seguro = contrato.contratar(
+    dividir,
+    pre=função(a, b) { retornar b != 0 },
+    pos=função(r, a, b) { retornar r * b == a },
+    nome="dividir"
+)
+
+imprimir(`10 / 2 = ${dividir_seguro(10, 2)}`)
+
+tentar {
+    dividir_seguro(10, 0)
+} capturar (e) {
+    imprimir(`✅ Contrato bloqueou divisão por zero: ${e}`)
+}
+
+// Garantias inline
+tentar {
+    seja x = 42
+    contrato.no_intervalo(x, 0, 100, "x")
+    imprimir(`✅ 42 está no intervalo [0, 100]`)
+} capturar (e) {
+    imprimir("❌ " + e)
+}
+
+tentar {
+    contrato.positivo(-5, "valor")
+} capturar (e) {
+    imprimir(`✅ Contrato detectou negativo: ${e}`)
+}
+
+// Afirmações
+tentar {
+    seja lista_valida = [1, 2, 3]
+    contrato.afirmar(lista_valida.tamanho > 0, "Lista não pode estar vazia")
+    imprimir("✅ Asserção passou!")
+} capturar (e) {
+    imprimir("❌ " + e)
+}
+
+// ─────────────────────────────────────────────────────────────
+//  RESUMO
+// ─────────────────────────────────────────────────────────────
+imprimir("")
+imprimir("═════════════════════════════════════════════════════╗")
+imprimir("║   ✅ TODOS OS SISTEMAS AVANÇADOS FUNCIONANDO!        ║")
+imprimir("╠══════════════════════════════════════════════════════╣")
+imprimir("║  1. tipos    — Verificação de tipos em runtime       ║")
+imprimir("║  2. canal    — Canais assíncronos (Go-like)          ║")
+imprimir("║  3. eventos  — Event Bus reativo com wildcards       ║")
+imprimir("║  4. stream   — Lazy streams com 15+ operadores       ║")
+imprimir("║  5. deco     — Decoradores: memo, log, retry, timer  ║")
+imprimir("║  6. fsm      — Máquina de estados finitos            ║")
+imprimir("║  7. obs      — Observáveis (RxJS-like)               ║")
+imprimir("║  8. contrato — Design by Contract (DbC)              ║")
+imprimir("╚══════════════════════════════════════════════════════╝")

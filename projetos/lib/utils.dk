@@ -1,0 +1,89 @@
+// ════════════════════════════════════════════════════════
+//  Advak 5.0 — Biblioteca Utilitária
+//  Uso: importar { somar, media, validar_cpf } de "lib/utils.dk"
+// ════════════════════════════════════════════════════════
+
+// ── Matemática ────────────────────────────────────────────
+exportar função somar(lista) {
+    seja total = 0
+    para (x em lista) { total += x }
+    retornar total
+}
+
+exportar função media(lista) {
+    se (lista.tamanho == 0) { retornar 0 }
+    retornar somar(lista) / lista.tamanho
+}
+
+exportar função maximo(lista) {
+    seja m = lista[0]
+    para (x em lista) { se (x > m) { m = x } }
+    retornar m
+}
+
+exportar função minimo(lista) {
+    seja m = lista[0]
+    para (x em lista) { se (x < m) { m = x } }
+    retornar m
+}
+
+exportar função arredondar(n, casas) {
+    seja fator = 10 ** casas
+    retornar piso(n * fator + 0.5) / fator
+}
+
+// ── Validação ─────────────────────────────────────────────
+exportar função validar_email(email) {
+    retornar email.contem("@") e email.contem(".") e email.tamanho > 5
+}
+
+exportar função validar_cpf(cpf) {
+    seja s = cpf.substituir(".", "").substituir("-", "")
+    retornar s.tamanho == 11 e s.e_numero()
+}
+
+exportar função e_vazio(valor) {
+    se (valor == nulo) { retornar verdadeiro }
+    se (tipo(valor) == "texto") { retornar valor.aparar() == "" }
+    se (tipo(valor) == "lista") { retornar valor.tamanho == 0 }
+    retornar falso
+}
+
+// ── Texto ─────────────────────────────────────────────────
+exportar função capitalizar_palavras(texto_) {
+    seja palavras = texto_.dividir(" ")
+    seja resultado = []
+    para (p em palavras) {
+        se (p.tamanho > 0) {
+            resultado.adicionar(p[0].maiusculo() + p.fatia(1).minusculo())
+        }
+    }
+    retornar resultado.unir(" ")
+}
+
+exportar função truncar(texto_, max_chars, sufixo) {
+    se (texto_.tamanho <= max_chars) { retornar texto_ }
+    retornar texto_.fatia(0, max_chars) + sufixo
+}
+
+// ── Lista ─────────────────────────────────────────────────
+exportar função agrupar(lista, tamanho_grupo) {
+    seja grupos = []
+    seja i = 0
+    enquanto (i < lista.tamanho) {
+        grupos.adicionar(lista.fatia(i, i + tamanho_grupo))
+        i += tamanho_grupo
+    }
+    retornar grupos
+}
+
+exportar função zipar(lista1, lista2) {
+    seja resultado = []
+    seja n = minimo([lista1.tamanho, lista2.tamanho])
+    seja i = 0
+    enquanto (i < n) {
+        resultado.adicionar([lista1[i], lista2[i]])
+        i++
+    }
+    retornar resultado
+}

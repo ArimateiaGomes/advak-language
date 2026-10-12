@@ -1,0 +1,191 @@
+// ═══════════════════════════════════════════════════════════════════════
+//  ADVAK 5.0 — Calculadora
+//  Execute: advak projetos\calculadora.dk
+// ═══════════════════════════════════════════════════════════════════════
+
+gui.tema("escuro")
+seja jan = gui.janela("🧮 Calculadora — Advak 5.0", 360, 500)
+
+// ── Estado ────────────────────────────────────────────────────────────
+seja _expr      = [""]
+seja _resultado = [falso]
+seja _historico = []
+
+// ── Display ───────────────────────────────────────────────────────────
+seja f_display = gui.frame(jan, cor="#0D1117")
+
+seja lbl_hist = gui.label(f_display, "", tamanho=9, cor="#475569")
+lbl_hist.pack(ancora="leste", espaco_x=16, espaco_y=0)
+
+seja lbl_expr = gui.label(f_display, "0",
+    tamanho=28, cor="#F1F5F9", negrito=verdadeiro)
+lbl_expr.pack(ancora="leste", espaco_x=16, espaco_y=4)
+
+gui.separador(jan)
+
+// ── Funções ───────────────────────────────────────────────────────────
+função atualizar_display() {
+    seja txt = _expr[0]
+    se (txt == "") { txt = "0" }
+    se (txt.tamanho > 16) { txt = "..." + txt.ultimos(14) }
+    lbl_expr.configure(text=txt)
+}
+
+função digitar(char) {
+    se (_resultado[0]) {
+        se (char == "+" ou char == "-" ou char == "*" ou char == "/") {
+            _resultado[0] = falso
+        } senão {
+            _expr[0] = ""
+            _resultado[0] = falso
+        }
+    }
+    _expr[0] = _expr[0] + char
+    atualizar_display()
+}
+
+função apagar() {
+    se (_expr[0].tamanho > 0) {
+        _expr[0] = _expr[0].fatia(0, _expr[0].tamanho - 1)
+    }
+    atualizar_display()
+}
+
+função limpar() {
+    _expr[0] = ""
+    _resultado[0] = falso
+    lbl_hist.configure(text="")
+    atualizar_display()
+}
+
+função calcular() {
+    seja expr = _expr[0]
+    se (expr == "") { retornar }
+    tentar {
+        seja resultado = avaliar(expr)
+        seja res_txt = texto(resultado)
+        se (res_txt.termina(".0")) {
+            res_txt = res_txt.fatia(0, res_txt.tamanho - 2)
+        }
+        _historico.adicionar(expr + " = " + res_txt)
+        lbl_hist.configure(text=expr + " =")
+        _expr[0] = res_txt
+        _resultado[0] = verdadeiro
+        atualizar_display()
+    } pegar (e) {
+        gui.toast("Expressão inválida!", "erro", 2000)
+    }
+}
+
+função avaliar(expr) {
+    // Avaliador de expressão com + - * /
+    // Primeiro: + e - (menor precedência)
+    seja e = expr.aparar()
+    seja nivel = 0
+    seja i = e.tamanho - 1
+    enquanto (i >= 0) {
+        seja c = e[i]
+        se (c == ")") { nivel++ }
+        se (c == "(") { nivel-- }
+        se (nivel == 0 e i > 0) {
+            se (c == "+") {
+                retornar avaliar(e.fatia(0, i)) + avaliar(e.fatia(i+1))
+            }
+            se (c == "-") {
+                retornar avaliar(e.fatia(0, i)) - avaliar(e.fatia(i+1))
+            }
+        }
+        i--
+    }
+    // Depois: * e /
+    nivel = 0
+    i = e.tamanho - 1
+    enquanto (i >= 0) {
+        seja c = e[i]
+        se (c == ")") { nivel++ }
+        se (c == "(") { nivel-- }
+        se (nivel == 0) {
+            se (c == "*") {
+                retornar avaliar(e.fatia(0, i)) * avaliar(e.fatia(i+1))
+            }
+            se (c == "/") {
+                seja d = avaliar(e.fatia(i+1))
+                se (d == 0) { lançar("div0") }
+                retornar avaliar(e.fatia(0, i)) / d
+            }
+        }
+        i--
+    }
+    // Parênteses
+    se (e.começa("(") e e.termina(")")) {
+        retornar avaliar(e.fatia(1, e.tamanho - 1))
+    }
+    // Número
+    seja n = numero(e)
+    retornar n
+}
+
+// ── Botões ────────────────────────────────────────────────────────────
+seja f_btns = gui.frame(jan, cor="#0F172A")
+
+// Linha 1
+seja r1 = gui.frame_horizontal(f_btns)
+gui.botao(r1, "AC",  ao_clicar=() => limpar(),       estilo="perigo",    largura=8).pack(lado="esquerda", espaco_x=2, espaco_y=2)
+gui.botao(r1, "⌫",   ao_clicar=() => apagar(),       estilo="aviso",     largura=8).pack(lado="esquerda", espaco_x=2, espaco_y=2)
+gui.botao(r1, "(",   ao_clicar=() => digitar("("),   estilo="secundario",largura=8).pack(lado="esquerda", espaco_x=2, espaco_y=2)
+gui.botao(r1, ")",   ao_clicar=() => digitar(")"),   estilo="secundario",largura=8).pack(lado="esquerda", espaco_x=2, espaco_y=2)
+
+// Linha 2
+seja r2 = gui.frame_horizontal(f_btns)
+gui.botao(r2, "7",   ao_clicar=() => digitar("7"),   estilo="secundario",largura=8).pack(lado="esquerda", espaco_x=2, espaco_y=2)
+gui.botao(r2, "8",   ao_clicar=() => digitar("8"),   estilo="secundario",largura=8).pack(lado="esquerda", espaco_x=2, espaco_y=2)
+gui.botao(r2, "9",   ao_clicar=() => digitar("9"),   estilo="secundario",largura=8).pack(lado="esquerda", espaco_x=2, espaco_y=2)
+gui.botao(r2, "÷",   ao_clicar=() => digitar("/"),   estilo="aviso",     largura=8).pack(lado="esquerda", espaco_x=2, espaco_y=2)
+
+// Linha 3
+seja r3 = gui.frame_horizontal(f_btns)
+gui.botao(r3, "4",   ao_clicar=() => digitar("4"),   estilo="secundario",largura=8).pack(lado="esquerda", espaco_x=2, espaco_y=2)
+gui.botao(r3, "5",   ao_clicar=() => digitar("5"),   estilo="secundario",largura=8).pack(lado="esquerda", espaco_x=2, espaco_y=2)
+gui.botao(r3, "6",   ao_clicar=() => digitar("6"),   estilo="secundario",largura=8).pack(lado="esquerda", espaco_x=2, espaco_y=2)
+gui.botao(r3, "×",   ao_clicar=() => digitar("*"),   estilo="aviso",     largura=8).pack(lado="esquerda", espaco_x=2, espaco_y=2)
+
+// Linha 4
+seja r4 = gui.frame_horizontal(f_btns)
+gui.botao(r4, "1",   ao_clicar=() => digitar("1"),   estilo="secundario",largura=8).pack(lado="esquerda", espaco_x=2, espaco_y=2)
+gui.botao(r4, "2",   ao_clicar=() => digitar("2"),   estilo="secundario",largura=8).pack(lado="esquerda", espaco_x=2, espaco_y=2)
+gui.botao(r4, "3",   ao_clicar=() => digitar("3"),   estilo="secundario",largura=8).pack(lado="esquerda", espaco_x=2, espaco_y=2)
+gui.botao(r4, "−",   ao_clicar=() => digitar("-"),   estilo="aviso",     largura=8).pack(lado="esquerda", espaco_x=2, espaco_y=2)
+
+// Linha 5
+seja r5 = gui.frame_horizontal(f_btns)
+gui.botao(r5, "+/-", ao_clicar=() => {
+    se (_expr[0] != "" e nao _expr[0].começa("-")) {
+        _expr[0] = "-" + _expr[0]
+    } senão se (_expr[0].começa("-")) {
+        _expr[0] = _expr[0].fatia(1)
+    }
+    atualizar_display()
+}, estilo="secundario", largura=8).pack(lado="esquerda", espaco_x=2, espaco_y=2)
+
+gui.botao(r5, "0",   ao_clicar=() => digitar("0"),   estilo="secundario",largura=8).pack(lado="esquerda", espaco_x=2, espaco_y=2)
+gui.botao(r5, ".",   ao_clicar=() => digitar("."),   estilo="secundario",largura=8).pack(lado="esquerda", espaco_x=2, espaco_y=2)
+gui.botao(r5, "+",   ao_clicar=() => digitar("+"),   estilo="aviso",     largura=8).pack(lado="esquerda", espaco_x=2, espaco_y=2)
+
+// Linha 6: botão = grande
+seja r6 = gui.frame_horizontal(f_btns)
+gui.botao(r6, "=",   ao_clicar=() => calcular(),     estilo="sucesso",   largura=35).pack(espaco_x=2, espaco_y=4, preencher="x", expandir=verdadeiro)
+
+gui.separador(jan)
+
+// Histórico
+gui.label(jan, "  Histórico:", tamanho=8, cor="#475569")
+seja area_hist = gui.area_texto(jan, largura=40, altura=4)
+area_hist.configure(estado="desabilitado", bg="#0D1117", fg="#64748B",
+    relief="flat", espaco_x=10, espaco_y=5)
+
+// Atalhos
+jan.bind("<Return>",    (e) => calcular())
+jan.bind("<Escape>",    (e) => limpar())
+jan.bind("<BackSpace>", (e) => apagar())
+
+gui.iniciar()

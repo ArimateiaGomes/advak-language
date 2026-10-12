@@ -1,0 +1,362 @@
+// ═══════════════════════════════════════════════════════════════════════
+//  ADVAK 5.0 — Lista de Tarefas (To-Do)
+//  Execute: advak projetos\tarefas.dk
+// ═══════════════════════════════════════════════════════════════════════
+
+gui.tema("escuro")
+seja jan = gui.janela("✅ Lista de Tarefas — Advak 5.0", 680, 620)
+
+// ── Dados ─────────────────────────────────────────────────────────────
+seja tarefas = []
+seja _filtro_atual = ["todas"]
+
+// ── Header ────────────────────────────────────────────────────────────
+seja f_header = gui.frame(jan, cor="#1E293B")
+gui.label(f_header, "  ✅ Minhas Tarefas",
+    negrito=verdadeiro, tamanho=14, cor="#3B82F6")
+
+// Estatísticas rápidas
+seja f_stats = gui.frame_horizontal(f_header)
+seja lbl_total    = gui.label(f_stats, "  📋 0 tarefas", tamanho=9, cor="#94A3B8")
+lbl_total.pack(lado="esquerda", espaco_x=8)
+seja lbl_feitas   = gui.label(f_stats, "  ✅ 0 feitas", tamanho=9, cor="#22C55E")
+lbl_feitas.pack(lado="esquerda", espaco_x=8)
+seja lbl_pendentes = gui.label(f_stats, "  ⏳ 0 pendentes", tamanho=9, cor="#F59E0B")
+lbl_pendentes.pack(lado="esquerda", espaco_x=8)
+
+gui.separador(jan)
+
+// ── Formulário de entrada ─────────────────────────────────────────────
+seja f_entrada = gui.frame_horizontal(jan)
+seja c_tarefa = gui.campo(f_entrada,
+    placeholder="Digite uma nova tarefa...",
+    largura=40)
+c_tarefa.pack(lado="esquerda", espaco_x=8, espaco_y=8, preencher="x", expandir=verdadeiro)
+
+seja sel_prioridade = gui.caixa_selecao(f_entrada,
+    opcoes=["🔴 Alta", "🟡 Média", "🟢 Baixa"],
+    valor_inicial="🟡 Média")
+sel_prioridade.pack(lado="esquerda", espaco_x=4)
+
+seja btn_add = gui.botao(f_entrada, "➕ Adicionar",
+    ao_clicar=() => adicionar_tarefa(),
+    estilo="sucesso")
+btn_add.pack(lado="esquerda", espaco_x=8)
+
+gui.separador(jan)
+
+// ── Filtros ────────────────────────────────────────────────────────────
+seja f_filtros = gui.frame_horizontal(jan)
+gui.label(f_filtros, "  Filtrar:", tamanho=9, cor="#64748B")
+
+função criar_btn_filtro(txt, valor) {
+    seja b = gui.botao(f_filtros, txt,
+        ao_clicar=() => aplicar_filtro(valor),
+        estilo="secundario")
+    b.pack(lado="esquerda", espaco_x=3, espaco_y=4)
+    retornar b
+}
+
+criar_btn_filtro("📋 Todas",    "todas")
+criar_btn_filtro("⏳ Pendentes","pendentes")
+criar_btn_filtro("✅ Concluídas","concluidas")
+criar_btn_filtro("🔴 Alta",     "alta")
+criar_btn_filtro("🟡 Média",    "media")
+criar_btn_filtro("🟢 Baixa",    "baixa")
+
+seja btn_limpar_feitas = gui.botao(f_filtros, "🗑️ Limpar Feitas",
+    ao_clicar=() => limpar_concluidas(),
+    estilo="perigo")
+btn_limpar_feitas.pack(lado="direita", espaco_x=8)
+
+gui.separador(jan)
+
+// ── Lista de tarefas ──────────────────────────────────────────────────
+seja colunas = ["", "Prioridade", "Tarefa", "Criada em", "Status"]
+seja tabela = gui.tabela(jan,
+    colunas=colunas,
+    altura=16,
+    ao_selecionar=(linha) => selecionar_tarefa(linha))
+
+// ── Ações na tarefa selecionada ───────────────────────────────────────
+seja f_acoes = gui.frame_horizontal(jan)
+seja btn_concluir = gui.botao(f_acoes, "✅ Concluir",
+    ao_clicar=() => concluir_selecionada(),
+    estilo="sucesso")
+btn_concluir.pack(lado="esquerda", espaco_x=5, espaco_y=5)
+
+seja btn_editar = gui.botao(f_acoes, "✏️ Editar",
+    ao_clicar=() => editar_selecionada(),
+    estilo="primario")
+btn_editar.pack(lado="esquerda", espaco_x=5)
+
+seja btn_excluir = gui.botao(f_acoes, "❌ Excluir",
+    ao_clicar=() => excluir_selecionada(),
+    estilo="perigo")
+btn_excluir.pack(lado="esquerda", espaco_x=5)
+
+seja btn_subir = gui.botao(f_acoes, "⬆️ Subir",
+    ao_clicar=() => mover_tarefa(-1),
+    estilo="secundario")
+btn_subir.pack(lado="esquerda", espaco_x=5)
+
+seja btn_descer = gui.botao(f_acoes, "⬇️ Descer",
+    ao_clicar=() => mover_tarefa(1),
+    estilo="secundario")
+btn_descer.pack(lado="esquerda", espaco_x=5)
+
+// Busca rápida
+seja f_busca = gui.frame_horizontal(f_acoes)
+f_busca.pack(lado="direita", espaco_x=10)
+gui.label(f_busca, "🔍", tamanho=10)
+seja c_busca = gui.campo(f_busca, placeholder="Buscar...", largura=20,
+    ao_mudar=(v) => buscar_tarefa(v))
+c_busca.pack(lado="esquerda", espaco_x=4)
+
+// Status bar
+seja status = gui.barra_status(jan,
+    "  Bem-vindo! Adicione sua primeira tarefa acima.")
+
+// ═══════════════════════════════════════════════════════════════════════
+//  FUNÇÕES
+// ═══════════════════════════════════════════════════════════════════════
+
+função prox_id() {
+    se (tarefas.tamanho == 0) { retornar 1 }
+    seja max_id = 0
+    para (t em tarefas) {
+        se (t.id > max_id) { max_id = t.id }
+    }
+    retornar max_id + 1
+}
+
+função data_hora_atual() {
+    retornar data_hoje() + " " + texto(hora_atual())
+}
+
+função hora_atual() {
+    // Usa data_agora com formato de hora
+    retornar data_agora("%H:%M")
+}
+
+função adicionar_tarefa() {
+    seja txt = c_tarefa.get().aparar()
+    se (txt == "") {
+        gui.aviso("Digite o texto da tarefa!")
+        retornar
+    }
+    seja prio = sel_prioridade.get()
+
+    seja nova = {
+        id:        prox_id(),
+        texto:     txt,
+        prioridade: prio,
+        concluida: falso,
+        criada:    data_hoje() + " " + data_agora("%H:%M")
+    }
+    tarefas.adicionar(nova)
+    c_tarefa.limpar()
+    c_tarefa.focus()
+    atualizar_tabela()
+    atualizar_stats()
+    gui.toast("Tarefa adicionada!", "sucesso", 2000)
+    status.mensagem("  ✅ Tarefa adicionada: " + txt.primeiros(40))
+}
+
+função emoji_status(concluida) {
+    se (concluida) { retornar "✅ Feita" }
+    retornar "⏳ Pendente"
+}
+
+função atualizar_tabela() {
+    seja lista = filtrar_lista()
+    tabela.limpar()
+    seja i = 1
+    para (t em lista) {
+        tabela.adicionar([
+            texto(t.id),
+            t.prioridade,
+            t.texto,
+            t.criada,
+            emoji_status(t.concluida)
+        ])
+        i++
+    }
+}
+
+função filtrar_lista() {
+    seja f = _filtro_atual[0]
+    se (f == "todas")     { retornar tarefas }
+    se (f == "pendentes") { retornar tarefas.filtrar((t) => nao t.concluida) }
+    se (f == "concluidas"){ retornar tarefas.filtrar((t) => t.concluida) }
+    se (f == "alta")      { retornar tarefas.filtrar((t) => t.prioridade.contem("Alta")) }
+    se (f == "media")     { retornar tarefas.filtrar((t) => t.prioridade.contem("Média")) }
+    se (f == "baixa")     { retornar tarefas.filtrar((t) => t.prioridade.contem("Baixa")) }
+    retornar tarefas
+}
+
+função aplicar_filtro(filtro) {
+    _filtro_atual[0] = filtro
+    atualizar_tabela()
+    status.mensagem("  Filtro: " + filtro)
+}
+
+função atualizar_stats() {
+    seja total   = tarefas.tamanho
+    seja feitas  = tarefas.filtrar((t) => t.concluida).tamanho
+    seja pendentes = total - feitas
+    lbl_total.configure(text="  📋 " + texto(total) + " tarefa(s)")
+    lbl_feitas.configure(text="  ✅ " + texto(feitas) + " feita(s)")
+    lbl_pendentes.configure(text="  ⏳ " + texto(pendentes) + " pendente(s)")
+}
+
+função encontrar_por_id(id_str) {
+    seja id = numero(id_str)
+    seja idx = -1
+    seja i = 0
+    para (t em tarefas) {
+        se (t.id == id) { idx = i }
+        i++
+    }
+    retornar idx
+}
+
+função selecionar_tarefa(linha) {
+    seja id_str = linha[""]
+    seja txt    = linha["Tarefa"]
+    status.mensagem("  Selecionado: " + txt)
+}
+
+função concluir_selecionada() {
+    seja sel = tabela.selecionado()
+    se (sel == nulo) {
+        gui.aviso("Selecione uma tarefa primeiro!")
+        retornar
+    }
+    seja idx = encontrar_por_id(sel[0])
+    se (idx == -1) { retornar }
+
+    tarefas[idx].concluida = nao tarefas[idx].concluida
+    seja msg = se (tarefas[idx].concluida) "concluída" senão "reaberta"
+    gui.toast(tarefas[idx].texto.primeiros(30) + " " + msg + "!", "sucesso", 2000)
+    atualizar_tabela()
+    atualizar_stats()
+    status.mensagem("  Tarefa " + msg + ": " + tarefas[idx].texto.primeiros(40))
+}
+
+função editar_selecionada() {
+    seja sel = tabela.selecionado()
+    se (sel == nulo) {
+        gui.aviso("Selecione uma tarefa primeiro!")
+        retornar
+    }
+    seja idx = encontrar_por_id(sel[0])
+    se (idx == -1) { retornar }
+
+    seja novo_txt = gui.pedir("Editar tarefa:")
+    se (novo_txt == nulo ou novo_txt.aparar() == "") { retornar }
+
+    tarefas[idx].texto = novo_txt.aparar()
+    atualizar_tabela()
+    gui.toast("Tarefa atualizada!", "info", 2000)
+    status.mensagem("  ✏️ Editada: " + novo_txt.primeiros(40))
+}
+
+função excluir_selecionada() {
+    seja sel = tabela.selecionado()
+    se (sel == nulo) {
+        gui.aviso("Selecione uma tarefa primeiro!")
+        retornar
+    }
+    seja idx = encontrar_por_id(sel[0])
+    se (idx == -1) { retornar }
+
+    seja txt = tarefas[idx].texto
+    se (gui.confirmar("Excluir a tarefa:\n\"" + txt + "\"?")) {
+        seja id_rm = tarefas[idx].id
+        seja novas = tarefas.filtrar((t) => t.id != id_rm)
+        tarefas.limpar()
+        para (t em novas) { tarefas.adicionar(t) }
+        atualizar_tabela()
+        atualizar_stats()
+        gui.toast("Tarefa removida", "aviso", 2000)
+        status.mensagem("  🗑️ Removida: " + txt.primeiros(40))
+    }
+}
+
+função mover_tarefa(direcao) {
+    seja sel = tabela.selecionado()
+    se (sel == nulo) { retornar }
+    seja idx = encontrar_por_id(sel[0])
+    se (idx == -1) { retornar }
+
+    seja novo_idx = idx + direcao
+    se (novo_idx < 0 ou novo_idx >= tarefas.tamanho) { retornar }
+
+    // Troca posições
+    seja tmp = tarefas[idx]
+    tarefas[idx] = tarefas[novo_idx]
+    tarefas[novo_idx] = tmp
+    atualizar_tabela()
+}
+
+função limpar_concluidas() {
+    seja qtd = tarefas.filtrar((t) => t.concluida).tamanho
+    se (qtd == 0) {
+        gui.aviso("Nenhuma tarefa concluída para remover!")
+        retornar
+    }
+    se (gui.confirmar("Remover " + texto(qtd) + " tarefa(s) concluída(s)?")) {
+        seja novas = tarefas.filtrar((t) => nao t.concluida)
+        tarefas.limpar()
+        para (t em novas) { tarefas.adicionar(t) }
+        atualizar_tabela()
+        atualizar_stats()
+        gui.toast(texto(qtd) + " tarefa(s) removida(s)!", "info", 2000)
+        status.mensagem("  🗑️ " + texto(qtd) + " tarefa(s) concluída(s) removida(s)")
+    }
+}
+
+função buscar_tarefa(busca) {
+    se (busca.aparar() == "") {
+        atualizar_tabela()
+        retornar
+    }
+    seja b = busca.minusculo()
+    seja encontradas = tarefas.filtrar((t) =>
+        t.texto.minusculo().contem(b) ou
+        t.prioridade.minusculo().contem(b))
+    tabela.limpar()
+    para (t em encontradas) {
+        tabela.adicionar([
+            texto(t.id),
+            t.prioridade,
+            t.texto,
+            t.criada,
+            emoji_status(t.concluida)
+        ])
+    }
+    status.mensagem("  🔍 " + texto(encontradas.tamanho) + " resultado(s) para: " + busca)
+}
+
+// Atalhos
+jan.bind("<Return>", (e) => adicionar_tarefa())
+
+// ── Tarefas de exemplo ─────────────────────────────────────────────────
+função carregar_exemplos() {
+    seja exemplos = [
+        {id:1, texto:"Estudar Advak 5.0",                prioridade:"🔴 Alta",  concluida:verdadeiro, criada:"hoje"},
+        {id:2, texto:"Preparar aula de programação",     prioridade:"🔴 Alta",  concluida:falso,      criada:"hoje"},
+        {id:3, texto:"Corrigir exercícios dos alunos",   prioridade:"🟡 Média", concluida:falso,      criada:"hoje"},
+        {id:4, texto:"Criar novos projetos de exemplo",  prioridade:"🟡 Média", concluida:verdadeiro, criada:"hoje"},
+        {id:5, texto:"Atualizar apostila do Advak",      prioridade:"🟢 Baixa", concluida:falso,      criada:"hoje"},
+        {id:6, texto:"Testar compilador Nuitka",         prioridade:"🟢 Baixa", concluida:falso,      criada:"hoje"}
+    ]
+    para (e em exemplos) { tarefas.adicionar(e) }
+    atualizar_tabela()
+    atualizar_stats()
+    status.mensagem("  6 tarefas de exemplo carregadas!")
+}
+
+carregar_exemplos()
+gui.iniciar()

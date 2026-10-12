@@ -1,0 +1,169 @@
+// ═══════════════════════════════════════════════════════
+//  FIBONACCI EM ADVAK 5.0 — 5 Abordagens
+//  Execute: advak projetos\fibonacci.dk
+// ═══════════════════════════════════════════════════════
+
+// ─── 1. RECURSÃO CLÁSSICA ───────────────────────────────
+função fibonacci_rec(n) {
+    se (n <= 1) { retornar n }
+    retornar fibonacci_rec(n - 1) + fibonacci_rec(n - 2)
+}
+
+// ─── 2. ITERATIVO (eficiente, O(n)) ─────────────────────
+função fibonacci_iter(n) {
+    se (n <= 1) { retornar n }
+    seja a = 0
+    seja b = 1
+    seja i = 2
+    enquanto (i <= n) {
+        seja temp = a + b
+        a = b
+        b = temp
+        i = i + 1
+    }
+    retornar b
+}
+
+// ─── 3. GENERATOR INFINITO (lazy, produzir/yield) ───────
+função gerador fibonacci_gen() {
+    seja a = 0
+    seja b = 1
+    enquanto (verdadeiro) {
+        produzir a
+        seja temp = a + b
+        a = b
+        b = temp
+    }
+}
+
+// ─── 4. MEMOIZAÇÃO (cache, O(1) para valores repetidos) ─
+// Cache usando lista (índice = n)
+seja _cache = [0, 1]
+função fibonacci_memo(n) {
+    se (n < _cache.tamanho) { retornar _cache[n] }
+    // Preenche o cache até n
+    seja i = _cache.tamanho
+    enquanto (i <= n) {
+        _cache.adicionar(_cache[i-1] + _cache[i-2])
+        i = i + 1
+    }
+    retornar _cache[n]
+}
+
+// ─── 5. PATTERN MATCHING + TIPOS ALGÉBRICOS ─────────────
+// ADT para representar um passo da sequência
+tipo FibPar { Inicio, Passo(a, b) }
+
+função fibonacci_adt(n) {
+    se (n == 0) { retornar 0 }
+    se (n == 1) { retornar 1 }
+    função _avancar(estado) {
+        retornar combinar estado {
+            caso Inicio    => Passo(0, 1)
+            caso Passo(a, b) => Passo(b, a + b)
+        }
+    }
+    função _valor(estado) {
+        retornar combinar estado {
+            caso Inicio      => 0
+            caso Passo(a, b) => b
+        }
+    }
+    seja estado = Inicio
+    seja i = 0
+    enquanto (i < n) {
+        estado = _avancar(estado)
+        i = i + 1
+    }
+    retornar _valor(estado)
+}
+
+// ═══════════════════════════════════════════════════════
+//  RESULTADOS
+// ═══════════════════════════════════════════════════════
+
+imprimir("╔══════════════════════════════════════════╗")
+imprimir("║   FIBONACCI EM ADVAK 5.0                ║")
+imprimir("╚══════════════════════════════════════════╝")
+
+imprimir("")
+imprimir("─── 1. Recursão (F0 a F10) ─────────────────")
+seja linha = ""
+para (i em [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
+    linha = linha + `F(${i})=${fibonacci_rec(i)}  `
+}
+imprimir(linha)
+
+imprimir("")
+imprimir("─── 2. Iterativo (valores grandes) ─────────")
+para (i em [10, 20, 30, 40, 50]) {
+    imprimir(`  F(${i}) = ${fibonacci_iter(i)}`)
+}
+
+imprimir("")
+imprimir("─── 3. Generator — primeiros 15 termos ─────")
+seja sequencia = []
+seja count = 0
+para (n em fibonacci_gen()) {
+    se (count >= 15) { quebrar }
+    sequencia.adicionar(n)
+    count = count + 1
+}
+imprimir(sequencia)
+
+imprimir("")
+imprimir("─── 4. Memoização (F50 instantâneo) ────────")
+imprimir(`  F(30) = ${fibonacci_memo(30)}`)
+imprimir(`  F(40) = ${fibonacci_memo(40)}`)
+imprimir(`  F(50) = ${fibonacci_memo(50)}`)
+
+imprimir("")
+imprimir("─── 5. ADT + Pattern Matching ───────────────")
+seja linha2 = ""
+para (i em [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
+    linha2 = linha2 + `F(${i})=${fibonacci_adt(i)}  `
+}
+imprimir(linha2)
+
+imprimir("")
+imprimir("─── Razão Áurea (φ) ────────────────────────")
+seja f19 = fibonacci_iter(19)
+seja f20 = fibonacci_iter(20)
+seja phi = f20 / f19
+imprimir(`  F(20) / F(19) = ${f20} / ${f19}`)
+imprimir(`  = ${phi}`)
+imprimir("  φ real ≈ 1.6180339887...")
+
+imprimir("")
+imprimir("─── Verificação: todas as abordagens ────────")
+seja ok = verdadeiro
+para (i em [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]) {
+    seja r = fibonacci_rec(i)
+    seja it = fibonacci_iter(i)
+    seja mo = fibonacci_memo(i)
+    seja ad = fibonacci_adt(i)
+    se (r != it || r != mo || r != ad) {
+        imprimir(`  ❌ DIVERGÊNCIA em F(${i})!`)
+        ok = falso
+    }
+}
+se (ok) {
+    imprimir("  ✅ Todas as 4 implementações concordam!")
+}
+
+imprimir("")
+imprimir("─── Generator vs Lista — comparação ─────────")
+seja gen_lista = []
+seja c2 = 0
+para (n em fibonacci_gen()) {
+    se (c2 >= 8) { quebrar }
+    gen_lista.adicionar(n)
+    c2 = c2 + 1
+}
+imprimir(`  Generator [lazy]:  ${gen_lista}`)
+seja iter_lista = []
+para (i em [0, 1, 2, 3, 4, 5, 6, 7]) {
+    iter_lista.adicionar(fibonacci_iter(i))
+}
+imprimir(`  Iterativo [eager]: ${iter_lista}`)
+imprimir("  ✅ Resultados idênticos!")

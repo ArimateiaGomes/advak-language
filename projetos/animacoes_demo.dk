@@ -1,0 +1,339 @@
+// ═══════════════════════════════════════════════════════════════════════
+//  ADVAK 5.0 — Demo de Animações
+//  Execute: advak projetos\animacoes_demo.dk
+// ═══════════════════════════════════════════════════════════════════════
+
+gui.tema("escuro")
+seja jan = gui.janela("✨ Animações — Advak 5.0", 900, 650)
+
+// ── Abas de demonstração ──────────────────────────────────────────────
+seja abas = gui.abas(jan)
+
+// ══════════════════════════════════════════════════════════════════════
+//  ABA 1 — MOVIMENTO
+// ══════════════════════════════════════════════════════════════════════
+seja tab1 = abas.adicionar("🎯 Movimento")
+
+gui.label(tab1, "  Animações de posição e tamanho", tamanho=11,
+    negrito=verdadeiro, cor="#3B82F6")
+gui.separador(tab1)
+
+// Palco de animação
+seja f_palco1 = gui.frame(tab1, cor="#0D1117")
+f_palco1.configure(height=260)
+f_palco1.pack(preencher="x", espaco_x=10, espaco_y=6)
+f_palco1.pack_propagate(falso)
+
+// Objetos para animar
+seja bola = gui.label(f_palco1, "⚽", tamanho=28)
+bola.place(x=50, y=80)
+
+seja estrela = gui.label(f_palco1, "⭐", tamanho=24)
+estrela.place(x=400, y=30)
+
+seja foguete = gui.label(f_palco1, "🚀", tamanho=22)
+foguete.place(x=700, y=120)
+
+seja caixa = gui.label(f_palco1, "📦", tamanho=20)
+caixa.place(x=200, y=150)
+
+// Controles
+seja f_ctrl1 = gui.frame_horizontal(tab1)
+
+gui.botao(f_ctrl1, "⚽ Rolar Bola",
+    ao_clicar=() => {
+        gui.animar(bola, "x", 700, duracao=1200, easing="ease_out")
+        gui.apos(1300, () => {
+            gui.animar(bola, "x", 50, duracao=1200, easing="ease_in")
+        })
+    }, estilo="primario").pack(lado="esquerda", espaco_x=4, espaco_y=6)
+
+gui.botao(f_ctrl1, "⭐ Pular Estrela",
+    ao_clicar=() => {
+        gui.animar(estrela, "y", 180, duracao=400, easing="ease_in")
+        gui.apos(420, () => {
+            gui.animar(estrela, "y", 30, duracao=600, easing="bounce")
+        })
+    }, estilo="aviso").pack(lado="esquerda", espaco_x=4)
+
+gui.botao(f_ctrl1, "🚀 Lançar Foguete",
+    ao_clicar=() => {
+        gui.animar(foguete, "y", 10, duracao=800, easing="ease_in")
+        gui.animar(foguete, "x", 400, duracao=800, easing="ease_out")
+        gui.apos(900, () => {
+            gui.animar(foguete, "y", 120, duracao=600, easing="bounce")
+            gui.animar(foguete, "x", 700, duracao=600, easing="ease_out")
+        })
+    }, estilo="roxo").pack(lado="esquerda", espaco_x=4)
+
+gui.botao(f_ctrl1, "📦 Zigzag",
+    ao_clicar=() => {
+        gui.animar(caixa, "x", 500, duracao=400, easing="ease_out")
+        gui.apos(420, () => {
+            gui.animar(caixa, "y", 30, duracao=300, easing="bounce")
+            gui.apos(320, () => {
+                gui.animar(caixa, "x", 200, duracao=400, easing="ease_out")
+                gui.animar(caixa, "y", 150, duracao=400, easing="bounce")
+            })
+        })
+    }, estilo="sucesso").pack(lado="esquerda", espaco_x=4)
+
+gui.botao(f_ctrl1, "🎪 Tudo ao mesmo tempo!",
+    ao_clicar=() => {
+        gui.animar(bola,    "x", 700, duracao=1000, easing="ease_out")
+        gui.animar(estrela, "y", 180, duracao=400,  easing="bounce")
+        gui.animar(foguete, "y", 10,  duracao=800,  easing="ease_in")
+        gui.animar(caixa,   "x", 600, duracao=700,  easing="bounce")
+        gui.apos(1100, () => {
+            gui.animar(bola,    "x", 50,  duracao=800, easing="ease_in")
+            gui.animar(estrela, "y", 30,  duracao=600, easing="ease_out")
+            gui.animar(foguete, "y", 120, duracao=600, easing="bounce")
+            gui.animar(caixa,   "x", 200, duracao=600, easing="ease_out")
+        })
+    }, estilo="perigo").pack(lado="esquerda", espaco_x=4)
+
+// ══════════════════════════════════════════════════════════════════════
+//  ABA 2 — CORES
+// ══════════════════════════════════════════════════════════════════════
+seja tab2 = abas.adicionar("🎨 Cores")
+
+gui.label(tab2, "  Transições de cor suaves", tamanho=11,
+    negrito=verdadeiro, cor="#3B82F6")
+gui.separador(tab2)
+
+// Paleta de cores para animar
+seja f_cores = gui.frame(tab2, cor="#0D1117")
+f_cores.configure(height=200)
+f_cores.pack(preencher="x", espaco_x=10, espaco_y=8)
+f_cores.pack_propagate(falso)
+
+// Blocos de cor
+seja bloco1 = gui.label(f_cores, "  Vermelho → Azul  ", tamanho=14, negrito=verdadeiro)
+bloco1.place(x=30, y=30)
+bloco1.configure(bg="#EF4444", fg="white")
+
+seja bloco2 = gui.label(f_cores, "  Verde → Roxo  ", tamanho=14, negrito=verdadeiro)
+bloco2.place(x=30, y=100)
+bloco2.configure(bg="#22C55E", fg="white")
+
+seja bloco3 = gui.label(f_cores, "  Laranja → Azul Escuro  ", tamanho=14, negrito=verdadeiro)
+bloco3.place(x=350, y=30)
+bloco3.configure(bg="#F59E0B", fg="white")
+
+seja bloco4 = gui.label(f_cores, "  Modo Arco-Íris  ", tamanho=14, negrito=verdadeiro)
+bloco4.place(x=350, y=100)
+bloco4.configure(bg="#6366F1", fg="white")
+
+// Controles de cor
+seja f_ctrl2 = gui.frame_horizontal(tab2)
+
+gui.botao(f_ctrl2, "🔴→🔵 Animar Bloco 1",
+    ao_clicar=() => {
+        gui.animar(bloco1, "cor_fundo", "#3B82F6", duracao=1500)
+        gui.apos(1600, () => {
+            gui.animar(bloco1, "cor_fundo", "#EF4444", duracao=1500)
+        })
+    }, estilo="perigo").pack(lado="esquerda", espaco_x=4, espaco_y=6)
+
+gui.botao(f_ctrl2, "🟢→🟣 Animar Bloco 2",
+    ao_clicar=() => {
+        gui.animar(bloco2, "cor_fundo", "#7C3AED", duracao=1200)
+        gui.apos(1300, () => {
+            gui.animar(bloco2, "cor_fundo", "#22C55E", duracao=1200)
+        })
+    }, estilo="roxo").pack(lado="esquerda", espaco_x=4)
+
+gui.botao(f_ctrl2, "🌈 Sequência Arco-Íris",
+    ao_clicar=() => {
+        seja cores = ["#EF4444","#F59E0B","#22C55E","#3B82F6","#7C3AED","#EC4899"]
+        seja i = [0]
+        função proxima_cor() {
+            gui.animar(bloco4, "cor_fundo", cores[i[0]], duracao=600)
+            i[0] = (i[0] + 1) % cores.tamanho
+            se (i[0] != 0) {
+                gui.apos(650, () => proxima_cor())
+            }
+        }
+        proxima_cor()
+    }, estilo="sucesso").pack(lado="esquerda", espaco_x=4)
+
+gui.botao(f_ctrl2, "✨ Piscar Laranja",
+    ao_clicar=() => {
+        gui.animar_loop(bloco3, "cor_fundo", "#F59E0B", "#1E293B", duracao=500)
+    }, estilo="aviso").pack(lado="esquerda", espaco_x=4)
+
+// ══════════════════════════════════════════════════════════════════════
+//  ABA 3 — EFEITOS
+// ══════════════════════════════════════════════════════════════════════
+seja tab3 = abas.adicionar("⚡ Efeitos")
+
+gui.label(tab3, "  Efeitos visuais com easing", tamanho=11,
+    negrito=verdadeiro, cor="#3B82F6")
+gui.separador(tab3)
+
+// Demonstração dos easings
+seja f_easings = gui.frame(tab3, cor="#0D1117")
+f_easings.configure(height=220)
+f_easings.pack(preencher="x", espaco_x=10, espaco_y=8)
+f_easings.pack_propagate(falso)
+
+// Uma bolinha para cada easing
+seja e_linear  = gui.label(f_easings, "⬜ linear",     tamanho=10, cor="#94A3B8")
+seja e_ease_in = gui.label(f_easings, "🔵 ease_in",   tamanho=10, cor="#3B82F6")
+seja e_ease_out= gui.label(f_easings, "🟢 ease_out",  tamanho=10, cor="#22C55E")
+seja e_ease_io = gui.label(f_easings, "🟡 ease_in_out",tamanho=10,cor="#F59E0B")
+seja e_bounce  = gui.label(f_easings, "🔴 bounce",    tamanho=10, cor="#EF4444")
+
+e_linear.place(x=10, y=20)
+e_ease_in.place(x=10, y=55)
+e_ease_out.place(x=10, y=90)
+e_ease_io.place(x=10, y=125)
+e_bounce.place(x=10, y=160)
+
+// Controles easing
+seja f_ctrl3 = gui.frame_horizontal(tab3)
+
+gui.botao(f_ctrl3, "▶️ Comparar Easings",
+    ao_clicar=() => {
+        seja destino = 700
+        seja duracao = 1500
+        gui.animar(e_linear,   "x", destino, duracao=duracao, easing="linear")
+        gui.animar(e_ease_in,  "x", destino, duracao=duracao, easing="ease_in")
+        gui.animar(e_ease_out, "x", destino, duracao=duracao, easing="ease_out")
+        gui.animar(e_ease_io,  "x", destino, duracao=duracao, easing="ease_in_out")
+        gui.animar(e_bounce,   "x", destino, duracao=duracao, easing="bounce")
+        gui.apos(duracao + 200, () => {
+            gui.animar(e_linear,   "x", 10, duracao=800, easing="ease_out")
+            gui.animar(e_ease_in,  "x", 10, duracao=800, easing="ease_out")
+            gui.animar(e_ease_out, "x", 10, duracao=800, easing="ease_out")
+            gui.animar(e_ease_io,  "x", 10, duracao=800, easing="ease_out")
+            gui.animar(e_bounce,   "x", 10, duracao=800, easing="ease_out")
+        })
+    }, estilo="primario").pack(lado="esquerda", espaco_x=4, espaco_y=6)
+
+gui.botao(f_ctrl3, "🎯 Bounce Especial",
+    ao_clicar=() => {
+        gui.animar(e_bounce, "y", 160, duracao=200, easing="linear")
+        gui.apos(220, () => {
+            gui.animar(e_bounce, "y", 20, duracao=800, easing="ease_in")
+            gui.apos(830, () => {
+                gui.animar(e_bounce, "y", 160, duracao=600, easing="bounce")
+            })
+        })
+    }, estilo="perigo").pack(lado="esquerda", espaco_x=4)
+
+// ══════════════════════════════════════════════════════════════════════
+//  ABA 4 — SEQUÊNCIAS
+// ══════════════════════════════════════════════════════════════════════
+seja tab4 = abas.adicionar("🎬 Sequências")
+
+gui.label(tab4, "  Animações encadeadas e coreografias", tamanho=11,
+    negrito=verdadeiro, cor="#3B82F6")
+gui.separador(tab4)
+
+seja f_seq = gui.frame(tab4, cor="#0D1117")
+f_seq.configure(height=220)
+f_seq.pack(preencher="x", espaco_x=10, espaco_y=8)
+f_seq.pack_propagate(falso)
+
+// Elementos para coreografia
+seja s1 = gui.label(f_seq, "🟥", tamanho=22)
+seja s2 = gui.label(f_seq, "🟧", tamanho=22)
+seja s3 = gui.label(f_seq, "🟨", tamanho=22)
+seja s4 = gui.label(f_seq, "🟩", tamanho=22)
+seja s5 = gui.label(f_seq, "🟦", tamanho=22)
+
+s1.place(x=50,  y=90)
+s2.place(x=150, y=90)
+s3.place(x=250, y=90)
+s4.place(x=350, y=90)
+s5.place(x=450, y=90)
+
+seja f_ctrl4 = gui.frame_horizontal(tab4)
+
+gui.botao(f_ctrl4, "🌊 Onda",
+    ao_clicar=() => {
+        seja blocos = [s1, s2, s3, s4, s5]
+        seja i = [0]
+        função animar_proximo() {
+            se (i[0] < blocos.tamanho) {
+                gui.animar(blocos[i[0]], "y", 30, duracao=300, easing="ease_out")
+                gui.apos(150, () => {
+                    gui.animar(blocos[i[0]-1 < 0 ? 0 : i[0]], "y", 90, duracao=300, easing="bounce")
+                })
+                i[0]++
+                gui.apos(120, () => animar_proximo())
+            }
+        }
+        animar_proximo()
+    }, estilo="primario").pack(lado="esquerda", espaco_x=4, espaco_y=6)
+
+gui.botao(f_ctrl4, "💥 Explodir",
+    ao_clicar=() => {
+        gui.animar_sequencia([
+            {widget: s1, prop: "x", valor: 10,  duracao: 600},
+            {widget: s2, prop: "x", valor: 100, duracao: 600},
+            {widget: s3, prop: "x", valor: 380, duracao: 600},
+            {widget: s4, prop: "x", valor: 500, duracao: 600},
+            {widget: s5, prop: "x", valor: 700, duracao: 600}
+        ])
+        gui.apos(800, () => {
+            gui.animar_sequencia([
+                {widget: s1, prop: "x", valor: 50,  duracao: 500},
+                {widget: s2, prop: "x", valor: 150, duracao: 500},
+                {widget: s3, prop: "x", valor: 250, duracao: 500},
+                {widget: s4, prop: "x", valor: 350, duracao: 500},
+                {widget: s5, prop: "x", valor: 450, duracao: 500}
+            ])
+        })
+    }, estilo="perigo").pack(lado="esquerda", espaco_x=4)
+
+gui.botao(f_ctrl4, "🔄 Girar Fila",
+    ao_clicar=() => {
+        gui.animar(s1, "y", 30,  duracao=400, easing="ease_out")
+        gui.animar(s2, "y", 150, duracao=400, easing="ease_out")
+        gui.animar(s3, "y", 30,  duracao=400, easing="ease_out")
+        gui.animar(s4, "y", 150, duracao=400, easing="ease_out")
+        gui.animar(s5, "y", 30,  duracao=400, easing="ease_out")
+        gui.apos(600, () => {
+            gui.animar(s1, "y", 90, duracao=400, easing="bounce")
+            gui.animar(s2, "y", 90, duracao=400, easing="bounce")
+            gui.animar(s3, "y", 90, duracao=400, easing="bounce")
+            gui.animar(s4, "y", 90, duracao=400, easing="bounce")
+            gui.animar(s5, "y", 90, duracao=400, easing="bounce")
+        })
+    }, estilo="aviso").pack(lado="esquerda", espaco_x=4)
+
+gui.botao(f_ctrl4, "🎭 Coreografia Completa",
+    ao_clicar=() => {
+        // Passo 1: Explodir
+        gui.animar(s1, "x", 10,  duracao=500, easing="ease_out")
+        gui.animar(s5, "x", 700, duracao=500, easing="ease_out")
+        gui.apos(300, () => {
+            gui.animar(s2, "x", 100, duracao=400, easing="ease_out")
+            gui.animar(s4, "x", 600, duracao=400, easing="ease_out")
+        })
+        // Passo 2: Pular
+        gui.apos(700, () => {
+            gui.animar(s1, "y", 20,  duracao=300, easing="ease_out")
+            gui.animar(s3, "y", 160, duracao=300, easing="ease_out")
+            gui.animar(s5, "y", 20,  duracao=300, easing="ease_out")
+        })
+        // Passo 3: Voltar ao centro
+        gui.apos(1200, () => {
+            gui.animar(s1, "x", 50,  duracao=600, easing="bounce")
+            gui.animar(s2, "x", 150, duracao=600, easing="bounce")
+            gui.animar(s3, "x", 250, duracao=600, easing="bounce")
+            gui.animar(s4, "x", 350, duracao=600, easing="bounce")
+            gui.animar(s5, "x", 450, duracao=600, easing="bounce")
+            gui.animar(s1, "y", 90, duracao=600, easing="bounce")
+            gui.animar(s3, "y", 90, duracao=600, easing="bounce")
+            gui.animar(s5, "y", 90, duracao=600, easing="bounce")
+        })
+    }, estilo="sucesso").pack(lado="esquerda", espaco_x=4)
+
+// ── Status bar ────────────────────────────────────────────────────────
+seja status = gui.barra_status(jan,
+    "  Clique nos botões para ver as animações! — Advak 5.0 Animações Demo")
+
+gui.iniciar()

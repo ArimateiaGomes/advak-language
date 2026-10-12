@@ -1,0 +1,58 @@
+// ═══════════════════════════════════════════════════════════════
+//  ADVAK 5.0 — TESTE NUITKA + CYTHON
+//  Execute: advak projetos\testar_nuitka.dk
+// ═══════════════════════════════════════════════════════════════
+
+imprimir("╔══════════════════════════════════════════════════════╗")
+imprimir("║   ADVAK 5.0 — TESTE NUITKA + CYTHON                ║")
+imprimir("╚══════════════════════════════════════════════════════╝")
+
+// ── Verifica se estão instalados ──────────────────────────────
+imprimir(compilador.info())
+
+// ══════════════════════════════════════════════════════════════
+//  1. NUITKA — Compila para C++ nativo standalone
+// ══════════════════════════════════════════════════════════════
+imprimir("")
+imprimir("═══ NUITKA — C++ NATIVO ═══")
+imprimir("Compilando fibonacci.dk para binário C++...")
+imprimir("(primeira vez demora alguns minutos — baixa dependências)")
+
+seja r_nuitka = compilador.nuitka("projetos\\fibonacci.dk")
+imprimir(r_nuitka)
+
+// ══════════════════════════════════════════════════════════════
+//  2. CYTHON — Gera código C (sem compilar extensão)
+// ══════════════════════════════════════════════════════════════
+imprimir("")
+imprimir("═══ CYTHON — CÓDIGO C ═══")
+imprimir("Gerando código C via Cython...")
+
+seja r_cython_c = compilador.cython("projetos\\fibonacci.dk", tipo_c=verdadeiro)
+imprimir(r_cython_c)
+
+// ══════════════════════════════════════════════════════════════
+//  3. CYTHON — Compila extensão .pyd nativa
+// ══════════════════════════════════════════════════════════════
+imprimir("")
+imprimir("═══ CYTHON — EXTENSÃO .pyd ═══")
+imprimir("Compilando extensão nativa .pyd...")
+
+seja r_cython = compilador.cython("projetos\\fibonacci.dk")
+imprimir(r_cython)
+
+// ══════════════════════════════════════════════════════════════
+//  4. RESUMO
+// ══════════════════════════════════════════════════════════════
+imprimir("")
+imprimir("╔══════════════════════════════════════════════════════╗")
+imprimir("║   RESULTADOS                                        ║")
+imprimir("╠══════════════════════════════════════════════════════╣")
+imprimir("║  dist\fibonacci\fibonacci.exe  ← Nuitka C++        ║")
+imprimir("║  dist\fibonacci_cython.c       ← Cython C source   ║")
+imprimir("║  dist\fibonacci.cpython-*.pyd  ← Cython extensão   ║")
+imprimir("╠══════════════════════════════════════════════════════╣")
+imprimir("║  Para instalar se não tiver:                        ║")
+imprimir("║  pip install nuitka zstandard ordered-set           ║")
+imprimir("║  pip install cython setuptools                      ║")
+imprimir("╚══════════════════════════════════════════════════════╝")

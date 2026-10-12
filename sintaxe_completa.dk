@@ -1,0 +1,175 @@
+// ════════════════════════════════════════════════════════
+//  Advak Language — Sintaxe Atual Completa + Funcional
+//  Execute: python advak.py run sintaxe_completa.dk
+// ════════════════════════════════════════════════════════
+
+imprimir("═══ 1. VARIÁVEIS E TIPOS ═══");
+seja nome    = "Arimatea";
+fixo PI      = 3.14159;
+seja ativo   = verdadeiro;
+seja vazio   = nulo;
+seja inteiro = 42;
+seja decimal = 9.99;
+imprimir(`nome=${nome} PI=${PI} ativo=${ativo} vazio=${vazio}`);
+
+imprimir("═══ 2. OPERADORES ═══");
+imprimir(10 + 3);           // 13
+imprimir(10 - 3);           // 7
+imprimir(10 * 3);           // 30
+imprimir(10 / 3);           // 3.333...
+imprimir(10 % 3);           // 1
+imprimir(2 ** 10);          // 1024
+imprimir(5 == 5);           // verdadeiro
+imprimir(5 != 3);           // verdadeiro
+imprimir(10 > 5 && 3 < 7);  // verdadeiro
+imprimir(falso || verdadeiro); // verdadeiro
+seja v = nulo ?? "padrão";
+imprimir(v);                // padrão
+
+imprimir("═══ 3. TEMPLATE STRINGS ═══");
+seja a = 8; seja b = 4;
+imprimir(`${a} + ${b} = ${a + b}`);
+imprimir(`${a} ** 2 = ${a ** 2}`);
+imprimir(`${nome} tem ${Texto.tamanho(nome)} letras`);
+
+imprimir("═══ 4. LISTAS ═══");
+seja nums = [5, 2, 8, 1, 9, 3];
+imprimir(`original: ${nums}`);
+nums.ordenar();
+imprimir(`ordenado: ${nums}`);
+nums.adicionar(99);
+imprimir(`com 99: ${nums}`);
+imprimir(`tamanho: ${nums.tamanho}`);
+imprimir(`primeiro: ${nums.primeiro}`);
+imprimir(`último: ${nums.ultimo}`);
+
+imprimir("═══ 5. MAPAS ═══");
+seja pessoa = {nome: "Ana", cidade: "Arraial", nota: 9.5};
+imprimir(pessoa.nome);
+imprimir(pessoa["cidade"]);
+pessoa.ativo = verdadeiro;
+imprimir(`ativo: ${pessoa.ativo}`);
+
+imprimir("═══ 6. CONDICIONAIS ═══");
+seja nota = 75;
+se (nota >= 90) {
+    imprimir("Excelente");
+} senão se (nota >= 70) {
+    imprimir("Aprovado");
+} senão {
+    imprimir("Recuperação");
+}
+
+imprimir("═══ 7. LAÇOS ═══");
+seja frutas = ["maçã", "banana", "uva"];
+para (f em frutas) { imprimir(`- ${f}`); }
+
+para (seja i = 1; i <= 3; i += 1) {
+    imprimir(`linha ${i}`);
+}
+
+seja n = 3;
+enquanto (n > 0) {
+    imprimir(`countdown: ${n}`);
+    n -= 1;
+}
+
+imprimir("═══ 8. FUNÇÕES ═══");
+função somar(a, b) { retornar a + b; }
+função saudar(n, s = "Olá") { retornar `${s}, ${n}!`; }
+função fatorial(n) {
+    se (n <= 1) { retornar 1; }
+    retornar n * fatorial(n - 1);
+}
+imprimir(somar(15, 27));
+imprimir(saudar("Dev"));
+imprimir(saudar("Dev", "Oi"));
+imprimir(fatorial(6));
+
+imprimir("═══ 9. LAMBDAS E PIPELINE ═══");
+seja dobrar   = (x) => x * 2;
+seja quadrado = (x) => x ** 2;
+seja somar10  = (x) => x + 10;
+
+imprimir(dobrar(7));
+imprimir(3 |> dobrar |> quadrado |> somar10);  // ((3*2)²)+10 = 46
+
+imprimir("═══ 10. CLASSES ═══");
+classe Veiculo {
+    construtor(marca, modelo) {
+        isso.marca  = marca;
+        isso.modelo = modelo;
+    }
+    descricao() { retornar `${isso.marca} ${isso.modelo}`; }
+}
+classe Carro herda Veiculo {
+    construtor(marca, modelo, portas) {
+        isso.marca  = marca;
+        isso.modelo = modelo;
+        isso.portas = portas;
+    }
+    descricao() { retornar `${isso.marca} ${isso.modelo} (${isso.portas}p)`; }
+}
+seja c = novo Carro("Toyota", "Corolla", 4);
+imprimir(c.descricao());
+
+imprimir("═══ 11. MATCH ═══");
+seja dia = 3;
+combinar(dia) {
+    caso 1: imprimir("Segunda");
+    caso 2: imprimir("Terça");
+    caso 3: imprimir("Quarta");
+    padrão: imprimir("Outro dia");
+}
+
+função classificar(n) {
+    combinar(verdadeiro) {
+        caso n >= 9: retornar "A";
+        caso n >= 7: retornar "B";
+        caso n >= 5: retornar "C";
+        padrão:      retornar "F";
+    }
+}
+imprimir(classificar(8.5));
+
+imprimir("═══ 12. ERROS ═══");
+tentar {
+    lançar "Erro intencional!";
+} capturar (e) {
+    imprimir(`Capturado: ${e}`);
+} finalmente {
+    imprimir("Finalmente executou");
+}
+
+imprimir("═══ 13. STDLIB ═══");
+imprimir(Mat.raiz(144));
+imprimir(Mat.abs(-42));
+imprimir(Mat.pi);
+imprimir(Texto.maiusculo("advak"));
+imprimir(Texto.dividir("a,b,c", ","));
+imprimir(Texto.aparar("  espaços  "));
+seja intervalo = Lista.intervalo(5);
+imprimir(intervalo);
+
+imprimir("═══ 14. JSON E ARQUIVO ═══");
+seja obj = {nome: "Advak", versao: 4, ativo: verdadeiro};
+seja json_str = JSON.stringify(obj);
+imprimir(json_str);
+seja parsed = JSON.parse(json_str);
+imprimir(parsed.versao);
+
+Arquivo.escrever("/tmp/teste_advak.txt", "Advak 4.0 escreveu aqui!");
+seja conteudo = Arquivo.ler("/tmp/teste_advak.txt");
+imprimir(conteudo);
+
+imprimir("═══ 15. ASYNC/AWAIT ═══");
+função async buscarDados(id) {
+    // Simula busca assíncrona
+    retornar {id: id, nome: `Item ${id}`};
+}
+// Chamada síncrona para demonstração
+seja item = buscarDados(42);
+imprimir(item);
+
+imprimir("═══════════════════════════════");
+imprimir("✅ Sintaxe Advak — TUDO OK!");

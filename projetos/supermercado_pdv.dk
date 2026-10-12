@@ -1,0 +1,1523 @@
+// ═══════════════════════════════════════════════════════════════════════════
+//  ADVAK 5.0 — PDV Supermercado COMPLETO
+//  Cadastro, edição, exclusão, estoque, vendas, relatórios
+//
+//  .env: ADVAK_DB_HOST / PORT / USER / PASS / NAME=supermercado
+//  Execute: advak projetos\supermercado_pdv.dk --db
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SEÇÃO 1 — SETUP DO BANCO
+// ═══════════════════════════════════════════════════════════════════════════
+
+funcao setup_banco() {
+    banco.sql(`CREATE TABLE IF NOT EXISTS operadores (
+        id SERIAL PRIMARY KEY, nome VARCHAR(50) NOT NULL,
+        login VARCHAR(20) UNIQUE NOT NULL, senha VARCHAR(64) NOT NULL,
+        nivel VARCHAR(10) DEFAULT 'caixa', ativo BOOLEAN DEFAULT TRUE
+    )`)
+    banco.sql(`CREATE TABLE IF NOT EXISTS categorias (
+        id SERIAL PRIMARY KEY, nome VARCHAR(50) UNIQUE NOT NULL
+    )`)
+    banco.sql(`CREATE TABLE IF NOT EXISTS produtos (
+        id SERIAL PRIMARY KEY, codigo_barras VARCHAR(13) UNIQUE NOT NULL,
+        nome VARCHAR(100) NOT NULL, descricao TEXT DEFAULT '',
+        preco_venda DECIMAL(10,2) NOT NULL, preco_custo DECIMAL(10,2) DEFAULT 0,
+        estoque_atual DECIMAL(10,3) DEFAULT 0, estoque_minimo DECIMAL(10,3) DEFAULT 5,
+        unidade VARCHAR(10) DEFAULT 'un', categoria_id INT REFERENCES categorias(id),
+        ativo BOOLEAN DEFAULT TRUE, criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`)
+    banco.sql(`CREATE TABLE IF NOT EXISTS vendas (
+        id SERIAL PRIMARY KEY, data_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        total_bruto DECIMAL(10,2) NOT NULL DEFAULT 0,
+        desconto DECIMAL(10,2) NOT NULL DEFAULT 0,
+        total_venda DECIMAL(10,2) NOT NULL,
+        forma_pagamento VARCHAR(20) NOT NULL,
+        valor_recebido DECIMAL(10,2), troco DECIMAL(10,2) DEFAULT 0,
+        operador VARCHAR(50), cancelada BOOLEAN DEFAULT FALSE, obs TEXT
+    )`)
+    banco.sql(`CREATE TABLE IF NOT EXISTS itens_venda (
+        id SERIAL PRIMARY KEY, venda_id INT REFERENCES vendas(id) ON DELETE CASCADE,
+        produto_id INT REFERENCES produtos(id), nome_produto VARCHAR(100) NOT NULL,
+        quantidade DECIMAL(10,3) NOT NULL, preco_unitario DECIMAL(10,2) NOT NULL,
+        desconto_item DECIMAL(10,2) DEFAULT 0, subtotal DECIMAL(10,2) NOT NULL
+    )`)
+    banco.sql(`CREATE TABLE IF NOT EXISTS movimentos_estoque (
+        id SERIAL PRIMARY KEY, produto_id INT REFERENCES produtos(id),
+        data_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        tipo VARCHAR(20) NOT NULL, quantidade DECIMAL(10,3) NOT NULL,
+        obs TEXT, operador VARCHAR(50)
+    )`)
+    banco.sql(`CREATE TABLE IF NOT EXISTS movimentos_caixa (
+        id SERIAL PRIMARY KEY, data_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        tipo VARCHAR(20) NOT NULL, valor DECIMAL(10,2) NOT NULL,
+        operador VARCHAR(50), obs TEXT
+    )`)
+    banco.sql(`CREATE INDEX IF NOT EXISTS idx_codbar ON produtos(codigo_barras)`)
+    banco.sql(`CREATE INDEX IF NOT EXISTS idx_vendas_data ON vendas(data_hora)`)
+
+    // Trigger baixar estoque
+    banco.sql(`CREATE OR REPLACE FUNCTION baixar_estoque() RETURNS TRIGGER AS $$
+        BEGIN UPDATE produtos SET estoque_atual = estoque_atual - NEW.quantidade,
+            atualizado_em = NOW() WHERE id = NEW.produto_id; RETURN NEW; END;
+        $$ LANGUAGE plpgsql`)
+    banco.sql(`DROP TRIGGER IF EXISTS trg_venda_estoque ON itens_venda`)
+    banco.sql(`CREATE TRIGGER trg_venda_estoque AFTER INSERT ON itens_venda
+        FOR EACH ROW EXECUTE FUNCTION baixar_estoque()`)
+
+    // Trigger restaurar estoque ao cancelar
+    banco.sql(`CREATE OR REPLACE FUNCTION restaurar_estoque_cancelamento()
+        RETURNS TRIGGER AS $$
+        BEGIN IF NEW.cancelada = TRUE AND OLD.cancelada = FALSE THEN
+            UPDATE produtos p SET estoque_atual = estoque_atual + iv.quantidade,
+                atualizado_em = NOW()
+            FROM itens_venda iv WHERE iv.venda_id = NEW.id AND p.id = iv.produto_id;
+        END IF; RETURN NEW; END; $$ LANGUAGE plpgsql`)
+    banco.sql(`DROP TRIGGER IF EXISTS trg_cancelar_venda ON vendas`)
+    banco.sql(`CREATE TRIGGER trg_cancelar_venda AFTER UPDATE ON vendas
+        FOR EACH ROW EXECUTE FUNCTION restaurar_estoque_cancelamento()`)
+
+    // Dados iniciais
+    banco.sql(`INSERT INTO categorias (nome) VALUES
+        ('Grãos'),('Óleos'),('Mercearia'),('Massas'),('Temperos'),
+        ('Laticínios'),('Bebidas'),('Biscoitos'),('Limpeza'),('Higiene'),('Frios')
+        ON CONFLICT (nome) DO NOTHING`)
+    banco.sql(`INSERT INTO operadores (nome,login,senha,nivel) VALUES
+        ('Administrador','admin','admin123','gerente'),
+        ('Caixa 01','caixa1','1234','caixa')
+        ON CONFLICT (login) DO NOTHING`)
+    banco.sql(`INSERT INTO produtos (codigo_barras,nome,preco_venda,preco_custo,estoque_atual,estoque_minimo,unidade,categoria_id) VALUES
+        ('7891000100103','Arroz Tipo 1 5kg',    8.90,5.50,50,10,'un', (SELECT id FROM categorias WHERE nome='Grãos')),
+        ('7891000053508','Feijão Carioca 1kg',   5.50,3.20,40,10,'un', (SELECT id FROM categorias WHERE nome='Grãos')),
+        ('7891910000197','Óleo de Soja 900ml',   7.20,4.80,30,5, 'un', (SELECT id FROM categorias WHERE nome='Óleos')),
+        ('7896005800027','Açúcar Cristal 1kg',   4.80,2.90,60,10,'un', (SELECT id FROM categorias WHERE nome='Mercearia')),
+        ('7891024130132','Macarrão Espaguete 500g',3.50,2.10,45,10,'un',(SELECT id FROM categorias WHERE nome='Massas')),
+        ('7891149410116','Sal Refinado 1kg',     2.30,1.20,80,15,'un', (SELECT id FROM categorias WHERE nome='Temperos')),
+        ('7891515501012','Leite Integral 1L',    4.50,3.00,35,10,'un', (SELECT id FROM categorias WHERE nome='Laticínios')),
+        ('7896065200059','Café Torrado 500g',   12.90,8.50,25,5, 'un', (SELECT id FROM categorias WHERE nome='Bebidas')),
+        ('7894900011517','Coca-Cola 2L',         9.80,6.50,20,5, 'un', (SELECT id FROM categorias WHERE nome='Bebidas')),
+        ('7891000060507','Biscoito Maizena 400g',4.20,2.80,38,8, 'un', (SELECT id FROM categorias WHERE nome='Biscoitos')),
+        ('7891962031003','Sabão em Pó 1kg',      8.90,6.00,22,5, 'un', (SELECT id FROM categorias WHERE nome='Limpeza')),
+        ('7896004803090','Detergente 500ml',     2.50,1.50,45,10,'un', (SELECT id FROM categorias WHERE nome='Limpeza')),
+        ('7891107101621','Shampoo 400ml',       12.50,8.00,18,5, 'un', (SELECT id FROM categorias WHERE nome='Higiene')),
+        ('7891152402285','Papel Higiênico 4un',  6.90,4.50,30,8, 'un', (SELECT id FROM categorias WHERE nome='Higiene')),
+        ('7893000615811','Queijo Minas 500g',   18.90,12.00,15,3,'kg', (SELECT id FROM categorias WHERE nome='Frios'))
+        ON CONFLICT (codigo_barras) DO NOTHING`)
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SEÇÃO 2 — FUNÇÕES DE BANCO (CRUD COMPLETO)
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ── Produtos ─────────────────────────────────────────────────────────────
+
+funcao listar_produtos(filtro, categoria, so_ativos) {
+    seja where = "WHERE 1=1"
+    seja params = []
+    seja idx = [1]
+
+    se (so_ativos) { where = where + " AND p.ativo=TRUE" }
+
+    se (filtro != nulo e filtro.aparar() != "") {
+        seja e_cod = Regex.testar("^[0-9]+$", filtro.aparar())
+        se (e_cod) {
+            where = where + " AND p.codigo_barras ILIKE $" + texto(idx[0])
+            params.adicionar("%" + filtro + "%")
+        } senão {
+            where = where + " AND p.nome ILIKE $" + texto(idx[0])
+            params.adicionar("%" + filtro + "%")
+        }
+        idx[0]++
+    }
+
+    se (categoria != nulo e categoria != "" e categoria != "Todas") {
+        where = where + " AND c.nome=$" + texto(idx[0])
+        params.adicionar(categoria)
+        idx[0]++
+    }
+
+    retornar banco.sql(`
+        SELECT p.*, c.nome as categoria_nome
+        FROM produtos p
+        LEFT JOIN categorias c ON c.id=p.categoria_id
+        ` + where + ` ORDER BY p.nome LIMIT 200`, params)
+}
+
+funcao buscar_por_codigo_ou_nome(termo) {
+    seja e_cod = Regex.testar("^[0-9]+$", termo.aparar())
+    se (e_cod) {
+        seja r = banco.sql(
+            "SELECT p.*,c.nome as categoria_nome FROM produtos p LEFT JOIN categorias c ON c.id=p.categoria_id WHERE p.codigo_barras=$1 AND p.ativo=TRUE",
+            [termo])
+        retornar r
+    }
+    retornar banco.sql(
+        "SELECT p.*,c.nome as categoria_nome FROM produtos p LEFT JOIN categorias c ON c.id=p.categoria_id WHERE p.nome ILIKE $1 AND p.ativo=TRUE ORDER BY p.nome LIMIT 20",
+        ["%" + termo + "%"])
+}
+
+funcao salvar_produto(dados) {
+    // Determina categoria_id
+    seja cat_id = nulo
+    se (dados.categoria != nulo e dados.categoria != "") {
+        seja cr = banco.sql("SELECT id FROM categorias WHERE nome=$1", [dados.categoria])
+        se (cr.tamanho > 0) { cat_id = cr[0].id }
+    }
+
+    se (dados.id == nulo) {
+        // INSERT
+        seja r = banco.sql(`
+            INSERT INTO produtos
+                (codigo_barras,nome,descricao,preco_venda,preco_custo,
+                 estoque_atual,estoque_minimo,unidade,categoria_id)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id`,
+            [dados.codigo_barras, dados.nome, dados.descricao ?? "",
+             dados.preco_venda, dados.preco_custo ?? 0,
+             dados.estoque_atual ?? 0, dados.estoque_minimo ?? 5,
+             dados.unidade ?? "un", cat_id])
+        retornar {sucesso: verdadeiro, id: r[0].id, acao: "criado"}
+    } senão {
+        // UPDATE
+        banco.sql(`
+            UPDATE produtos SET
+                codigo_barras=$1, nome=$2, descricao=$3,
+                preco_venda=$4, preco_custo=$5,
+                estoque_atual=$6, estoque_minimo=$7,
+                unidade=$8, categoria_id=$9,
+                atualizado_em=NOW()
+            WHERE id=$10`,
+            [dados.codigo_barras, dados.nome, dados.descricao ?? "",
+             dados.preco_venda, dados.preco_custo ?? 0,
+             dados.estoque_atual, dados.estoque_minimo ?? 5,
+             dados.unidade ?? "un", cat_id, dados.id])
+        retornar {sucesso: verdadeiro, id: dados.id, acao: "atualizado"}
+    }
+}
+
+funcao excluir_produto(id) {
+    // Verificar se tem vendas
+    seja r = banco.sql(
+        "SELECT COUNT(*) cnt FROM itens_venda WHERE produto_id=$1", [id])
+    se (numero(r[0].cnt) > 0) {
+        // Soft delete — desativa ao invés de excluir
+        banco.sql("UPDATE produtos SET ativo=FALSE, atualizado_em=NOW() WHERE id=$1", [id])
+        retornar {sucesso: verdadeiro, tipo: "desativado"}
+    }
+    banco.sql("DELETE FROM produtos WHERE id=$1", [id])
+    retornar {sucesso: verdadeiro, tipo: "excluido"}
+}
+
+funcao ajustar_estoque(produto_id, qtd, tipo, obs, operador) {
+    se (tipo == "entrada") {
+        banco.sql("UPDATE produtos SET estoque_atual=estoque_atual+$1, atualizado_em=NOW() WHERE id=$2",
+            [qtd, produto_id])
+    } senão {
+        banco.sql("UPDATE produtos SET estoque_atual=estoque_atual-$1, atualizado_em=NOW() WHERE id=$2",
+            [qtd, produto_id])
+    }
+    banco.sql("INSERT INTO movimentos_estoque (produto_id,tipo,quantidade,obs,operador) VALUES ($1,$2,$3,$4,$5)",
+        [produto_id, tipo, qtd, obs, operador])
+}
+
+// ── Operadores ────────────────────────────────────────────────────────────
+
+funcao listar_operadores() {
+    retornar banco.sql("SELECT * FROM operadores ORDER BY nome")
+}
+
+funcao salvar_operador(dados) {
+    se (dados.id == nulo) {
+        banco.sql("INSERT INTO operadores (nome,login,senha,nivel,ativo) VALUES ($1,$2,$3,$4,$5)",
+            [dados.nome, dados.login, dados.senha, dados.nivel ?? "caixa", verdadeiro])
+    } senão {
+        se (dados.senha != "" e dados.senha != nulo) {
+            banco.sql("UPDATE operadores SET nome=$1,login=$2,senha=$3,nivel=$4,ativo=$5 WHERE id=$6",
+                [dados.nome, dados.login, dados.senha, dados.nivel, dados.ativo, dados.id])
+        } senão {
+            banco.sql("UPDATE operadores SET nome=$1,login=$2,nivel=$3,ativo=$4 WHERE id=$5",
+                [dados.nome, dados.login, dados.nivel, dados.ativo, dados.id])
+        }
+    }
+    retornar {sucesso: verdadeiro}
+}
+
+funcao excluir_operador(id) {
+    banco.sql("UPDATE operadores SET ativo=FALSE WHERE id=$1", [id])
+    retornar {sucesso: verdadeiro}
+}
+
+funcao autenticar(login, senha) {
+    seja r = banco.sql(
+        "SELECT * FROM operadores WHERE login=$1 AND senha=$2 AND ativo=TRUE",
+        [login, senha])
+    retornar r.tamanho > 0 ? r[0] : nulo
+}
+
+// ── Vendas ────────────────────────────────────────────────────────────────
+
+funcao registrar_venda(itens, forma_pag, valor_recebido, desconto, operador, obs) {
+    seja total_bruto = itens.reduzir((a, i) => a + i.subtotal, 0)
+    seja desc        = numero(desconto ?? 0)
+    seja total       = arred(total_bruto - desc, 2)
+    seja troco       = forma_pag == "Dinheiro" ? arred(valor_recebido - total, 2) : 0
+    banco.sql("BEGIN")
+    tentar {
+        seja v = banco.sql(`INSERT INTO vendas
+            (total_bruto,desconto,total_venda,forma_pagamento,valor_recebido,troco,operador,obs)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,
+            [total_bruto,desc,total,forma_pag,valor_recebido,troco,operador,obs??""])
+        seja vid = v[0].id
+        para (item em itens) {
+            banco.sql(`INSERT INTO itens_venda
+                (venda_id,produto_id,nome_produto,quantidade,preco_unitario,desconto_item,subtotal)
+                VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+                [vid,item.produto_id,item.nome,item.quantidade,
+                 item.preco_unitario,item.desconto_item??0,item.subtotal])
+        }
+        banco.sql("COMMIT")
+        retornar {sucesso: verdadeiro, venda_id: vid, troco: troco, total: total}
+    } pegar (e) {
+        banco.sql("ROLLBACK")
+        retornar {sucesso: falso, erro: texto(e)}
+    }
+}
+
+funcao cancelar_venda(id) {
+    banco.sql("UPDATE vendas SET cancelada=TRUE WHERE id=$1 AND cancelada=FALSE",[id])
+}
+
+funcao relatorio_dia(data_sql) {
+    retornar banco.sql(`
+        SELECT forma_pagamento, COUNT(*) total_vendas,
+            SUM(total_venda) faturamento, AVG(total_venda) ticket_medio
+        FROM vendas WHERE DATE(data_hora)=$1 AND cancelada=FALSE
+        GROUP BY forma_pagamento ORDER BY faturamento DESC`, [data_sql])
+}
+
+funcao top_produtos(data_sql) {
+    retornar banco.sql(`
+        SELECT p.nome, SUM(iv.quantidade) qtd, SUM(iv.subtotal) receita
+        FROM itens_venda iv
+        JOIN produtos p ON p.id=iv.produto_id
+        JOIN vendas v   ON v.id=iv.venda_id
+        WHERE DATE(v.data_hora)=$1 AND v.cancelada=FALSE
+        GROUP BY p.id,p.nome ORDER BY qtd DESC LIMIT 10`, [data_sql])
+}
+
+funcao estoque_baixo() {
+    retornar banco.sql(`
+        SELECT p.nome, c.nome as cat, p.estoque_atual, p.estoque_minimo
+        FROM produtos p LEFT JOIN categorias c ON c.id=p.categoria_id
+        WHERE p.estoque_atual<=p.estoque_minimo AND p.ativo=TRUE
+        ORDER BY p.estoque_atual ASC`)
+}
+
+funcao saldo_caixa(data_sql) {
+    seja v = banco.sql(`SELECT COALESCE(SUM(total_venda),0) t FROM vendas
+        WHERE DATE(data_hora)=$1 AND cancelada=FALSE`, [data_sql])
+    seja m = banco.sql(`SELECT
+        COALESCE(SUM(CASE WHEN tipo='suprimento' THEN valor ELSE 0 END),0) e,
+        COALESCE(SUM(CASE WHEN tipo='sangria' THEN valor ELSE 0 END),0) s
+        FROM movimentos_caixa WHERE DATE(data_hora)=$1`, [data_sql])
+    seja tv=numero(v[0].t); seja e=numero(m[0].e); seja s=numero(m[0].s)
+    retornar {vendas:tv, entradas:e, saidas:s, saldo:arred(tv+e-s,2)}
+}
+
+funcao gerar_cupom(venda_id, itens, total, forma, troco, operador) {
+    seja l = "-".repetir(40)
+    seja ls = ["     SUPERMERCADO ADVAK 5.0     ",
+        "  Tecnologia em Português!  ", l,
+        "Venda #" + texto(venda_id) + "  " + data_hoje() + " " + data_agora("%H:%M"),
+        "Operador: " + operador, l,
+        "PRODUTO              QTD   SUBTOTAL", l]
+    para (item em itens) {
+        seja nm = texto(item.nome).primeiros(20).padEnd(20)
+        seja qt = texto(arred(item.quantidade,3)).padStart(4)
+        seja sb = moeda(item.subtotal).padStart(10)
+        ls.adicionar(nm + qt + sb)
+    }
+    ls.adicionar(l)
+    ls.adicionar("TOTAL:               " + moeda(total).padStart(14))
+    ls.adicionar("Forma: " + forma)
+    se (forma == "Dinheiro" e troco > 0) {
+        ls.adicionar("Troco:               " + moeda(troco).padStart(14))
+    }
+    ls.adicionar(l)
+    ls.adicionar("   Obrigado pela preferência!   ")
+    retornar ls.unir("\n")
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SEÇÃO 3 — ESTADO
+// ═══════════════════════════════════════════════════════════════════════════
+
+seja _op      = [{id: nulo, nome: "Não logado", nivel: "caixa"}]
+seja _venda   = {itens: [], desconto: 0.0}
+seja _edit_id = [nulo]  // produto sendo editado
+
+funcao total_bruto() {
+    retornar _venda.itens.reduzir((a,i) => a+i.subtotal, 0)
+}
+funcao total_liq() {
+    retornar arred(total_bruto() - _venda.desconto, 2)
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════════════════
+// SEÇÃO 4 — INTERFACE PDV — Design Profissional
+// ═══════════════════════════════════════════════════════════════════════════
+
+gui.tema("escuro")
+seja jan = gui.janela("🛒 PDV Supermercado — Advak 5.0", 1280, 780)
+jan.configure(bg="#060D1F")
+
+// ── HEADER PRINCIPAL ─────────────────────────────────────────────────────
+seja f_header = gui.frame(jan, cor="#0A1628")
+f_header.configure(height=56)
+f_header.pack(preencher="x")
+f_header.pack_propagate(falso)
+
+// Logo + Título
+seja f_h_esq = gui.frame(f_header, cor="#0A1628")
+f_h_esq.pack(lado="esquerda", espaco_x=0)
+f_h_esq.pack_propagate(falso)
+f_h_esq.configure(width=300)
+
+seja f_logo = gui.frame(f_header, cor="#2563EB")
+f_logo.configure(width=6)
+f_logo.pack(lado="esquerda", preencher="y")
+
+gui.label(f_h_esq, "  🛒  SUPERMERCADO ADVAK",
+    negrito=verdadeiro, tamanho=14, cor="#FFFFFF").pack(lado="esquerda", espaco_x=16, espaco_y=14)
+
+// Operador + hora
+seja f_h_dir = gui.frame(f_header, cor="#0A1628")
+f_h_dir.pack(lado="direita", espaco_x=10)
+
+seja lbl_op = gui.label(f_h_dir, "  👤  Não logado",
+    negrito=verdadeiro, tamanho=10, cor="#94A3B8")
+lbl_op.pack(lado="esquerda", espaco_x=8)
+
+seja f_hora_box = gui.frame(f_header, cor="#1E3A5F")
+f_hora_box.configure(width=110)
+f_hora_box.pack(lado="direita", preencher="y")
+f_hora_box.pack_propagate(falso)
+
+seja lbl_hora = gui.label(f_hora_box, "00:00:00",
+    negrito=verdadeiro, tamanho=14, cor="#60A5FA")
+lbl_hora.pack(expandir=verdadeiro, espaco_y=14)
+
+funcao tick() {
+    lbl_hora.configure(text=data_agora("%H:%M:%S"))
+    gui.apos(1000, () => tick())
+}
+tick()
+
+// Linha separadora azul
+seja f_linha = gui.frame(jan, cor="#2563EB")
+f_linha.configure(height=2)
+f_linha.pack(preencher="x")
+
+// ── CORPO PRINCIPAL ───────────────────────────────────────────────────────
+seja f_corpo = gui.frame_horizontal(jan)
+f_corpo.configure(bg="#060D1F")
+f_corpo.pack(preencher="x", expandir=verdadeiro, espaco_x=0, espaco_y=0)
+
+// ══════════════════════════════════════════════════════════
+// COLUNA ESQUERDA — SIDEBAR DE ENTRADA
+// ══════════════════════════════════════════════════════════
+seja sidebar = gui.frame(f_corpo, cor="#0D1B2E")
+sidebar.configure(width=480)
+sidebar.pack(lado="esquerda", preencher="y")
+sidebar.pack_propagate(falso)
+
+// ── Seção busca ──────────────────────────────────────────
+seja f_busca_sec = gui.frame(sidebar, cor="#111C2E")
+f_busca_sec.pack(preencher="x", espaco_x=0, espaco_y=0)
+
+gui.label(f_busca_sec, "  PRODUTO", negrito=verdadeiro,
+    tamanho=8, cor="#4B6B8A").pack(ancora="oeste", espaco_x=16, espaco_y=8)
+
+seja f_campo_row = gui.frame_horizontal(f_busca_sec)
+f_campo_row.configure(bg="#111C2E")
+
+seja c_cod = gui.campo(f_campo_row,
+    placeholder="Código de barras ou nome...", largura=26)
+c_cod.configure(bg="#1A2D45", fg="#E2E8F0", insertbackground="#60A5FA",
+    relief="flat")
+c_cod.pack(lado="esquerda", espaco_x=16, espaco_y=8, iespaco_y=6)
+
+seja btn_add = gui.botao(f_campo_row, "＋",
+    ao_clicar=() => pdv_adicionar(),
+    estilo="sucesso", largura=3)
+btn_add.configure()
+btn_add.pack(lado="esquerda", espaco_y=8, espaco_x=2, iespaco_y=4)
+
+seja btn_srch = gui.botao(f_campo_row, "🔍",
+    ao_clicar=() => pdv_buscar_nome(),
+    estilo="primario", largura=3)
+btn_srch.pack(lado="esquerda", espaco_y=8, espaco_x=2, iespaco_y=4)
+
+// Qtd + Desconto item
+seja f_aux_row = gui.frame_horizontal(f_busca_sec)
+f_aux_row.configure(bg="#111C2E")
+
+gui.label(f_aux_row, "  Qtd:", tamanho=10, cor="#64748B", negrito=verdadeiro).pack(lado="esquerda", espaco_x=8)
+seja c_qtd = gui.campo(f_aux_row, largura=6)
+c_qtd.configure(bg="#1A2D45", fg="#E2E8F0", insertbackground="#60A5FA",
+    relief="flat", justify="center")
+c_qtd.insert(0, "1")
+c_qtd.pack(lado="esquerda", espaco_y=6, iespaco_y=4)
+
+gui.label(f_aux_row, "   Desc: R$", tamanho=10, cor="#64748B", negrito=verdadeiro).pack(lado="esquerda", espaco_x=4)
+seja c_desc_item = gui.campo(f_aux_row, largura=7)
+c_desc_item.configure(bg="#1A2D45", fg="#E2E8F0", insertbackground="#60A5FA",
+    relief="flat", justify="center")
+c_desc_item.insert(0, "0")
+c_desc_item.pack(lado="esquerda", espaco_y=6, iespaco_y=4)
+
+// ── Info produto selecionado ──────────────────────────────
+seja f_prod_card = gui.frame(sidebar, cor="#0F2740")
+f_prod_card.configure(height=64)
+f_prod_card.pack(preencher="x", espaco_x=12, espaco_y=6)
+f_prod_card.pack_propagate(falso)
+
+seja lbl_pnome = gui.label(f_prod_card, "  Aguardando produto...",
+    tamanho=11, cor="#4B6B8A", negrito=verdadeiro)
+lbl_pnome.pack(ancora="oeste", espaco_x=10, espaco_y=6)
+
+seja lbl_pinfo = gui.label(f_prod_card, "", tamanho=9, cor="#4B6B8A")
+lbl_pinfo.pack(ancora="oeste", espaco_x=10)
+
+// ── Linha divisória ───────────────────────────────────────
+seja f_div1 = gui.frame(sidebar, cor="#1A2D45")
+f_div1.configure(height=1)
+f_div1.pack(preencher="x", espaco_x=12, espaco_y=4)
+
+// ── Tabela de itens ───────────────────────────────────────
+seja f_tbl_header = gui.frame(sidebar, cor="#0D1B2E")
+gui.label(f_tbl_header, "  🛒  ITENS DA VENDA",
+    negrito=verdadeiro, tamanho=9, cor="#4B6B8A").pack(lado="esquerda", espaco_x=16, espaco_y=4)
+
+seja tbl_itens = gui.tabela(sidebar,
+    colunas=["#", "Produto", "Qtd", "Unit.", "Subtotal"],
+    altura=13)
+
+// Barra de ações dos itens
+seja f_acoes = gui.frame(sidebar, cor="#111C2E")
+f_acoes.pack(preencher="x")
+f_acoes.configure(height=46)
+f_acoes.pack_propagate(falso)
+
+seja f_acoes_inner = gui.frame_horizontal(f_acoes)
+f_acoes_inner.configure(bg="#111C2E")
+
+gui.botao(f_acoes_inner, "🗑 Remover",
+    ao_clicar=() => pdv_remover_item(), estilo="perigo").pack(lado="esquerda", espaco_x=8, espaco_y=6, iespaco_y=2)
+gui.botao(f_acoes_inner, "✏ Editar Qtd",
+    ao_clicar=() => pdv_editar_qtd(), estilo="secundario").pack(lado="esquerda", espaco_x=2, espaco_y=6, iespaco_y=2)
+gui.botao(f_acoes_inner, "🧹 Limpar",
+    ao_clicar=() => pdv_limpar_venda(), estilo="aviso").pack(lado="esquerda", espaco_x=2, espaco_y=6, iespaco_y=2)
+
+// ══════════════════════════════════════════════════════════
+// COLUNA CENTRAL — TOTAL + PAGAMENTO
+// ══════════════════════════════════════════════════════════
+seja painel_pag = gui.frame(f_corpo, cor="#060D1F")
+painel_pag.configure(width=420)
+painel_pag.pack(lado="esquerda", preencher="y")
+painel_pag.pack_propagate(falso)
+
+// ── Card Total ────────────────────────────────────────────
+seja f_total_card = gui.frame(painel_pag, cor="#0D1B2E")
+f_total_card.configure(height=160)
+f_total_card.pack(preencher="x", espaco_x=10, espaco_y=10)
+f_total_card.pack_propagate(falso)
+
+gui.label(f_total_card, "  TOTAL A PAGAR",
+    negrito=verdadeiro, tamanho=9, cor="#4B6B8A").pack(ancora="oeste", espaco_x=14, espaco_y=8)
+
+seja lbl_total = gui.label(f_total_card, "R$ 0,00",
+    negrito=verdadeiro, tamanho=34, cor="#22C55E")
+lbl_total.pack(espaco_x=14, espaco_y=2)
+
+seja lbl_info_venda = gui.label(f_total_card, "0 itens  ·  Sem desconto",
+    tamanho=9, cor="#4B6B8A")
+lbl_info_venda.pack(ancora="oeste", espaco_x=14, espaco_y=4)
+
+// ── Cards métricas (3 colunas) ───────────────────────────
+seja f_metricas = gui.frame_horizontal(painel_pag)
+f_metricas.configure(bg="#060D1F")
+
+funcao criar_metrica(pai, rotulo, valor_init, cor_val) {
+    seja f = gui.frame(pai, cor="#0D1B2E")
+    f.configure(height=58, width=130)
+    f.pack(lado="esquerda", espaco_x=5, espaco_y=4)
+    f.pack_propagate(falso)
+    gui.label(f, rotulo, tamanho=7, cor="#4B6B8A", negrito=verdadeiro).pack(ancora="oeste", espaco_x=8, espaco_y=3)
+    seja lv = gui.label(f, valor_init, tamanho=12, cor=cor_val, negrito=verdadeiro)
+    lv.pack(ancora="oeste", espaco_x=8)
+    retornar lv
+}
+
+seja lbl_m_itens  = criar_metrica(f_metricas, "ITENS",     "0",       "#60A5FA")
+seja lbl_m_bruto  = criar_metrica(f_metricas, "BRUTO",     "R$ 0,00", "#E2E8F0")
+seja lbl_m_desc   = criar_metrica(f_metricas, "DESCONTO",  "R$ 0,00", "#F59E0B")
+
+// ── Desconto ─────────────────────────────────────────────
+seja f_desc_row = gui.frame(painel_pag, cor="#0D1B2E")
+f_desc_row.configure(height=46)
+f_desc_row.pack(preencher="x", espaco_x=10, espaco_y=4)
+f_desc_row.pack_propagate(falso)
+
+seja f_desc_inner = gui.frame_horizontal(f_desc_row)
+f_desc_inner.configure(bg="#0D1B2E")
+
+gui.label(f_desc_inner, "  🏷  Desconto: R$",
+    tamanho=10, cor="#94A3B8", negrito=verdadeiro).pack(lado="esquerda", espaco_x=8, espaco_y=10)
+seja c_desc_tot = gui.campo(f_desc_inner, largura=8)
+c_desc_tot.configure(bg="#1A2D45", fg="#E2E8F0", insertbackground="#60A5FA",
+    relief="flat", justify="center")
+c_desc_tot.insert(0, "0")
+c_desc_tot.pack(lado="esquerda", iespaco_y=4)
+gui.botao(f_desc_inner, "Aplicar",
+    ao_clicar=() => pdv_aplicar_desc(), estilo="secundario").pack(lado="esquerda", espaco_x=6, espaco_y=8)
+
+// ── Forma de pagamento ────────────────────────────────────
+seja f_pag_sec = gui.frame(painel_pag, cor="#0D1B2E")
+f_pag_sec.pack(preencher="x", espaco_x=10, espaco_y=4)
+
+gui.label(f_pag_sec, "  FORMA DE PAGAMENTO",
+    negrito=verdadeiro, tamanho=8, cor="#4B6B8A").pack(ancora="oeste", espaco_x=12, espaco_y=8)
+
+seja _forma = ["Dinheiro"]
+seja f_pag1 = gui.frame_horizontal(f_pag_sec)
+f_pag1.configure(bg="#0D1B2E")
+seja f_pag2 = gui.frame_horizontal(f_pag_sec)
+f_pag2.configure(bg="#0D1B2E")
+
+funcao criar_btn_pag(pai, emoji, nome, cor_estilo) {
+    seja btn = gui.botao(pai, emoji + "  " + nome,
+        ao_clicar=() => pdv_sel_pag(nome),
+        estilo=cor_estilo, largura=13)
+    btn.pack(lado="esquerda", espaco_x=4, espaco_y=4, iespaco_y=4)
+    retornar btn
+}
+
+criar_btn_pag(f_pag1, "💵", "Dinheiro", "sucesso")
+criar_btn_pag(f_pag1, "💳", "Débito",   "primario")
+criar_btn_pag(f_pag1, "💳", "Crédito",  "roxo")
+criar_btn_pag(f_pag2, "📱", "Pix",      "aviso")
+criar_btn_pag(f_pag2, "🧾", "Voucher",  "secundario")
+
+seja lbl_pag = gui.label(f_pag_sec, "  ✅  DINHEIRO selecionado",
+    negrito=verdadeiro, tamanho=10, cor="#22C55E")
+lbl_pag.pack(ancora="oeste", espaco_x=12, espaco_y=4)
+
+// ── Recebido + Troco ──────────────────────────────────────
+seja f_rec_box = gui.frame(painel_pag, cor="#0D1B2E")
+f_rec_box.configure(height=100)
+f_rec_box.pack(preencher="x", espaco_x=10, espaco_y=4)
+f_rec_box.pack_propagate(falso)
+
+seja f_rec_inner = gui.frame_horizontal(f_rec_box)
+f_rec_inner.configure(bg="#0D1B2E")
+gui.label(f_rec_inner, "  Valor Recebido:",
+    tamanho=11, cor="#94A3B8", negrito=verdadeiro).pack(lado="esquerda", espaco_x=10, espaco_y=10)
+
+seja c_rec = gui.campo(f_rec_inner, largura=11)
+c_rec.configure(bg="#1A2D45", fg="#E2E8F0", insertbackground="#60A5FA",
+    relief="flat", justify="right")
+c_rec.insert(0, "0")
+c_rec.pack(lado="esquerda", iespaco_y=6)
+
+seja lbl_troco = gui.label(f_rec_box, "  💰  Troco: —",
+    negrito=verdadeiro, tamanho=14, cor="#F59E0B")
+lbl_troco.pack(ancora="oeste", espaco_x=10, espaco_y=4)
+
+// ── Botão FINALIZAR ───────────────────────────────────────
+seja btn_fin = gui.botao(painel_pag, "✅   FINALIZAR VENDA   [ F12 ]",
+    ao_clicar=() => pdv_finalizar(), estilo="sucesso")
+btn_fin.configure()
+btn_fin.pack(preencher="x", espaco_x=10, espaco_y=6, iespaco_y=14)
+
+seja btn_canc = gui.botao(painel_pag, "❌   CANCELAR ÚLTIMA VENDA   [ F9 ]",
+    ao_clicar=() => pdv_cancelar_ultima(), estilo="perigo")
+btn_canc.pack(preencher="x", espaco_x=10, espaco_y=2, iespaco_y=6)
+
+// ══════════════════════════════════════════════════════════
+// COLUNA DIREITA — GESTÃO E RELATÓRIOS
+// ══════════════════════════════════════════════════════════
+seja painel_gest = gui.frame(f_corpo, cor="#060D1F")
+painel_gest.pack(lado="esquerda", preencher="ambos", expandir=verdadeiro)
+
+// Botões de gestão no topo
+seja f_gest_header = gui.frame(painel_gest, cor="#0A1628")
+f_gest_header.configure(height=50)
+f_gest_header.pack(preencher="x")
+f_gest_header.pack_propagate(falso)
+
+seja f_gest_btns = gui.frame_horizontal(f_gest_header)
+f_gest_btns.configure(bg="#0A1628")
+
+funcao criar_btn_gest(pai, emoji, label, fn, cor) {
+    seja b = gui.botao(pai, emoji + " " + label,
+        ao_clicar=fn, estilo=cor)
+    b.configure()
+    b.pack(lado="esquerda", espaco_x=4, espaco_y=8, iespaco_y=2)
+    retornar b
+}
+
+criar_btn_gest(f_gest_btns, "⚙️",  "Gestão  F10", () => abrir_gestao(),  "primario")
+criar_btn_gest(f_gest_btns, "📊",  "Caixa  F5",   () => pdv_relatorio(), "secundario")
+criar_btn_gest(f_gest_btns, "📦",  "Estoque F6",  () => pdv_estoque_baixo(), "aviso")
+criar_btn_gest(f_gest_btns, "🏆",  "Top F7",      () => pdv_top(),       "roxo")
+criar_btn_gest(f_gest_btns, "💰",  "Sangria",     () => pdv_sangria(),   "perigo")
+criar_btn_gest(f_gest_btns, "💵",  "Suprimento",  () => pdv_suprimento(),"sucesso")
+
+// Divisória
+seja f_div2 = gui.frame(painel_gest, cor="#1A2D45")
+f_div2.configure(height=1)
+f_div2.pack(preencher="x")
+
+// Abas de conteúdo
+seja abas_pdv = gui.abas(painel_gest)
+
+// Aba Buscar
+seja tab_bk = abas_pdv.adicionar("🔍 Buscar Produto")
+seja f_bk = gui.frame_horizontal(tab_bk)
+
+seja c_bk = gui.campo(f_bk, placeholder="Nome ou código...", largura=28)
+c_bk.configure(bg="#1A2D45", fg="#E2E8F0", insertbackground="#60A5FA",
+    relief="flat")
+c_bk.pack(lado="esquerda", espaco_x=8, espaco_y=8, iespaco_y=5)
+gui.botao(f_bk, "🔍 Buscar",
+    ao_clicar=() => pdv_buscar_tabela(), estilo="primario").pack(lado="esquerda", espaco_x=4, iespaco_y=4)
+
+seja tbl_bk = gui.tabela(tab_bk,
+    colunas=["Cód.Barras", "Nome", "Preço", "Estoque"],
+    altura=14,
+    ao_selecionar=(l) => pdv_add_da_busca(l))
+
+// Aba Caixa
+seja tab_cx = abas_pdv.adicionar("📊 Caixa do Dia")
+seja txt_cx = gui.area_texto(tab_cx, largura=42, altura=12)
+txt_cx.configure(estado="desabilitado", bg="#0D1117", fg="#94A3B8",
+    relief="flat")
+seja f_cx_btns = gui.frame_horizontal(tab_cx)
+gui.botao(f_cx_btns, "📊 Atualizar Relatório",
+    ao_clicar=() => pdv_relatorio(), estilo="primario").pack(lado="esquerda", espaco_x=8, espaco_y=6)
+
+// Aba Estoque
+seja tab_es = abas_pdv.adicionar("📦 Estoque Baixo")
+seja tbl_es = gui.tabela(tab_es,
+    colunas=["Produto", "Atual", "Mínimo", "Cat."], altura=14)
+seja f_es_btns = gui.frame_horizontal(tab_es)
+gui.botao(f_es_btns, "⚠️ Atualizar Estoque Baixo",
+    ao_clicar=() => pdv_estoque_baixo(), estilo="aviso").pack(lado="esquerda", espaco_x=8, espaco_y=6)
+
+// Aba Top
+seja tab_tp = abas_pdv.adicionar("🏆 Top Produtos")
+seja tbl_top = gui.tabela(tab_tp,
+    colunas=["Produto", "Qtd Vendida", "Receita"], altura=14)
+seja f_tp_btns = gui.frame_horizontal(tab_tp)
+gui.botao(f_tp_btns, "🏆 Atualizar Top Produtos",
+    ao_clicar=() => pdv_top(), estilo="roxo").pack(lado="esquerda", espaco_x=8, espaco_y=6)
+
+// ── STATUS BAR ────────────────────────────────────────────
+seja f_statusbar = gui.frame(jan, cor="#0A1628")
+f_statusbar.configure(height=28)
+f_statusbar.pack(preencher="x", lado="fundo")
+f_statusbar.pack_propagate(falso)
+
+seja lbl_status_esq = gui.label(f_statusbar,
+    "  ⌨  Enter=Adicionar  F8=Login  F10=Gestão  F12=Finalizar  F9=Cancelar  F5=Caixa  F6=Estoque  F7=Top",
+    tamanho=8, cor="#4B6B8A")
+lbl_status_esq.pack(lado="esquerda", espaco_x=8, espaco_y=5)
+
+seja lbl_status_dir = gui.label(f_statusbar, "●  Conectado", tamanho=8, cor="#22C55E", negrito=verdadeiro)
+lbl_status_dir.pack(lado="direita", espaco_x=12)
+
+seja status = lbl_status_esq  // alias para compatibilidade
+funcao status_mensagem(msg) {
+    lbl_status_esq.configure(text=msg)
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SEÇÃO 5 — FUNÇÕES PDV
+// ═══════════════════════════════════════════════════════════════════════════
+
+funcao pdv_atualizar_tela() {
+    tbl_itens.limpar()
+    seja i = 1
+    para (item em _venda.itens) {
+        tbl_itens.adicionar([texto(i), item.nome.primeiros(26),
+            texto(arred(item.quantidade, 3)),
+            moeda(item.preco_unitario), moeda(item.subtotal)])
+        i++
+    }
+    seja tl = total_liq()
+    seja tb = total_bruto()
+    seja n  = _venda.itens.tamanho
+    seja d  = _venda.desconto
+
+    // Total principal — cor muda com valor
+    lbl_total.configure(text=moeda(tl))
+    se (tl > 0) { lbl_total.configure(fg="#22C55E") }
+    se (tl == 0) { lbl_total.configure(fg="#4B6B8A") }
+
+    // Info venda
+    lbl_info_venda.configure(text=texto(n) + (n==1?" item":" itens") +
+        "  ·  " + (d>0?"Desc: "+moeda(d):"Sem desconto"))
+
+    // Cards métricas
+    lbl_m_itens.configure(text=texto(n))
+    lbl_m_bruto.configure(text=moeda(tb))
+    lbl_m_desc.configure(text=moeda(d), fg=(d>0?"#F59E0B":"#4B6B8A"))
+
+    // Troco
+    se (_forma[0] == "Dinheiro") {
+        seja rec = numero(c_rec.get() ?? "0")
+        seja tr  = arred(rec - tl, 2)
+        lbl_troco.configure(
+            text="  💰  Troco: " + moeda(tr),
+            fg=tr >= 0 ? "#22C55E" : "#EF4444")
+    }
+}
+
+funcao pdv_adicionar_produto(prod, qtd, desc_item) {
+    se (prod.estoque_atual < qtd) {
+        gui.aviso("⚠️  Estoque insuficiente!
+
+" + prod.nome +
+            "
+Disponível: " + texto(prod.estoque_atual))
+        retornar falso
+    }
+    seja idx = -1; seja i = 0
+    para (item em _venda.itens) {
+        se (item.produto_id == prod.id) { idx = i }
+        i++
+    }
+    se (idx >= 0) {
+        seja nq = _venda.itens[idx].quantidade + qtd
+        _venda.itens[idx].quantidade = nq
+        _venda.itens[idx].subtotal   = arred(nq * _venda.itens[idx].preco_unitario - _venda.itens[idx].desconto_item, 2)
+    } senão {
+        _venda.itens.adicionar({
+            produto_id:    prod.id,
+            nome:          prod.nome,
+            quantidade:    qtd,
+            preco_unitario:prod.preco_venda,
+            desconto_item: desc_item,
+            subtotal:      arred(qtd * prod.preco_venda - desc_item, 2)
+        })
+    }
+    pdv_atualizar_tela()
+    lbl_pnome.configure(text="  ✅  " + prod.nome, fg="#22C55E")
+    lbl_pinfo.configure(
+        text="  " + moeda(prod.preco_venda) + "  ·  Estoque: " + texto(prod.estoque_atual) +
+             "  ·  " + (prod.categoria_nome ?? ""), fg="#4B6B8A")
+    status_mensagem("  ✅  " + prod.nome + " adicionado — " + moeda(qtd * prod.preco_venda))
+    retornar verdadeiro
+}
+
+funcao pdv_adicionar() {
+    seja cod = c_cod.get().aparar()
+    se (cod == "") { retornar }
+    seja qtd  = numero(c_qtd.get() ?? "1")
+    seja desc = numero(c_desc_item.get() ?? "0")
+    seja prods = buscar_por_codigo_ou_nome(cod)
+    se (prods.tamanho == 0) {
+        lbl_pnome.configure(text="  ❌  Não encontrado: " + cod, fg="#EF4444")
+        lbl_pinfo.configure(text="  Use código de barras ou parte do nome", fg="#F59E0B")
+        gui.toast("Produto não encontrado!", "erro", 2000)
+        retornar
+    }
+    se (prods.tamanho == 1) {
+        se (pdv_adicionar_produto(prods[0], qtd, desc)) {
+            c_cod.delete(0,"end")
+            c_qtd.delete(0,"end"); c_qtd.insert(0,"1")
+            c_desc_item.delete(0,"end"); c_desc_item.insert(0,"0")
+            c_cod.focus()
+        }
+    } senão {
+        tbl_bk.limpar()
+        para (p em prods) {
+            tbl_bk.adicionar([texto(p.codigo_barras), texto(p.nome),
+                moeda(numero(p.preco_venda)), texto(p.estoque_atual)])
+        }
+        status_mensagem("  🔍  " + texto(prods.tamanho) + " resultados — clique na aba Buscar Produto")
+    }
+}
+
+funcao pdv_buscar_nome() {
+    seja b = gui.pedir("🔍  Buscar produto:
+Digite parte do nome:")
+    se (b == nulo ou b == "") { retornar }
+    seja prods = buscar_por_codigo_ou_nome(b)
+    tbl_bk.limpar()
+    para (p em prods) {
+        tbl_bk.adicionar([texto(p.codigo_barras), texto(p.nome),
+            moeda(numero(p.preco_venda)), texto(p.estoque_atual)])
+    }
+    status_mensagem("  " + texto(prods.tamanho) + " produto(s) encontrado(s)")
+}
+
+funcao pdv_buscar_tabela() {
+    seja b = c_bk.get().aparar()
+    se (b == "") { retornar }
+    seja prods = buscar_por_codigo_ou_nome(b)
+    tbl_bk.limpar()
+    para (p em prods) {
+        tbl_bk.adicionar([texto(p.codigo_barras), texto(p.nome),
+            moeda(numero(p.preco_venda)), texto(p.estoque_atual)])
+    }
+    status_mensagem("  " + texto(prods.tamanho) + " resultado(s)")
+}
+
+funcao pdv_add_da_busca(linha) {
+    seja p = buscar_por_codigo_ou_nome(linha["Cód.Barras"])
+    se (p.tamanho > 0) {
+        seja qtd  = numero(c_qtd.get() ?? "1")
+        seja desc = numero(c_desc_item.get() ?? "0")
+        pdv_adicionar_produto(p[0], qtd, desc)
+    }
+}
+
+funcao pdv_remover_item() {
+    seja sel = tbl_itens.selecionado()
+    se (sel == nulo) { gui.aviso("Selecione um item para remover!"); retornar }
+    seja num = inteiro(sel["#"]) - 1
+    se (num >= 0 e num < _venda.itens.tamanho) {
+        seja nm = _venda.itens[num].nome
+        _venda.itens.remover(num)
+        pdv_atualizar_tela()
+        status_mensagem("  🗑  Removido: " + nm)
+    }
+}
+
+funcao pdv_editar_qtd() {
+    seja sel = tbl_itens.selecionado()
+    se (sel == nulo) { gui.aviso("Selecione um item!"); retornar }
+    seja num = inteiro(sel["#"]) - 1
+    seja nova = gui.pedir("Nova quantidade para:
+" + _venda.itens[num].nome + ":")
+    se (nova == nulo) { retornar }
+    seja qtd = numero(nova)
+    se (qtd <= 0) { gui.aviso("Quantidade inválida!"); retornar }
+    _venda.itens[num].quantidade = qtd
+    _venda.itens[num].subtotal   = arred(qtd * _venda.itens[num].preco_unitario - _venda.itens[num].desconto_item, 2)
+    pdv_atualizar_tela()
+}
+
+funcao pdv_aplicar_desc() {
+    seja d = numero(c_desc_tot.get() ?? "0")
+    se (d < 0 ou d > total_bruto()) { gui.aviso("Desconto inválido!"); retornar }
+    _venda.desconto = d
+    pdv_atualizar_tela()
+    status_mensagem("  🏷  Desconto de " + moeda(d) + " aplicado")
+}
+
+funcao pdv_sel_pag(forma) {
+    _forma[0] = forma
+    lbl_pag.configure(text="  ✅  " + forma.maiusculo() + " selecionado")
+    se (forma == "Dinheiro") {
+        c_rec.configure(estado="habilitado")
+        lbl_pag.configure(fg="#22C55E")
+    } senão {
+        c_rec.configure(estado="desabilitado")
+        c_rec.delete(0,"end"); c_rec.insert(0,"0")
+        lbl_troco.configure(text="  💳  " + forma + " — sem troco")
+        lbl_pag.configure(fg="#60A5FA")
+    }
+}
+
+funcao pdv_limpar_venda() {
+    se (_venda.itens.tamanho > 0) {
+        se (nao gui.confirmar("Limpar todos os itens da venda?")) { retornar }
+    }
+    _venda.itens.limpar(); _venda.desconto = 0
+    c_desc_tot.delete(0,"end"); c_desc_tot.insert(0,"0")
+    pdv_atualizar_tela()
+    lbl_pnome.configure(text="  Aguardando produto...", fg="#4B6B8A")
+    lbl_pinfo.configure(text="")
+    lbl_total.configure(fg="#4B6B8A")
+    status_mensagem("  🧹  Venda limpa — pronto para nova venda")
+}
+
+funcao pdv_finalizar() {
+    se (_venda.itens.tamanho == 0) {
+        gui.aviso("Adicione produtos antes de finalizar!")
+        retornar
+    }
+    seja tl   = total_liq()
+    seja forma = _forma[0]
+    seja rec  = numero(c_rec.get() ?? "0")
+
+    se (forma == "Dinheiro" e rec < tl) {
+        gui.aviso("⚠️  Valor recebido insuficiente!
+
+Total:     " +
+            moeda(tl) + "
+Recebido:  " + moeda(rec))
+        retornar
+    }
+
+    seja r = registrar_venda(_venda.itens, forma, rec, _venda.desconto, _op[0].nome, "")
+
+    se (r.sucesso) {
+        seja cupom = gerar_cupom(r.venda_id, _venda.itens, r.total, forma, r.troco, _op[0].nome)
+        Arquivo.escrever("cupom_" + texto(r.venda_id) + ".txt", cupom)
+        gui.alerta("✅  VENDA FINALIZADA!
+
+Número:  #" + texto(r.venda_id) +
+            "
+Total:    " + moeda(r.total) +
+            "
+Forma:    " + forma +
+            (forma == "Dinheiro" ? "
+Troco:    " + moeda(r.troco) : "") +
+            "
+
+Cupom salvo: cupom_" + texto(r.venda_id) + ".txt")
+        gui.toast("Venda #" + texto(r.venda_id) + " — " + moeda(r.total), "sucesso", 4000)
+        pdv_limpar_venda()
+        lbl_status_dir.configure(text="● Venda #" + texto(r.venda_id), fg="#22C55E")
+        status_mensagem("  ✅  Venda #" + texto(r.venda_id) + " — " + moeda(r.total) + " — " + forma)
+    } senão {
+        gui.aviso("Erro ao registrar venda:
+" + r.erro)
+    }
+}
+
+funcao pdv_cancelar_ultima() {
+    se (nao gui.confirmar("Cancelar a última venda?
+O estoque será restaurado automaticamente.")) { retornar }
+    seja ul = banco.sql("SELECT id,total_venda FROM vendas WHERE cancelada=FALSE ORDER BY id DESC LIMIT 1")
+    se (ul.tamanho == 0) { gui.aviso("Nenhuma venda para cancelar!"); retornar }
+    cancelar_venda(ul[0].id)
+    gui.toast("Venda #" + texto(ul[0].id) + " cancelada — estoque restaurado", "aviso", 4000)
+    status_mensagem("  ❌  Venda #" + texto(ul[0].id) + " cancelada")
+}
+
+funcao pdv_relatorio() {
+    seja hoje = data_hoje(); seja p = hoje.dividir("/")
+    seja ds = p[2] + "-" + p[1] + "-" + p[0]
+    seja dados = relatorio_dia(ds); seja saldo = saldo_caixa(ds)
+    txt_cx.configure(estado="habilitado"); txt_cx.delete("1.0","end")
+    seja t = "═══════════════════════════════════
+"
+    t = t + "  RELATÓRIO DE CAIXA — " + hoje + "
+"
+    t = t + "═══════════════════════════════════
+
+"
+    se (dados.tamanho == 0) {
+        t = t + "  Nenhuma venda registrada hoje.
+"
+    } senão {
+        para (row em dados) {
+            t = t + "  ▸ " + texto(row.forma_pagamento) + "
+"
+            t = t + "    Vendas:  " + texto(row.total_vendas) + "
+"
+            t = t + "    Fat.:    " + moeda(numero(row.faturamento)) + "
+"
+            t = t + "    Ticket:  " + moeda(numero(row.ticket_medio)) + "
+
+"
+        }
+        t = t + "───────────────────────────────────
+"
+        t = t + "  Vendas:       " + moeda(saldo.vendas) + "
+"
+        t = t + "  Suprimentos:  " + moeda(saldo.entradas) + "
+"
+        t = t + "  Sangrias:     " + moeda(saldo.saidas) + "
+"
+        t = t + "  ─────────────────────────────
+"
+        t = t + "  SALDO FINAL:  " + moeda(saldo.saldo) + "
+"
+    }
+    txt_cx.insert("1.0", t)
+    txt_cx.configure(estado="desabilitado")
+}
+
+funcao pdv_top() {
+    seja hoje = data_hoje(); seja p = hoje.dividir("/")
+    seja ds = p[2] + "-" + p[1] + "-" + p[0]
+    seja dados = top_produtos(ds)
+    tbl_top.limpar()
+    para (row em dados) {
+        tbl_top.adicionar([texto(row.nome).primeiros(26),
+            texto(arred(numero(row.qtd), 1)), moeda(numero(row.receita))])
+    }
+}
+
+funcao pdv_estoque_baixo() {
+    seja prods = estoque_baixo()
+    tbl_es.limpar()
+    para (p em prods) {
+        tbl_es.adicionar([texto(p.nome).primeiros(24),
+            texto(p.estoque_atual), texto(p.estoque_minimo), texto(p.cat)])
+    }
+    se (prods.tamanho > 0) {
+        gui.toast("⚠️  " + texto(prods.tamanho) + " produto(s) com estoque baixo!", "aviso", 4000)
+        lbl_status_dir.configure(text="⚠ " + texto(prods.tamanho) + " sem estoque", fg="#F59E0B")
+    } senão {
+        lbl_status_dir.configure(text="● Estoque OK", fg="#22C55E")
+    }
+}
+
+funcao pdv_sangria() {
+    seja v = gui.pedir("💰  Sangria de Caixa
+
+Valor (R$):")
+    se (v == nulo) { retornar }
+    seja val = numero(v)
+    se (val <= 0) { gui.aviso("Valor inválido!"); retornar }
+    banco.sql("INSERT INTO movimentos_caixa (tipo,valor,operador,obs) VALUES ('sangria',$1,$2,'Sangria')",
+        [val, _op[0].nome])
+    gui.toast("Sangria de " + moeda(val) + " registrada", "aviso", 3000)
+}
+
+funcao pdv_suprimento() {
+    seja v = gui.pedir("💵  Suprimento de Caixa
+
+Valor (R$):")
+    se (v == nulo) { retornar }
+    seja val = numero(v)
+    se (val <= 0) { gui.aviso("Valor inválido!"); retornar }
+    banco.sql("INSERT INTO movimentos_caixa (tipo,valor,operador,obs) VALUES ('suprimento',$1,$2,'Suprimento')",
+        [val, _op[0].nome])
+    gui.toast("Suprimento de " + moeda(val) + " registrado", "sucesso", 3000)
+}
+
+funcao pdv_login() {
+    seja login = gui.pedir("🔐  Login:"); se (login == nulo) { retornar }
+    seja senha = gui.pedir("🔐  Senha:"); se (senha == nulo) { retornar }
+    seja op = autenticar(login, senha)
+    se (op != nulo) {
+        _op[0] = op
+        lbl_op.configure(text="  👤  " + op.nome + " (" + op.nivel + ")", fg="#22C55E")
+        gui.toast("Bem-vindo, " + op.nome + "! 👋", "sucesso", 3000)
+        status_mensagem("  ✅  Logado: " + op.nome + " | F10=Gestão  F12=Finalizar")
+    } senão {
+        gui.aviso("⛔  Login ou senha incorretos!")
+    }
+}
+
+// SEÇÃO 6 — JANELA DE GESTÃO (CADASTRO COMPLETO)
+// ═══════════════════════════════════════════════════════════════════════════
+
+funcao abrir_gestao() {
+    seja jg = gui.janela("⚙️ Gestão — Produtos, Estoque e Operadores", 1000, 680)
+
+    seja abas_g = gui.abas(jg)
+
+    // ════════════════════════════════════════════════════════════════════
+    // ABA PRODUTOS — CRUD COMPLETO
+    // ════════════════════════════════════════════════════════════════════
+    seja tab_p = abas_g.adicionar("📦 Produtos")
+
+    seja f_p_top = gui.frame_horizontal(tab_p)
+    seja c_p_filtro = gui.campo(f_p_top, placeholder="Buscar por nome ou código...", largura=28)
+    c_p_filtro.pack(lado="esquerda", espaco_x=6, espaco_y=6)
+
+    seja cats_lista = banco.sql("SELECT nome FROM categorias ORDER BY nome")
+    seja cats_nomes = ["Todas"] + cats_lista.mapear((c) => texto(c.nome))
+    seja sel_cat = gui.caixa_selecao(f_p_top, opcoes=cats_nomes, valor_inicial="Todas")
+    sel_cat.pack(lado="esquerda", espaco_x=4)
+
+    gui.botao(f_p_top, "🔍 Filtrar",
+        ao_clicar=() => prod_listar(),
+        estilo="primario").pack(lado="esquerda", espaco_x=4)
+    gui.botao(f_p_top, "➕ Novo Produto",
+        ao_clicar=() => prod_novo(),
+        estilo="sucesso").pack(lado="direita", espaco_x=8)
+
+    seja tbl_p = gui.tabela(tab_p,
+        colunas=["ID","Código","Nome","Preço","Custo","Estoque","Min.","Un.","Cat.","Ativo"],
+        altura=16,
+        ao_selecionar=(l) => prod_selecionar(l))
+
+    seja f_p_bot = gui.frame_horizontal(tab_p)
+    gui.botao(f_p_bot, "✏️ Editar",        ao_clicar=() => prod_editar(),   estilo="primario").pack(lado="esquerda",espaco_x=4,espaco_y=4)
+    gui.botao(f_p_bot, "🗑️ Excluir",       ao_clicar=() => prod_excluir(),  estilo="perigo").pack(lado="esquerda",espaco_x=2)
+    gui.botao(f_p_bot, "📦 Ajustar Estoque",ao_clicar=()=>prod_ajuste_est(),estilo="aviso").pack(lado="esquerda",espaco_x=2)
+    gui.botao(f_p_bot, "🔄 Atualizar",     ao_clicar=() => prod_listar(),   estilo="secundario").pack(lado="direita",espaco_x=8)
+
+    seja _prod_sel = [nulo]
+
+    funcao prod_listar() {
+        seja filtro = c_p_filtro.get()
+        seja cat = sel_cat.get()
+        seja prods = listar_produtos(filtro, cat, falso)
+        tbl_p.limpar()
+        para (p em prods) {
+            tbl_p.adicionar([
+                texto(p.id), texto(p.codigo_barras), texto(p.nome).primeiros(28),
+                moeda(numero(p.preco_venda)), moeda(numero(p.preco_custo)),
+                texto(p.estoque_atual), texto(p.estoque_minimo),
+                texto(p.unidade), texto(p.categoria_nome ?? ""),
+                p.ativo ? "✅" : "❌"
+            ])
+        }
+        status_mensagem("  " + texto(prods.tamanho) + " produto(s)")
+    }
+
+    funcao prod_selecionar(linha) {
+        _prod_sel[0] = linha
+    }
+
+    funcao abrir_form_produto(titulo, dados_init) {
+        seja jf = gui.janela(titulo, 520, 540)
+
+        seja f_form = gui.frame(jf, cor="#1E293B")
+        f_form.pack(preencher="ambos", expandir=verdadeiro, espaco_x=16, espaco_y=12)
+
+        // Campos do formulário
+        funcao campo_form(pai, rotulo, valor_init, larg) {
+            gui.label(pai, rotulo, tamanho=9, cor="#94A3B8")
+            seja c = gui.campo(pai, largura=larg)
+            se (valor_init != nulo e valor_init != "") { c.insert(0, texto(valor_init)) }
+            retornar c
+        }
+
+        gui.label(f_form, "Código de Barras:", tamanho=9, cor="#94A3B8")
+        seja c_cod_f  = gui.campo(f_form, largura=40)
+        se (dados_init.codigo_barras != nulo) { c_cod_f.insert(0, texto(dados_init.codigo_barras)) }
+
+        gui.label(f_form, "Nome do Produto:", tamanho=9, cor="#94A3B8")
+        seja c_nome_f = gui.campo(f_form, largura=40)
+        se (dados_init.nome != nulo) { c_nome_f.insert(0, texto(dados_init.nome)) }
+
+        gui.label(f_form, "Descrição:", tamanho=9, cor="#94A3B8")
+        seja c_desc_f = gui.area_texto(f_form, largura=40, altura=2)
+        se (dados_init.descricao != nulo e dados_init.descricao != "") {
+            c_desc_f.insert("1.0", texto(dados_init.descricao))
+        }
+
+        seja f_r1 = gui.frame_horizontal(f_form)
+        gui.label(f_r1, "Preço Venda: R$", tamanho=9, cor="#94A3B8").pack(lado="esquerda")
+        seja c_pv = gui.campo(f_r1, largura=10)
+        se (dados_init.preco_venda != nulo) { c_pv.insert(0, texto(dados_init.preco_venda)) }
+        c_pv.pack(lado="esquerda", espaco_x=4)
+        gui.label(f_r1, "  Custo: R$", tamanho=9, cor="#94A3B8").pack(lado="esquerda")
+        seja c_pc = gui.campo(f_r1, largura=10)
+        se (dados_init.preco_custo != nulo) { c_pc.insert(0, texto(dados_init.preco_custo)) }
+        c_pc.pack(lado="esquerda", espaco_x=4)
+
+        seja f_r2 = gui.frame_horizontal(f_form)
+        gui.label(f_r2, "Estoque Atual:", tamanho=9, cor="#94A3B8").pack(lado="esquerda")
+        seja c_est = gui.campo(f_r2, largura=8)
+        se (dados_init.estoque_atual != nulo) { c_est.insert(0, texto(dados_init.estoque_atual)) }
+        c_est.pack(lado="esquerda", espaco_x=4)
+        gui.label(f_r2, "  Mínimo:", tamanho=9, cor="#94A3B8").pack(lado="esquerda")
+        seja c_min = gui.campo(f_r2, largura=8)
+        se (dados_init.estoque_minimo != nulo) { c_min.insert(0, texto(dados_init.estoque_minimo)) }
+        c_min.pack(lado="esquerda", espaco_x=4)
+        gui.label(f_r2, "  Un.:", tamanho=9, cor="#94A3B8").pack(lado="esquerda")
+        seja c_un = gui.caixa_selecao(f_r2,
+            opcoes=["un","kg","L","cx","pc","dz"],
+            valor_inicial=dados_init.unidade ?? "un")
+        c_un.pack(lado="esquerda", espaco_x=4)
+
+        gui.label(f_form, "Categoria:", tamanho=9, cor="#94A3B8")
+        seja c_cat_f = gui.caixa_selecao(f_form,
+            opcoes=cats_nomes.filtrar((c) => c != "Todas"),
+            valor_inicial=dados_init.categoria_nome ?? "Mercearia")
+
+        gui.separador(f_form)
+
+        seja f_btns = gui.frame_horizontal(f_form)
+        gui.botao(f_btns, "💾 Salvar",
+            ao_clicar=() => {
+                seja dados = {
+                    id:            dados_init.id,
+                    codigo_barras: c_cod_f.get().aparar(),
+                    nome:          c_nome_f.get().aparar(),
+                    descricao:     c_desc_f.get("1.0","end").aparar(),
+                    preco_venda:   numero(c_pv.get()),
+                    preco_custo:   numero(c_pc.get()),
+                    estoque_atual: numero(c_est.get()),
+                    estoque_minimo:numero(c_min.get()),
+                    unidade:       c_un.get(),
+                    categoria:     c_cat_f.get()
+                }
+                se (dados.codigo_barras == "") { gui.aviso("Código de barras obrigatório!"); retornar }
+                se (dados.nome == "") { gui.aviso("Nome obrigatório!"); retornar }
+                se (dados.preco_venda <= 0) { gui.aviso("Preço deve ser maior que zero!"); retornar }
+                tentar {
+                    seja r = salvar_produto(dados)
+                    gui.toast("Produto " + r.acao + " com sucesso!", "sucesso", 3000)
+                    prod_listar()
+                    gui.apos(50, () => jf.destroy())
+                } pegar (e) {
+                    gui.aviso("Erro ao salvar:\n" + texto(e))
+                }
+            }, estilo="sucesso").pack(lado="esquerda", espaco_x=4, espaco_y=6)
+
+        gui.botao(f_btns, "❌ Cancelar",
+            ao_clicar=() => gui.apos(50, () => jf.destroy()),
+            estilo="perigo").pack(lado="esquerda", espaco_x=4)
+    }
+
+    funcao prod_novo() {
+        abrir_form_produto("➕ Novo Produto", {id: nulo, codigo_barras: "",
+            nome: "", descricao: "", preco_venda: 0, preco_custo: 0,
+            estoque_atual: 0, estoque_minimo: 5, unidade: "un",
+            categoria_nome: "Mercearia"})
+    }
+
+    funcao prod_editar() {
+        se (_prod_sel[0] == nulo) { gui.aviso("Selecione um produto!"); retornar }
+        seja id = inteiro(_prod_sel[0]["ID"])
+        seja r = banco.sql(`SELECT p.*,c.nome as categoria_nome
+            FROM produtos p LEFT JOIN categorias c ON c.id=p.categoria_id
+            WHERE p.id=$1`, [id])
+        se (r.tamanho == 0) { gui.aviso("Produto não encontrado!"); retornar }
+        abrir_form_produto("✏️ Editar Produto — " + texto(r[0].nome), r[0])
+    }
+
+    funcao prod_excluir() {
+        se (_prod_sel[0] == nulo) { gui.aviso("Selecione um produto!"); retornar }
+        seja nm = _prod_sel[0]["Nome"]
+        se (nao gui.confirmar("Excluir/Desativar o produto:\n" + nm + "?")) { retornar }
+        seja id = inteiro(_prod_sel[0]["ID"])
+        seja r = excluir_produto(id)
+        se (r.tipo == "desativado") {
+            gui.toast(nm + " desativado (tem vendas vinculadas)", "aviso", 4000)
+        } senão {
+            gui.toast(nm + " excluído!", "sucesso", 3000)
+        }
+        prod_listar()
+    }
+
+    funcao prod_ajuste_est() {
+        se (_prod_sel[0] == nulo) { gui.aviso("Selecione um produto!"); retornar }
+        seja nm  = _prod_sel[0]["Nome"]
+        seja id  = inteiro(_prod_sel[0]["ID"])
+        seja est = _prod_sel[0]["Estoque"]
+
+        seja tipo_str = gui.pedir("Tipo de ajuste:\n1 = Entrada\n2 = Saída/Perda\nDigite 1 ou 2:")
+        se (tipo_str == nulo) { retornar }
+        seja tipo_mov = tipo_str == "1" ? "entrada" : "saida"
+
+        seja qtd_str = gui.pedir("Quantidade a " + (tipo_mov=="entrada"?"ADICIONAR":"REMOVER") + ":\n(Estoque atual: " + texto(est) + ")")
+        se (qtd_str == nulo) { retornar }
+        seja qtd = numero(qtd_str)
+        se (qtd <= 0) { gui.aviso("Quantidade inválida!"); retornar }
+
+        seja obs = gui.pedir("Motivo (opcional):") ?? ""
+
+        ajustar_estoque(id, qtd, tipo_mov, obs, _op[0].nome)
+        gui.toast("Estoque de " + nm + " " + (tipo_mov=="entrada"?"aumentado":"reduzido") + " em " + texto(qtd), "sucesso", 3000)
+        prod_listar()
+    }
+
+    prod_listar()
+
+    // ════════════════════════════════════════════════════════════════════
+    // ABA OPERADORES
+    // ════════════════════════════════════════════════════════════════════
+    seja tab_op = abas_g.adicionar("👤 Operadores")
+
+    gui.botao(tab_op, "➕ Novo Operador",
+        ao_clicar=() => op_novo(),
+        estilo="sucesso").pack(ancora="leste", espaco_x=8, espaco_y=6)
+
+    seja tbl_op = gui.tabela(tab_op,
+        colunas=["ID","Nome","Login","Nível","Ativo"],
+        altura=14,
+        ao_selecionar=(l) => op_selecionar(l))
+
+    seja f_op_bot = gui.frame_horizontal(tab_op)
+    gui.botao(f_op_bot,"✏️ Editar",   ao_clicar=()=>op_editar(),  estilo="primario").pack(lado="esquerda",espaco_x=4,espaco_y=4)
+    gui.botao(f_op_bot,"🔐 Alterar Senha",ao_clicar=()=>op_alterar_senha(),estilo="aviso").pack(lado="esquerda",espaco_x=2)
+    gui.botao(f_op_bot,"🗑️ Desativar",ao_clicar=()=>op_excluir(), estilo="perigo").pack(lado="esquerda",espaco_x=2)
+    gui.botao(f_op_bot,"🔄 Atualizar",ao_clicar=()=>op_listar(),  estilo="secundario").pack(lado="direita",espaco_x=8)
+
+    seja _op_sel = [nulo]
+
+    funcao op_listar() {
+        seja ops = listar_operadores()
+        tbl_op.limpar()
+        para (o em ops) {
+            tbl_op.adicionar([texto(o.id), texto(o.nome), texto(o.login),
+                texto(o.nivel), o.ativo ? "✅" : "❌"])
+        }
+    }
+
+    funcao op_selecionar(linha) { _op_sel[0] = linha }
+
+    funcao op_form(titulo, dados) {
+        seja jop = gui.janela(titulo, 420, 340)
+        seja ff = gui.frame(jop, cor="#1E293B")
+        ff.pack(preencher="ambos", expandir=verdadeiro, espaco_x=16, espaco_y=12)
+
+        gui.label(ff, "Nome:", tamanho=9, cor="#94A3B8")
+        seja c_nm = gui.campo(ff, largura=36)
+        se (dados.nome != nulo) { c_nm.insert(0, texto(dados.nome)) }
+
+        gui.label(ff, "Login:", tamanho=9, cor="#94A3B8")
+        seja c_lg = gui.campo(ff, largura=20)
+        se (dados.login != nulo) { c_lg.insert(0, texto(dados.login)) }
+
+        gui.label(ff, "Senha" + (dados.id != nulo ? " (deixe em branco para não alterar):" : ":"), tamanho=9, cor="#94A3B8")
+        seja c_sn = gui.campo(ff, largura=20)
+
+        gui.label(ff, "Nível:", tamanho=9, cor="#94A3B8")
+        seja c_nv = gui.caixa_selecao(ff, opcoes=["caixa","gerente","admin"],
+            valor_inicial=dados.nivel ?? "caixa")
+
+        gui.separador(ff)
+        seja f_bb = gui.frame_horizontal(ff)
+        gui.botao(f_bb, "💾 Salvar",
+            ao_clicar=() => {
+                seja d = {id: dados.id, nome: c_nm.get().aparar(),
+                    login: c_lg.get().aparar(), senha: c_sn.get(),
+                    nivel: c_nv.get(), ativo: verdadeiro}
+                se (d.nome == "") { gui.aviso("Nome obrigatório!"); retornar }
+                se (d.login == "") { gui.aviso("Login obrigatório!"); retornar }
+                se (d.id == nulo e d.senha == "") { gui.aviso("Senha obrigatória para novo operador!"); retornar }
+                salvar_operador(d)
+                gui.toast("Operador salvo!", "sucesso", 3000)
+                op_listar()
+                gui.apos(50, () => jop.destroy())
+            }, estilo="sucesso").pack(lado="esquerda",espaco_x=4,espaco_y=6)
+        gui.botao(f_bb, "❌ Cancelar", ao_clicar=()=>gui.apos(50, () => jop.destroy()), estilo="perigo").pack(lado="esquerda",espaco_x=4)
+    }
+
+    funcao op_novo() {
+        op_form("➕ Novo Operador", {id: nulo, nome: "", login: "", senha: "", nivel: "caixa"})
+    }
+
+    funcao op_editar() {
+        se (_op_sel[0] == nulo) { gui.aviso("Selecione um operador!"); retornar }
+        seja id = inteiro(_op_sel[0]["ID"])
+        seja r = banco.sql("SELECT * FROM operadores WHERE id=$1", [id])
+        se (r.tamanho > 0) { op_form("✏️ Editar Operador", r[0]) }
+    }
+
+    funcao op_alterar_senha() {
+        se (_op_sel[0] == nulo) { gui.aviso("Selecione um operador!"); retornar }
+        seja id = inteiro(_op_sel[0]["ID"])
+        seja nm = _op_sel[0]["Nome"]
+        seja nova = gui.pedir("Nova senha para " + nm + ":")
+        se (nova == nulo ou nova == "") { retornar }
+        banco.sql("UPDATE operadores SET senha=$1 WHERE id=$2", [nova, id])
+        gui.toast("Senha alterada para " + nm, "sucesso", 3000)
+    }
+
+    funcao op_excluir() {
+        se (_op_sel[0] == nulo) { gui.aviso("Selecione um operador!"); retornar }
+        seja nm = _op_sel[0]["Nome"]
+        se (nao gui.confirmar("Desativar operador: " + nm + "?")) { retornar }
+        seja id = inteiro(_op_sel[0]["ID"])
+        excluir_operador(id)
+        gui.toast(nm + " desativado", "aviso", 3000)
+        op_listar()
+    }
+
+    op_listar()
+
+    // ════════════════════════════════════════════════════════════════════
+    // ABA CATEGORIAS
+    // ════════════════════════════════════════════════════════════════════
+    seja tab_c = abas_g.adicionar("🏷️ Categorias")
+
+    gui.label(tab_c, "  Categorias de Produtos:", negrito=verdadeiro,
+        tamanho=11, cor="#F1F5F9").pack(ancora="oeste", espaco_x=10, espaco_y=8)
+
+    seja f_nc = gui.frame_horizontal(tab_c)
+    seja c_nova_cat = gui.campo(f_nc, placeholder="Nome da nova categoria...", largura=30)
+    c_nova_cat.pack(lado="esquerda", espaco_x=8)
+    gui.botao(f_nc, "➕ Adicionar",
+        ao_clicar=() => {
+            seja nm = c_nova_cat.get().aparar()
+            se (nm == "") { gui.aviso("Digite o nome!"); retornar }
+            tentar {
+                banco.sql("INSERT INTO categorias (nome) VALUES ($1)", [nm])
+                c_nova_cat.delete(0,"end")
+                cat_listar()
+                gui.toast("Categoria '" + nm + "' criada!", "sucesso", 3000)
+            } pegar (e) {
+                gui.aviso("Categoria já existe!")
+            }
+        }, estilo="sucesso").pack(lado="esquerda", espaco_x=4)
+
+    seja tbl_cat = gui.tabela(tab_c,
+        colunas=["ID","Nome","Nº Produtos"],
+        altura=14)
+
+    gui.botao(tab_c, "🗑️ Excluir Categoria Selecionada",
+        ao_clicar=() => {
+            seja sel = tbl_cat.selecionado()
+            se (sel == nulo) { gui.aviso("Selecione uma categoria!"); retornar }
+            seja id = inteiro(sel["ID"])
+            seja nm = sel["Nome"]
+            seja nprod = inteiro(sel["Nº Produtos"])
+            se (nprod > 0) {
+                gui.aviso("Não é possível excluir!\n" + nm + " tem " + texto(nprod) + " produto(s).")
+                retornar
+            }
+            se (gui.confirmar("Excluir categoria: " + nm + "?")) {
+                banco.sql("DELETE FROM categorias WHERE id=$1", [id])
+                cat_listar()
+                gui.toast("Categoria excluída!", "sucesso", 3000)
+            }
+        }, estilo="perigo").pack(espaco_x=8, espaco_y=4)
+
+    funcao cat_listar() {
+        seja cats = banco.sql(`
+            SELECT c.id, c.nome,
+                COUNT(p.id) AS nprod
+            FROM categorias c
+            LEFT JOIN produtos p ON p.categoria_id=c.id AND p.ativo=TRUE
+            GROUP BY c.id, c.nome ORDER BY c.nome`)
+        tbl_cat.limpar()
+        para (c em cats) {
+            tbl_cat.adicionar([texto(c.id), texto(c.nome), texto(c.nprod)])
+        }
+    }
+
+    cat_listar()
+
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SEÇÃO 7 — ATALHOS E INICIALIZAÇÃO
+// ═══════════════════════════════════════════════════════════════════════════
+
+jan.bind("<Return>", (e) => pdv_adicionar())
+jan.bind("<F12>",    (e) => pdv_finalizar())
+jan.bind("<Escape>", (e) => pdv_limpar_venda())
+jan.bind("<F5>",     (e) => pdv_relatorio())
+jan.bind("<F6>",     (e) => pdv_estoque_baixo())
+jan.bind("<F7>",     (e) => pdv_top())
+jan.bind("<F8>",     (e) => pdv_login())
+jan.bind("<F9>",     (e) => pdv_cancelar_ultima())
+jan.bind("<F10>",    (e) => abrir_gestao())
+
+tentar {
+    setup_banco()
+    _op[0] = {id: 1, nome: "Administrador", nivel: "gerente"}
+    lbl_op.configure(text="  👤  Administrador (gerente)", fg="#22C55E")
+    lbl_status_dir.configure(text="● Conectado", fg="#22C55E")
+    pdv_estoque_baixo()
+    status_mensagem(
+        "  ⌨  Enter=Adicionar  F8=Login  F9=Cancelar  F10=Gestão  F12=Finalizar")
+} pegar (e) {
+    lbl_status_dir.configure(text="● Sem banco", fg="#EF4444")
+    gui.aviso("Erro ao conectar ao banco:\n" + texto(e) +
+        "\n\nConfigure o .env:\nADVAK_DB_HOST, ADVAK_DB_PORT, ADVAK_DB_USER, ADVAK_DB_PASS, ADVAK_DB_NAME=supermercado")
+    status_mensagem("  ❌  Sem conexão — configure o .env")
+}
+
+gui.iniciar()

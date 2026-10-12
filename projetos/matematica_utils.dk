@@ -1,0 +1,46 @@
+// ═══════════════════════════════════════════
+//  módulo: matematica_utils.dk
+//  Utilitários matemáticos reutilizáveis
+// ═══════════════════════════════════════════
+
+exportar função fatorial(n) {
+    se (n <= 1) { retornar 1; }
+    retornar n * fatorial(n - 1);
+}
+
+exportar função fibonacci(n) {
+    se (n <= 1) { retornar n; }
+    seja a = 0; seja b = 1;
+    para (i em Lista.intervalo(2, n + 1)) {
+        seja c = a + b;
+        a = b;
+        b = c;
+    }
+    retornar b;
+}
+
+exportar função eh_primo(n) {
+    se (n < 2) { retornar falso; }
+    para (i em Lista.intervalo(2, Mat.piso(Mat.raiz(n)) + 1)) {
+        se (n % i == 0) { retornar falso; }
+    }
+    retornar verdadeiro;
+}
+
+exportar função mdc(a, b) {
+    enquanto (b != 0) {
+        seja t = b;
+        b = a % b;
+        a = t;
+    }
+    retornar a;
+}
+
+exportar função media(lista) {
+    seja soma = 0;
+    para (x em lista) { soma = soma + x; }
+    retornar soma / lista.tamanho;
+}
+
+exportar seja PI_DUPLO = 6.283185307;
+exportar seja EULER = 2.718281828;

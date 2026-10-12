@@ -1,0 +1,269 @@
+// ═══════════════════════════════════════════════════════════════
+//  ADVAK GUI MODERNO — Demo Completo
+//  Execute: advak projetos run gui_moderno_demo.dk --db
+// ═══════════════════════════════════════════════════════════════
+
+// ── Janela com tema moderno ───────────────────────────────────
+seja jan = gui.janela("Advak GUI Moderno 4.0", 1000, 700, tema="escuro");
+jan.centralizar();
+
+// ── Barra de status ───────────────────────────────────────────
+seja status = gui.barra_status(jan, "Advak GUI Moderno — F11 alterna tema");
+
+// ── Menu moderno ──────────────────────────────────────────────
+seja menu = gui.menu_bar(jan);
+menu.adicionar("Arquivo", [
+    ["Novo",   (x) => { gui.toast("Novo arquivo criado!", tipo="sucesso"); }],
+    ["Abrir",  (x) => { gui.escolher_arquivo("Abrir"); }],
+    "---",
+    ["Sair",   (x) => { gui.parar(); }]
+]);
+menu.adicionar("Tema", [
+    ["Escuro",  (x) => { gui.tema("escuro");  status.mensagem("Tema: Escuro"); }],
+    ["Claro",   (x) => { gui.tema("claro");   status.mensagem("Tema: Claro"); }],
+    ["Roxo",    (x) => { gui.tema("roxo");    status.mensagem("Tema: Roxo"); }],
+    ["Verde",   (x) => { gui.tema("verde");   status.mensagem("Tema: Verde"); }]
+]);
+
+// ── Abas ──────────────────────────────────────────────────────
+seja abas = gui.abas(jan);
+seja aba_dash  = abas.adicionar("  Dashboard  ");
+seja aba_forms = abas.adicionar("  Formularios  ");
+seja aba_dados = abas.adicionar("  Dados  ");
+seja aba_charts= abas.adicionar("  Graficos  ");
+seja aba_extra = abas.adicionar("  Componentes  ");
+
+// ════════════════════════════════════════════════════════════
+//  ABA 1 — DASHBOARD com cards modernos
+// ════════════════════════════════════════════════════════════
+gui.label(aba_dash, "Painel de Controle", negrito=verdadeiro, tamanho=14);
+gui.separador(aba_dash);
+
+// Cards de métricas
+seja fr_cards = gui.frame_horizontal(aba_dash);
+fr_cards.posicionar(lado="top", preencher="x", espaco_y=8);
+
+seja card1 = gui.card(fr_cards, "Total de Vendas",  "R$ 48.750,00", cor_borda="#2563EB");
+seja card2 = gui.card(fr_cards, "Clientes Ativos",  "1.284",        cor_borda="#16A34A");
+seja card3 = gui.card(fr_cards, "Pedidos Pendentes","37",            cor_borda="#CA8A04");
+seja card4 = gui.card(fr_cards, "Crescimento",      "+18,5%",        cor_borda="#7C3AED");
+
+card1.posicionar(lado="left", preencher="x", expandir=verdadeiro, espaco_x=4);
+card2.posicionar(lado="left", preencher="x", expandir=verdadeiro, espaco_x=4);
+card3.posicionar(lado="left", preencher="x", expandir=verdadeiro, espaco_x=4);
+card4.posicionar(lado="left", preencher="x", expandir=verdadeiro, espaco_x=4);
+
+gui.separador(aba_dash);
+
+// Splitter: tabela à esquerda, gráfico à direita
+seja sp = gui.splitter(aba_dash, orientacao="horizontal");
+seja painel_esq = sp.adicionar();
+seja painel_dir = sp.adicionar();
+
+// Tabela no painel esquerdo
+gui.label(painel_esq, "Ultimas Vendas", negrito=verdadeiro);
+seja tab_dash = gui.tabela(painel_esq, ["Produto","Qtd","Valor","Status"], altura=8);
+tab_dash.adicionar(["Notebook Dell",   "2", "R$ 5.999", "Entregue"]);
+tab_dash.adicionar(["Mouse Wireless",  "5", "R$ 449",   "Enviado"]);
+tab_dash.adicionar(["Monitor 4K",      "1", "R$ 2.199", "Pendente"]);
+tab_dash.adicionar(["Teclado RGB",     "3", "R$ 599",   "Entregue"]);
+tab_dash.adicionar(["Headset Gamer",   "2", "R$ 699",   "Cancelado"]);
+
+// Gráfico no painel direito
+gui.label(painel_dir, "Vendas por Mes", negrito=verdadeiro);
+seja dados_grafico = {
+    labels: ["Jan","Fev","Mar","Abr","Mai","Jun"],
+    valores: [28000, 35000, 42000, 38000, 45000, 48750]
+};
+gui.grafico(painel_dir, dados_grafico, tipo="linha", titulo="Evolucao de Vendas");
+
+// ════════════════════════════════════════════════════════════
+//  ABA 2 — FORMULÁRIOS modernos
+// ════════════════════════════════════════════════════════════
+gui.label(aba_forms, "Formulario de Cadastro", negrito=verdadeiro, tamanho=12);
+gui.separador(aba_forms);
+
+// Busca com autocomplete
+gui.label(aba_forms, "Busca com Autocomplete:");
+seja busca = gui.busca(aba_forms,
+    ["Ana Silva","Bob Santos","Carla Lima","Diego Costa","Eva Pereira","Fernando Alves"],
+    placeholder="Digite um nome...");
+
+gui.separador(aba_forms);
+
+// Campos modernos
+seja fr_form = gui.frame_horizontal(aba_forms);
+seja col1 = gui.frame(fr_form);
+seja col2 = gui.frame(fr_form);
+col1.posicionar(lado="left", preencher="both", expandir=verdadeiro, espaco_x=8);
+col2.posicionar(lado="left", preencher="both", expandir=verdadeiro, espaco_x=8);
+
+gui.label(col1, "Nome Completo:");
+seja f_nome = gui.campo(col1, "Digite o nome...");
+gui.label(col1, "Email:");
+seja f_email = gui.campo(col1, "email@exemplo.com");
+gui.label(col1, "Data de Nascimento:");
+seja f_data = gui.calendario(col1);
+gui.label(col1, "Cargo:");
+seja f_cargo = gui.caixa_selecao(col1, ["Analista","Desenvolvedor","Designer","Gerente","Diretor"]);
+
+gui.label(col2, "Cidade:");
+seja f_cidade = gui.campo(col2, "Sua cidade...");
+gui.label(col2, "Nivel de Experiencia:");
+seja slider_nivel = gui.slider(col2, 0, 10, 5);
+gui.label(col2, "Notificacoes:");
+seja tog_notif = gui.toggle(col2, "Receber emails", valor_inicial=verdadeiro);
+gui.label(col2, "Newsletter:");
+seja tog_news = gui.toggle(col2, "Assinar newsletter");
+
+gui.separador(aba_forms);
+seja fr_btns_form = gui.frame_horizontal(aba_forms);
+gui.botao(fr_btns_form, "Salvar Cadastro", (btn) => {
+    seja nome = f_nome.valor();
+    se (nome) {
+        gui.toast(`${nome} cadastrado!`, tipo="sucesso");
+        status.ok(`Salvo: ${nome}`);
+    } senão {
+        gui.toast("Preencha o nome!", tipo="erro");
+        status.erro_st("Campos obrigatorios");
+    }
+}, estilo="sucesso");
+gui.botao(fr_btns_form, "Limpar", (btn) => {
+    f_nome.limpar(); f_email.limpar(); f_cidade.limpar();
+    gui.toast("Formulario limpo", tipo="info");
+}, estilo="secundario");
+
+// ════════════════════════════════════════════════════════════
+//  ABA 3 — DADOS com tabela avancada
+// ════════════════════════════════════════════════════════════
+gui.label(aba_dados, "Gerenciamento de Dados", negrito=verdadeiro, tamanho=12);
+gui.separador(aba_dados);
+
+// Barra de ferramentas
+seja fr_tools = gui.frame_horizontal(aba_dados);
+gui.botao(fr_tools, "Adicionar", (btn) => {
+    seja nome  = gui.pedir("Nome do produto:");
+    seja preco = gui.pedir_numero("Preco:");
+    se (nome && preco) {
+        tab_dados.adicionar([nome, preco, "100", "Ativo"]);
+        gui.toast(`${nome} adicionado!`, tipo="sucesso");
+    }
+}, estilo="sucesso");
+gui.botao(fr_tools, "Exportar CSV", (btn) => {
+    seja cam = gui.salvar_arquivo("Salvar CSV", [["CSV","*.csv"]]);
+    se (cam) { gui.toast("Exportado!", tipo="sucesso"); }
+}, estilo="primario");
+gui.botao(fr_tools, "Limpar Tabela", (btn) => {
+    se (gui.confirmar("Limpar todos os dados?")) {
+        tab_dados.limpar();
+        gui.toast("Tabela limpa", tipo="aviso");
+    }
+}, estilo="perigo");
+
+// Badges de status
+seja fr_badges = gui.frame_horizontal(aba_dados);
+gui.label(fr_badges, "Status: ");
+gui.badge(fr_badges, "ATIVO",    cor="verde");
+gui.badge(fr_badges, "INATIVO",  cor="cinza");
+gui.badge(fr_badges, "PENDENTE", cor="amarelo");
+gui.badge(fr_badges, "ERRO",     cor="vermelho");
+gui.badge(fr_badges, "NOVO",     cor="azul");
+
+seja tab_dados = gui.tabela(aba_dados,
+    ["Produto","Preco","Estoque","Status"],
+    altura=15);
+tab_dados.adicionar(["Notebook Pro",   "3.499,00", "12", "Ativo"]);
+tab_dados.adicionar(["Smartphone X",   "1.899,00", "28", "Ativo"]);
+tab_dados.adicionar(["Tablet Ultra",   "2.199,00", "5",  "Pendente"]);
+tab_dados.adicionar(["Smart TV 55\"",   "2.799,00", "0",  "Inativo"]);
+tab_dados.adicionar(["Headphone BT",   "599,00",   "45", "Ativo"]);
+
+// ════════════════════════════════════════════════════════════
+//  ABA 4 — GRAFICOS
+// ════════════════════════════════════════════════════════════
+gui.label(aba_charts, "Visualizacao de Dados", negrito=verdadeiro, tamanho=12);
+gui.separador(aba_charts);
+
+seja fr_charts = gui.frame_horizontal(aba_charts);
+seja col_g1 = gui.frame(fr_charts);
+seja col_g2 = gui.frame(fr_charts);
+col_g1.posicionar(lado="left", preencher="both", expandir=verdadeiro, espaco_x=4);
+col_g2.posicionar(lado="left", preencher="both", expandir=verdadeiro, espaco_x=4);
+
+// Grafico de barras
+gui.grafico(col_g1,
+    {labels: ["Jan","Fev","Mar","Abr","Mai"], valores: [42,58,73,65,89]},
+    tipo="barras", titulo="Vendas Mensais", largura=5, altura=3);
+
+// Grafico de pizza
+gui.grafico(col_g2,
+    {labels: ["Notebook","Mouse","Teclado","Monitor"], valores: [40,25,20,15]},
+    tipo="pizza", titulo="Mix de Produtos", largura=5, altura=3);
+
+// ════════════════════════════════════════════════════════════
+//  ABA 5 — COMPONENTES EXTRAS
+// ════════════════════════════════════════════════════════════
+gui.label(aba_extra, "Componentes Avancados", negrito=verdadeiro, tamanho=12);
+gui.separador(aba_extra);
+
+seja fr_extra = gui.frame_horizontal(aba_extra);
+seja col_e1 = gui.frame(fr_extra, borda=verdadeiro);
+seja col_e2 = gui.frame(fr_extra, borda=verdadeiro);
+col_e1.posicionar(lado="left", preencher="both", expandir=verdadeiro, espaco_x=8, espaco_y=4);
+col_e2.posicionar(lado="left", preencher="both", expandir=verdadeiro, espaco_x=8, espaco_y=4);
+
+// Coluna 1: Árvore hierárquica
+gui.label(col_e1, "Arvore Hierarquica:", negrito=verdadeiro);
+seja dados_arvore = [
+    {texto: "Projetos", filhos: [
+        {texto: "Advak Studio", filhos: [
+            {texto: "advak_lexer.py"},
+            {texto: "advak_parser.py"}
+        ]},
+        {texto: "Sistema Estoque", filhos: [
+            {texto: "estoque.dk"}
+        ]}
+    ]},
+    {texto: "Documentacao", filhos: [
+        {texto: "README.md"},
+        {texto: "CHANGELOG.md"}
+    ]}
+];
+gui.arvore(col_e1, dados_arvore, altura=10);
+
+// Coluna 2: Sliders e Switches
+gui.label(col_e2, "Controles Modernos:", negrito=verdadeiro);
+gui.label(col_e2, "Volume:");
+seja sl_vol  = gui.slider(col_e2, 0, 100, 70);
+gui.label(col_e2, "Brilho:");
+seja sl_bri  = gui.slider(col_e2, 0, 100, 50);
+gui.label(col_e2, "Opcoes:");
+seja tog1 = gui.toggle(col_e2, "Modo escuro",      valor_inicial=verdadeiro);
+seja tog2 = gui.toggle(col_e2, "Notificacoes",     valor_inicial=verdadeiro);
+seja tog3 = gui.toggle(col_e2, "Atualizacoes auto");
+seja tog4 = gui.toggle(col_e2, "Backup na nuvem",  valor_inicial=verdadeiro);
+
+gui.separador(col_e2);
+gui.botao(col_e2, "Testar Toast Info",    (b) => { gui.toast("Informacao!", tipo="info"); });
+gui.botao(col_e2, "Testar Toast Sucesso", (b) => { gui.toast("Operacao concluida!", tipo="sucesso"); }, estilo="sucesso");
+gui.botao(col_e2, "Testar Toast Erro",    (b) => { gui.toast("Algo deu errado!", tipo="erro"); }, estilo="perigo");
+gui.botao(col_e2, "Abrir Modal", (b) => {
+    gui.modal("Detalhes do Sistema", (win) => {
+        gui.label(win, "Advak GUI Moderno 4.0", negrito=verdadeiro, tamanho=14);
+        gui.separador(win);
+        gui.label(win, "Componentes disponiveis:");
+        seja itens = [
+            "Cards modernos","Graficos matplotlib","Switch toggle",
+            "Badges coloridas","Barra de status","Autocomplete",
+            "Arvore hierarquica","Sliders","Splitter","Toasts","Modais"
+        ];
+        para (item em itens) {
+            gui.label(win, `  ✓  ${item}`);
+        }
+        gui.botao(win, "Fechar", (b) => { win.fechar(); }, estilo="primario");
+    }, largura=400, altura=450);
+});
+
+// ── Inicia ────────────────────────────────────────────────────
+status.ok("Advak GUI Moderno 4.0 — Pronto!");
+gui.iniciar();

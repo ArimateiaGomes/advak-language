@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>doc_demo — Documentação Advak 5.0</title>
+<style>
+  body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; padding: 0; }
+  .header { background: #1e293b; padding: 24px 40px; border-bottom: 2px solid #3b82f6; }
+  .header h1 { margin: 0; color: #3b82f6; font-size: 1.8em; }
+  .header p { margin: 4px 0 0; color: #64748b; }
+  .container { max-width: 900px; margin: 0 auto; padding: 32px 40px; }
+  .stats { display: flex; gap: 16px; margin-bottom: 32px; }
+  .stat { background: #1e293b; border-radius: 8px; padding: 12px 20px; }
+  .stat .n { font-size: 1.8em; font-weight: bold; color: #3b82f6; }
+  .stat .l { color: #64748b; font-size: 0.85em; }
+  .item { background: #1e293b; border-radius: 8px; padding: 20px; margin-bottom: 16px; border-left: 4px solid #334155; }
+  .item.funcao { border-left-color: #3b82f6; }
+  .item.classe { border-left-color: #7c3aed; }
+  .item.variavel { border-left-color: #22c55e; }
+  .assinatura { font-family: monospace; font-size: 1.05em; color: #f1f5f9; margin-bottom: 8px; }
+  .nome { color: #38bdf8; font-weight: bold; }
+  .kw { color: #7c3aed; }
+  .param { color: #fbbf24; }
+  .default { color: #64748b; }
+  .val { color: #22c55e; }
+  .descricao { color: #94a3b8; line-height: 1.6; }
+  .linha { color: #475569; font-size: 0.8em; margin-top: 8px; }
+  h2 { color: #3b82f6; border-bottom: 1px solid #334155; padding-bottom: 8px; }
+  .empty { color: #475569; font-style: italic; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>📖 doc_demo</h1>
+  <p>Documentação gerada automaticamente — Advak 5.0</p>
+  <p style="color:#475569;font-size:0.85em">Fonte: projetos/doc_demo.dk</p>
+</div>
+<div class="container">
+  <div class="stats">
+    <div class="stat"><div class="n">5</div><div class="l">Funções</div></div>
+    <div class="stat"><div class="n">1</div><div class="l">Classes</div></div>
+    <div class="stat"><div class="n">1</div><div class="l">Constantes</div></div>
+    <div class="stat"><div class="n">7</div><div class="l">Total</div></div>
+  </div>
+  <h2>⚙️ Funções</h2>
+            <div class="item variavel">
+              <div class="assinatura"><span class="kw">fixo</span> <span class="nome">PI</span> = <span class="val">3.14159</span></div>
+              <div class="descricao">Constante matemática Pi com 5 casas decimais</div>
+            </div>
+            <div class="item funcao">
+              <div class="assinatura">função <span class="nome">area_circulo</span>(<span class="param">raio</span>)</div>
+              <div class="descricao">Calcula a área de um círculo dado o raio<br>@param raio - raio do círculo em centímetros<br>@retorna - área em cm²</div>
+              <div class="linha">Linha 13</div>
+            </div>
+            <div class="item funcao">
+              <div class="assinatura">função <span class="nome">calcular_imc</span>(<span class="param">peso</span>, <span class="param">altura</span>)</div>
+              <div class="descricao">Calcula o IMC (Índice de Massa Corporal)<br>@param peso   - peso em quilogramas<br>@param altura - altura em metros<br>@retorna - valor do IMC</div>
+              <div class="linha">Linha 21</div>
+            </div>
+            <div class="item funcao">
+              <div class="assinatura">função <span class="nome">classificar_imc</span>(<span class="param">imc</span>)</div>
+              <div class="descricao">Classifica o IMC em categorias da OMS<br>@param imc - valor do IMC calculado<br>@retorna - texto com a classificação</div>
+              <div class="linha">Linha 28</div>
+            </div>
+            <div class="item funcao">
+              <div class="assinatura">função <span class="nome">media</span>(<span class="param">numeros</span>)</div>
+              <div class="descricao">Calcula a média de uma lista de números<br>@param numeros - lista de valores numéricos<br>@retorna - média aritmética ou 0 se lista vazia</div>
+              <div class="linha">Linha 38</div>
+            </div>
+            <div class="item funcao">
+              <div class="assinatura">função <span class="nome">e_primo</span>(<span class="param">n</span>)</div>
+              <div class="descricao">Verifica se um número é primo<br>@param n - número inteiro a verificar<br>@retorna - verdadeiro se for primo</div>
+              <div class="linha">Linha 46</div>
+            </div>
+            <div class="item classe">
+              <div class="assinatura">classe <span class="nome">Aluno</span></div>
+              <div class="descricao">Classe que representa um aluno do CETI</div>
+              <div class="linha">Linha 57</div>
+            </div>
+  <h2>🏗️ Classes</h2>
+  <h2>📌 Constantes</h2>
+  
+            <div class="item variavel">
+              <div class="assinatura"><span class="kw">fixo</span> <span class="nome">PI</span> = <span class="val">3.14159</span></div>
+              <div class="descricao">Constante matemática Pi com 5 casas decimais</div>
+            </div>
+            <div class="item funcao">
+              <div class="assinatura">função <span class="nome">area_circulo</span>(<span class="param">raio</span>)</div>
+              <div class="descricao">Calcula a área de um círculo dado o raio<br>@param raio - raio do círculo em centímetros<br>@retorna - área em cm²</div>
+              <div class="linha">Linha 13</div>
+            </div>
+            <div class="item funcao">
+              <div class="assinatura">função <span class="nome">calcular_imc</span>(<span class="param">peso</span>, <span class="param">altura</span>)</div>
+              <div class="descricao">Calcula o IMC (Índice de Massa Corporal)<br>@param peso   - peso em quilogramas<br>@param altura - altura em metros<br>@retorna - valor do IMC</div>
+              <div class="linha">Linha 21</div>
+            </div>
+            <div class="item funcao">
+              <div class="assinatura">função <span class="nome">classificar_imc</span>(<span class="param">imc</span>)</div>
+              <div class="descricao">Classifica o IMC em categorias da OMS<br>@param imc - valor do IMC calculado<br>@retorna - texto com a classificação</div>
+              <div class="linha">Linha 28</div>
+            </div>
+            <div class="item funcao">
+              <div class="assinatura">função <span class="nome">media</span>(<span class="param">numeros</span>)</div>
+              <div class="descricao">Calcula a média de uma lista de números<br>@param numeros - lista de valores numéricos<br>@retorna - média aritmética ou 0 se lista vazia</div>
+              <div class="linha">Linha 38</div>
+            </div>
+            <div class="item funcao">
+              <div class="assinatura">função <span class="nome">e_primo</span>(<span class="param">n</span>)</div>
+              <div class="descricao">Verifica se um número é primo<br>@param n - número inteiro a verificar<br>@retorna - verdadeiro se for primo</div>
+              <div class="linha">Linha 46</div>
+            </div>
+            <div class="item classe">
+              <div class="assinatura">classe <span class="nome">Aluno</span></div>
+              <div class="descricao">Classe que representa um aluno do CETI</div>
+              <div class="linha">Linha 57</div>
+            </div>
+</div>
+</body>
+</html>

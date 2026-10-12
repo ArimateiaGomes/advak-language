@@ -1,0 +1,125 @@
+// ═══════════════════════════════════════════════════════════
+//  ADVAK 5.0 — Demo das 5 Novas Features
+// ═══════════════════════════════════════════════════════════
+
+// ─── 1. PATTERN MATCHING AVANÇADO ───────────────────────────
+
+função classificar(valor) {
+    retornar combinar valor {
+        caso (x, y) se x > 0 => `positivo: (${x}, ${y})`
+        caso (x, y) se x < 0 => `negativo: (${x}, ${y})`
+        caso [primeiro, ...resto] => `lista com ${primeiro} e mais ${resto.tamanho}`
+        caso {nome, idade} se idade >= 18 => `adulto: ${nome}`
+        caso {nome, idade} => `menor: ${nome}`
+        caso Numero(n) se n > 100 => `grande: ${n}`
+        caso _ => "outro"
+    }
+}
+
+imprimir(classificar([1, 2, 3, 4]))
+imprimir(classificar({nome: "Ana", idade: 25}))
+imprimir(classificar({nome: "Bia", idade: 15}))
+
+// ─── 2. DESTRUCTURING ───────────────────────────────────────
+
+// Object destructuring
+seja pessoa = {nome: "Carlos", idade: 30, cidade: "São Paulo"}
+seja {nome, idade, cidade} = pessoa
+imprimir(`Nome: ${nome}, Idade: ${idade}, Cidade: ${cidade}`)
+
+// Array destructuring com rest
+seja numeros = [10, 20, 30, 40, 50]
+seja [primeiro, segundo, ...resto] = numeros
+imprimir(`Primeiro: ${primeiro}, Segundo: ${segundo}, Resto: ${resto}`)
+
+// Destructuring com valor padrão
+seja config = {host: "localhost"}
+seja {host, porta: porta = 8080, debug: debug = falso} = config
+imprimir(`Servidor: ${host}:${porta} (debug=${debug})`)
+
+// Destructuring em parâmetros de função
+função saudar({nome, titulo: titulo = "Sr(a)"}) {
+    retornar `Olá, ${titulo} ${nome}!`
+}
+imprimir(saudar({nome: "Lima", titulo: "Dr"}))
+
+// ─── 3. CANVAS 2D ───────────────────────────────────────────
+
+tela.cor_fundo("#1a1a2e")
+tela.retangulo(50, 50, 200, 100, "#e94560", verdadeiro)
+tela.circulo(400, 150, 60, "#0f3460", verdadeiro)
+tela.linha(0, 300, 800, 300, "#16213e", 2)
+tela.texto("Advak 5.0 — Canvas", 250, 350, "#e94560", "bold 24px sans-serif")
+tela.retangulo(600, 50, 150, 150, "#533483", verdadeiro)
+tela.circulo(675, 125, 40, "#e94560", falso)
+
+// Exporta como SVG
+seja svg = tela.exportar_svg()
+imprimir("Canvas SVG gerado!")
+
+// ─── 4. GENERATORS ──────────────────────────────────────────
+
+// Generator de fibonacci
+função gerador fibonacci() {
+    seja a = 0
+    seja b = 1
+    enquanto (verdadeiro) {
+        produzir a
+        seja temp = a + b
+        a = b
+        b = temp
+    }
+}
+
+// Coleta os primeiros 10 números
+seja fib = fibonacci()
+seja sequencia = []
+seja count = 0
+para (n em fib) {
+    se (count >= 10) quebrar
+    sequencia.adicionar(n)
+    count = count + 1
+}
+imprimir(`Fibonacci: ${sequencia}`)
+
+// Generator de intervalo
+função gerador intervalo_par(inicio, fim) {
+    seja i = inicio
+    enquanto (i <= fim) {
+        se (i % 2 == 0) {
+            produzir i
+        }
+        i = i + 1
+    }
+}
+
+seja pares = []
+para (n em intervalo_par(1, 20)) {
+    pares.adicionar(n)
+}
+imprimir(`Pares de 1 a 20: ${pares}`)
+
+// ─── 5. LÓGICA / PROLOG ─────────────────────────────────────
+
+// Definindo fatos
+fato pai("joão", "maria")
+fato pai("joão", "pedro")
+fato pai("pedro", "ana")
+fato pai("pedro", "lucas")
+
+// Definindo regras
+regra avo(X, Z) :- pai(X, Y), pai(Y, Z)
+regra ancestral(X, Z) :- pai(X, Z)
+regra ancestral(X, Z) :- pai(X, Y), ancestral(Y, Z)
+
+// Consultas
+consultar pai("joão", X)
+imprimir(`Filhos de João: ${_solucoes}`)
+
+consultar avo("joão", X)
+imprimir(`Netos de João: ${_solucoes}`)
+
+consultar ancestral("joão", X)
+imprimir(`Descendentes de João: ${_solucoes}`)
+
+imprimir("✅ Advak 5.0 — Todas as features funcionando!")

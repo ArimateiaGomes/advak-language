@@ -1,0 +1,173 @@
+// ═══════════════════════════════════════════════════════════
+//  ADVAK 5.0 — Módulo Haskell: Tipos Algébricos + Imutabilidade
+// ═══════════════════════════════════════════════════════════
+
+// ─── TIPOS ALGÉBRICOS (ADT) ─────────────────────────────────
+
+// ADT simples — como Maybe/Option do Haskell
+tipo Opcional {
+    Nenhum,
+    Algum(valor)
+}
+
+// ADT recursivo — árvore binária
+tipo Arvore {
+    Folha,
+    No(esq, val, dir)
+}
+
+// ADT para expressões matemáticas
+tipo Expr {
+    Num(n),
+    Soma(esq, dir),
+    Mul(esq, dir),
+    Neg(expr)
+}
+
+// ADT para resultado (como Either/Result)
+tipo Resultado {
+    Ok(valor),
+    Erro(mensagem)
+}
+
+// ─── Criando valores ADT ─────────────────────────────────────
+
+seja vazio = Nenhum
+seja com_valor = Algum(42)
+imprimir(vazio)
+imprimir(com_valor)
+
+// Árvore binária
+seja arvore = No(No(Folha, 1, Folha), 2, No(Folha, 3, Folha))
+imprimir(arvore)
+
+// ─── Pattern matching em ADTs ────────────────────────────────
+
+função desembrulhar(opt, padrao) {
+    retornar combinar opt {
+        caso Algum(v) => v
+        caso Nenhum   => padrao
+    }
+}
+imprimir(desembrulhar(Algum(99), 0))
+imprimir(desembrulhar(Nenhum, 0))
+
+// Avaliador de expressões — pattern matching recursivo
+função avaliar(expr) {
+    retornar combinar expr {
+        caso Num(n)       => n
+        caso Soma(e, d)   => avaliar(e) + avaliar(d)
+        caso Mul(e, d)    => avaliar(e) * avaliar(d)
+        caso Neg(e)       => -avaliar(e)
+    }
+}
+
+// (3 + 4) * -2 = -14
+seja exp = Mul(Soma(Num(3), Num(4)), Neg(Num(2)))
+imprimir(`(3 + 4) * -2 = ${avaliar(exp)}`)
+
+// Soma dos nós de uma árvore
+função soma_arvore(arv) {
+    retornar combinar arv {
+        caso Folha              => 0
+        caso No(esq, val, dir)  => soma_arvore(esq) + val + soma_arvore(dir)
+    }
+}
+imprimir(`Soma da árvore: ${soma_arvore(arvore)}`)
+
+// Profundidade de uma árvore
+função profundidade(arv) {
+    retornar combinar arv {
+        caso Folha             => 0
+        caso No(esq, _, dir)   => 1 + MAX(profundidade(esq), profundidade(dir))
+    }
+}
+macro MAX(a, b) => a > b ? a : b
+imprimir(`Profundidade: ${profundidade(arvore)}`)
+
+// Resultado (como Either)
+função dividir(a, b) {
+    se (b == 0) {
+        retornar Erro("Divisão por zero!")
+    }
+    retornar Ok(a / b)
+}
+
+função mostrar_resultado(r) {
+    retornar combinar r {
+        caso Ok(v)   => `✅ Resultado: ${v}`
+        caso Erro(m) => `❌ Erro: ${m}`
+    }
+}
+
+imprimir(mostrar_resultado(dividir(10, 2)))
+imprimir(mostrar_resultado(dividir(10, 0)))
+
+// ─── IMUTABILIDADE ──────────────────────────────────────────
+
+// Variável imutável simples
+imutavel PI = 3.14159265358979
+imprimir(`PI = ${PI}`)
+
+// Tentar modificar PI vai lançar erro
+tentar {
+    PI = 999
+} capturar (e) {
+    imprimir(`✅ Imutabilidade protegida: ${e}`)
+}
+
+// Objeto imutável (mapa congelado)
+imutavel config = {
+    host: "localhost",
+    porta: 8080,
+    debug: falso,
+    versao: "5.0"
+}
+imprimir(`Config: host=${config.host}, porta=${config.porta}`)
+
+// Lista imutável
+imutavel primos = [2, 3, 5, 7, 11, 13, 17, 19]
+imprimir(`Primos: ${primos}`)
+imprimir(`Primeiro primo: ${primos[0]}`)
+imprimir(`Quinto primo: ${primos[4]}`)
+
+// Congelar uma variável existente
+seja info = {nome: "Alice", pontos: 100}
+congelar info
+imprimir(`Info congelada: ${info}`)
+tentar {
+    info.nome = "Bob"
+} capturar (e) {
+    imprimir(`✅ Struct congelada protegida`)
+}
+
+// ─── COMPOSIÇÃO DE FUNÇÕES ──────────────────────────────────
+
+// Pipeline |> já existia, mas com imutabilidade e ADTs fica mais poderoso
+função dobrar(x) { retornar x * 2 }
+função incrementar(x) { retornar x + 1 }
+função quadrado(x) { retornar x * x }
+
+// Composição via pipeline
+seja resultado = 3 |> dobrar |> incrementar |> quadrado
+imprimir(`3 |> dobrar |> incrementar |> quadrado = ${resultado}`)
+
+// Map e filter em listas imutáveis (retornam listas normais)
+seja nums = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+seja pares_quad = nums.filtrar((n) => n % 2 == 0).map((n) => n * n)
+imprimir(`Pares ao quadrado: ${pares_quad}`)
+
+// Processamento com ADTs e pipeline
+função talvez_dobrar(opt) {
+    retornar combinar opt {
+        caso Algum(v) => Algum(v * 2)
+        caso Nenhum   => Nenhum
+    }
+}
+
+seja m1 = Algum(5)
+seja m2 = talvez_dobrar(m1)
+imprimir(`Algum(5) dobrado = ${m2}`)
+imprimir(`desembrulhado = ${desembrulhar(m2, -1)}`)
+
+imprimir("✅ Módulo Haskell — COMPLETO!")

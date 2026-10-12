@@ -1,0 +1,31 @@
+// ═══════════════════════════════════════════
+//  módulo: validacao.dk
+//  Funções de validação reutilizáveis
+// ═══════════════════════════════════════════
+
+exportar função validar_email(email) {
+    se (!email) { retornar falso; }
+    seja tem_arroba = Texto.contem(email, "@");
+    seja tem_ponto  = Texto.contem(email, ".");
+    retornar tem_arroba && tem_ponto;
+}
+
+exportar função validar_cpf(cpf) {
+    seja apenas_nums = "";
+    para (c em cpf) {
+        se (c >= "0" && c <= "9") { apenas_nums = apenas_nums + c; }
+    }
+    retornar Texto.tamanho(apenas_nums) == 11;
+}
+
+exportar função validar_senha(senha) {
+    se (Texto.tamanho(senha) < 8) {
+        retornar {ok: falso, erro: "Mínimo 8 caracteres"};
+    }
+    retornar {ok: verdadeiro, erro: ""};
+}
+
+exportar função sanitizar(texto_input) {
+    seja r = Texto.aparar(texto_input);
+    retornar r;
+}

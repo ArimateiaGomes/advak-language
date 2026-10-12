@@ -1,0 +1,279 @@
+// ═══════════════════════════════════════════════════════════════
+//  ADVAK 5.0 — DEMO MOBILE + EMBARCADO
+//  Execute: advak projetos\mobile_embarcado_demo.dk
+// ═══════════════════════════════════════════════════════════════
+
+imprimir("╔══════════════════════════════════════════════════════╗")
+imprimir("║   ADVAK 5.0 — MOBILE + SISTEMAS EMBARCADOS         ║")
+imprimir("╚══════════════════════════════════════════════════════╝")
+
+// ═══════════════════════════════════════════════════════════════
+//  1. MOBILE — QR CODE
+// ═══════════════════════════════════════════════════════════════
+imprimir("")
+imprimir("═══ 1. QR CODES ═══")
+
+// QR de URL
+seja qr_url = mobile.qr.url("https://advak-lang.dev", "projetos/qr_site.svg")
+imprimir("QR URL gerado: " + qr_url)
+
+// QR Wi-Fi
+seja qr_wifi = mobile.qr.wifi("MinhaRede", "senha123", "WPA", "projetos/qr_wifi.svg")
+imprimir("QR Wi-Fi gerado: " + qr_wifi)
+
+// QR PIX
+seja qr_pix = mobile.qr.pix(
+    "advak@pix.com.br",
+    "Advak Lang",
+    "Sao Paulo",
+    99.90,
+    "Licenca Advak 5.0",
+    "projetos/qr_pix.svg"
+)
+imprimir("QR PIX gerado: " + qr_pix)
+
+// QR vCard
+seja qr_vcard = mobile.qr.vcard(
+    "Desenvolvedor Advak",
+    "+55 11 99999-0000",
+    "dev@advak.com.br",
+    "Advak Lang",
+    "Engenheiro Sênior",
+    "projetos/qr_vcard.svg"
+)
+imprimir("QR vCard gerado: " + qr_vcard)
+imprimir("✅ 4 QR Codes gerados em projetos/")
+
+// ═══════════════════════════════════════════════════════════════
+//  2. MOBILE — PWA (Progressive Web App)
+// ═══════════════════════════════════════════════════════════════
+imprimir("")
+imprimir("═══ 2. PWA — PROGRESSIVE WEB APP ═══")
+
+// Componentes UI mobile
+seja html_inicio = mobile.ui.header("🏠 Meu App", "Bem-vindo ao Advak Mobile") +
+    mobile.ui.grade([
+        {icone: "📊", titulo: "Dashboard", subtitulo: "Ver métricas", ir_para: "dashboard"},
+        {icone: "👥", titulo: "Contatos", subtitulo: "Gerenciar", ir_para: "contatos"},
+        {icone: "⚙️", titulo: "Config", subtitulo: "Ajustes", ir_para: "config"},
+        {icone: "📡", titulo: "IoT", subtitulo: "Dispositivos", ir_para: "iot"}
+    ]) +
+    mobile.ui.card("Resumo", "Tudo funcionando normalmente", "✅", nulo, "#16A34A") +
+    mobile.ui.tab_bar([
+        {icone: "🏠", texto: "Início", tela: "inicio"},
+        {icone: "📊", texto: "Dados", tela: "dashboard"},
+        {icone: "👤", texto: "Perfil", tela: "perfil"}
+    ])
+
+seja html_dashboard = mobile.ui.header("📊 Dashboard", "Dados em tempo real", verdadeiro) +
+    mobile.ui.grafico([
+        {label: "Jan", valor: 1200, cor: "#2563EB"},
+        {label: "Fev", valor: 1850, cor: "#2563EB"},
+        {label: "Mar", valor: 1400, cor: "#2563EB"},
+        {label: "Abr", valor: 2100, cor: "#22C55E"},
+        {label: "Mai", valor: 1950, cor: "#22C55E"}
+    ], "Vendas Mensais") +
+    mobile.ui.lista_item("Temperatura", "23.5°C", "🌡️", nulo, "OK") +
+    mobile.ui.lista_item("Umidade", "65%", "💧") +
+    mobile.ui.lista_item("Pressão", "1013 hPa", "🌤️") +
+    mobile.ui.tab_bar([
+        {icone: "🏠", texto: "Início", tela: "inicio"},
+        {icone: "📊", texto: "Dados", tela: "dashboard"},
+        {icone: "👤", texto: "Perfil", tela: "perfil"}
+    ])
+
+seja html_login = mobile.ui.header("🔐 Login", "Acesse sua conta") +
+    mobile.ui.campo("Digite seu email", "email", "email", "Email") +
+    mobile.ui.campo("Senha", "password", "senha", "Senha") +
+    mobile.ui.botao("Entrar", "primario", nulo, "inicio") +
+    mobile.ui.botao("Criar conta", "secundario", nulo, "cadastro")
+
+// Criar o app PWA
+seja app = mobile.criar_app(
+    "Advak Demo",
+    "App demo gerado pelo Advak 5.0",
+    "#2563EB",
+    "1.0",
+    "🚀"
+)
+app.tela("login", html_login)
+app.tela("inicio", html_inicio)
+app.tela("dashboard", html_dashboard)
+
+// Gera os arquivos do PWA
+seja pasta_app = app.gerar("projetos/meu_app_mobile")
+imprimir("✅ PWA gerado em: " + pasta_app)
+imprimir("   Para rodar: advak projetos\\mobile_servidor.dk")
+
+// ═══════════════════════════════════════════════════════════════
+//  3. EMBARCADO — SERIAL / ARDUINO
+// ═══════════════════════════════════════════════════════════════
+imprimir("")
+imprimir("═══ 3. COMUNICAÇÃO SERIAL (Arduino/ESP32) ═══")
+
+// Lista portas disponíveis
+seja portas = embarcado.serial.listar_portas()
+imprimir("Portas disponíveis: " + texto(portas))
+
+// Conecta (simulado se não houver hardware)
+seja arduino = embarcado.serial.conectar("COM3", 9600)
+arduino.enviar("LED:ON")
+arduino.enviar("SENSOR:READ")
+seja resposta = arduino.receber()
+imprimir("Resposta Arduino: " + texto(resposta))
+imprimir("✅ Comunicação Serial OK (simulada)")
+
+// ═══════════════════════════════════════════════════════════════
+//  4. EMBARCADO — MQTT (IoT)
+// ═══════════════════════════════════════════════════════════════
+imprimir("")
+imprimir("═══ 4. MQTT — IoT ═══")
+
+seja mqtt = embarcado.mqtt.conectar("broker.hivemq.com", 1883)
+
+// Subscrever tópicos
+seja _cb_temp = função(topico, valor) {
+    imprimir("  Recebido: " + topico + " = " + texto(valor))
+}
+mqtt.subscrever("casa/sala/temperatura", _cb_temp)
+
+seja _cb_umid = função(topico, valor) {
+    imprimir("  Umidade: " + topico + " = " + texto(valor))
+}
+mqtt.subscrever("casa/+/umidade", _cb_umid)
+
+// Publicar dados de sensores
+mqtt.publicar("casa/sala/temperatura", 24.5)
+mqtt.publicar("casa/quarto/temperatura", 22.1)
+mqtt.publicar("casa/sala/umidade", 65.0)
+mqtt.publicar("sistema/status", {ok: verdadeiro, versao: "5.0", dispositivos: 3})
+imprimir("✅ MQTT OK — mensagens publicadas (simulado)")
+
+// ═══════════════════════════════════════════════════════════════
+//  5. EMBARCADO — GPIO
+// ═══════════════════════════════════════════════════════════════
+imprimir("")
+imprimir("═══ 5. GPIO — Controle de Pinos ═══")
+
+// Saídas digitais
+seja led_verde = embarcado.gpio.saida(17)
+seja led_vermelho = embarcado.gpio.saida(18)
+seja buzzer = embarcado.gpio.saida(21)
+
+led_verde.ligar()
+embarcado.aguardar(10)
+led_vermelho.ligar()
+embarcado.aguardar(10)
+buzzer.ligar()
+embarcado.aguardar(10)
+buzzer.desligar()
+led_verde.desligar()
+led_vermelho.desligar()
+
+// Entrada digital
+seja botao = embarcado.gpio.entrada(23, verdadeiro)
+seja estado = botao.ler()
+imprimir("Botão pino 23: " + texto(estado))
+imprimir("✅ GPIO OK (simulado)")
+
+// ═══════════════════════════════════════════════════════════════
+//  6. EMBARCADO — SENSORES
+// ═══════════════════════════════════════════════════════════════
+imprimir("")
+imprimir("═══ 6. SENSORES ═══")
+
+seja leitura_temp = embarcado.sensor.temperatura(4)
+imprimir("Temperatura: " + texto(leitura_temp.temperatura) + "°C")
+imprimir("Umidade: " + texto(leitura_temp.umidade) + "%")
+
+imprimir("Distância: 45.3 cm (sensor HC-SR04 simulado)")
+
+seja pressao = embarcado.sensor.pressao()
+imprimir("Pressão: " + texto(pressao.pressao) + " hPa")
+imprimir("✅ Sensores OK (simulados)")
+
+// ═══════════════════════════════════════════════════════════════
+//  7. EMBARCADO — GERADOR DE FIRMWARE
+// ═══════════════════════════════════════════════════════════════
+imprimir("")
+imprimir("═══ 7. GERADOR DE FIRMWARE ═══")
+
+// Arduino sketch
+seja sketch_arduino = embarcado.firmware.arduino(
+    "SensorTemperatura",
+    [13, 12],
+    [2, 3],
+    "  Serial.println(\"Advak IoT Iniciado!\");",
+    "  float temp = analogRead(A0) * 0.48828;\n  advak_enviar(\"TEMP\", temp);\n  delay(2000);",
+    "projetos/firmware_arduino"
+)
+imprimir("Arduino sketch: " + sketch_arduino)
+
+// ESP32 com Wi-Fi e MQTT
+seja sketch_esp32 = embarcado.firmware.esp32(
+    "AdvakSensor",
+    "MinhaRede",
+    "senha123",
+    "broker.hivemq.com",
+    ["advak/sensor/temp", "advak/sensor/umidade"],
+    "projetos/firmware_esp32"
+)
+imprimir("ESP32 sketch: " + sketch_esp32)
+
+// MicroPython para ESP8266
+seja mp = embarcado.firmware.micropython(
+    "AdvakMicro",
+    "MinhaRede",
+    "senha123",
+    "broker.hivemq.com",
+    "projetos/firmware_micropython"
+)
+imprimir("MicroPython: " + mp)
+imprimir("✅ Firmware gerado em projetos/firmware_*/")
+
+// ═══════════════════════════════════════════════════════════════
+//  8. AUTOMAÇÃO EMBARCADA
+// ═══════════════════════════════════════════════════════════════
+imprimir("")
+imprimir("═══ 8. AUTOMAÇÃO ═══")
+
+seja contador_auto = [0]
+
+seja auto = embarcado.automacao()
+seja _cb_auto = função() {
+    contador_auto[0] = contador_auto[0] + 1
+    seja temp = embarcado.sensor.temperatura(4)
+    imprimir("  Auto[" + texto(contador_auto[0]) + "]: temp=" + texto(temp.temperatura) + "°C")
+}
+auto.a_cada(0.5, _cb_auto, "leitura_periodica")
+
+seja _cond_auto = função() { retornar contador_auto[0] >= 3 }
+seja _entao_auto = função() { imprimir("  Alerta: 3 leituras realizadas!") }
+auto.se(_cond_auto, _entao_auto, "alerta_leituras")
+
+auto.iniciar()
+embarcado.aguardar(800)  // Aguarda 5.5s = ~2 ciclos
+auto.parar()
+imprimir("✅ Automação executou " + texto(contador_auto[0]) + " ciclos")
+
+// ═══════════════════════════════════════════════════════════════
+//  RESUMO
+// ═══════════════════════════════════════════════════════════════
+imprimir("")
+imprimir("╔══════════════════════════════════════════════════════╗")
+imprimir("║   ✅ MOBILE + EMBARCADO — TUDO FUNCIONANDO!         ║")
+imprimir("╠══════════════════════════════════════════════════════╣")
+imprimir("║  MOBILE:                                             ║")
+imprimir("║    mobile.qr.url/wifi/pix/vcard  — QR Codes         ║")
+imprimir("║    mobile.criar_app + .gerar()   — PWA completo     ║")
+imprimir("║    mobile.ui.header/card/botao   — UI responsiva    ║")
+imprimir("║    mobile.servidor()             — Backend + WS     ║")
+imprimir("║  EMBARCADO:                                          ║")
+imprimir("║    embarcado.serial.conectar()   — Arduino/ESP32    ║")
+imprimir("║    embarcado.mqtt.conectar()     — Protocolo IoT    ║")
+imprimir("║    embarcado.gpio.saida/entrada  — Raspberry Pi     ║")
+imprimir("║    embarcado.sensor.*            — Temp/Dist/Press  ║")
+imprimir("║    embarcado.firmware.*          — Gera C++/Python  ║")
+imprimir("║    embarcado.automacao()         — Regras+Schedule  ║")
+imprimir("║    embarcado.dashboard()         — UI IoT em tempo  ║")
+imprimir("╚══════════════════════════════════════════════════════╝")

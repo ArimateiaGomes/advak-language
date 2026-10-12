@@ -1,0 +1,168 @@
+// ═══════════════════════════════════════════════════════
+//  Advak 3.0 — Exemplo: Banco de Dados PostgreSQL Nativo
+//  Execute: python advak.py run banco_exemplo.dk --db
+// ═══════════════════════════════════════════════════════
+
+imprimir("🚀 Advak 3.0 — Demonstração de Banco de Dados");
+imprimir("═══════════════════════════════════════════════");
+
+// ── 1. Criar e selecionar banco ───────────────────────
+imprimir("\n📦 1. Criando banco 'escola_advak'...");
+seja r = banco.criar_banco("escola_advak");
+imprimir(r);
+banco.usar("escola_advak");
+
+// ── 2. Criar tabelas ──────────────────────────────────
+imprimir("\n📋 2. Criando tabelas...");
+
+banco.tabela("professores", {
+    "id":         "autonum",
+    "nome":       "texto obrigatorio",
+    "email":      "texto unico obrigatorio",
+    "disciplina": "texto",
+    "ativo":      "booleano padrao verdadeiro",
+    "criado":     "datahora"
+});
+imprimir("   ✅ Tabela 'professores' criada");
+
+banco.tabela("alunos", {
+    "id":         "autonum",
+    "nome":       "texto obrigatorio",
+    "matricula":  "texto unico obrigatorio",
+    "turma":      "varchar",
+    "nota_final": "decimal",
+    "ativo":      "booleano padrao verdadeiro"
+});
+imprimir("   ✅ Tabela 'alunos' criada");
+
+banco.tabela("notas", {
+    "id":          "autonum",
+    "aluno_id":    "ref alunos",
+    "professor_id":"ref professores",
+    "disciplina":  "texto",
+    "nota":        "decimal",
+    "data_prova":  "data"
+});
+imprimir("   ✅ Tabela 'notas' criada");
+
+// ── 3. Inserir dados ──────────────────────────────────
+imprimir("\n📥 3. Inserindo dados...");
+
+seja prof1 = banco.inserir("professores", {
+    "nome": "Prof. Arimatea",
+    "email": "arimatea@ceti.edu.br",
+    "disciplina": "Programação"
+});
+imprimir(`   Professor inserido: ID ${prof1.id}`);
+
+seja prof2 = banco.inserir("professores", {
+    "nome": "Prof. Maria",
+    "email": "maria@ceti.edu.br",
+    "disciplina": "Redes"
+});
+
+// Insere vários alunos de uma vez
+banco.inserir_varios("alunos", [
+    {"nome": "Ana Silva",    "matricula": "2024001", "turma": "3A", "nota_final": 8.5},
+    {"nome": "Bob Santos",   "matricula": "2024002", "turma": "3A", "nota_final": 7.2},
+    {"nome": "Carla Lima",   "matricula": "2024003", "turma": "3B", "nota_final": 9.1},
+    {"nome": "Diego Costa",  "matricula": "2024004", "turma": "3B", "nota_final": 6.8},
+    {"nome": "Eva Pereira",  "matricula": "2024005", "turma": "3A", "nota_final": 5.5}
+]);
+imprimir("   5 alunos inseridos");
+
+// ── 4. Buscar dados ───────────────────────────────────
+imprimir("\n🔍 4. Buscando dados...");
+
+// Todos os alunos
+seja todos = banco.buscar("alunos").ordenar("nome").executar();
+imprimir(`\n   Total de alunos: ${todos.tamanho}`);
+
+// Busca com filtro
+seja aprovados = banco.buscar("alunos")
+    .onde("nota_final >= %s", 7.0)
+    .ordenar("nota_final", "DESC")
+    .executar();
+
+imprimir(`\n   Alunos aprovados (nota >= 7.0):`);
+para (a em aprovados) {
+    imprimir(`     ✅ ${a.nome} — Nota: ${a.nota_final} — Turma: ${a.turma}`);
+}
+
+// Alunos em recuperação
+seja recuperacao = banco.buscar("alunos")
+    .onde("nota_final < %s", 7.0)
+    .executar();
+
+imprimir(`\n   Alunos em recuperação:`);
+para (a em recuperacao) {
+    imprimir(`     ⚠️  ${a.nome} — Nota: ${a.nota_final}`);
+}
+
+// ── 5. Contar registros ───────────────────────────────
+imprimir("\n📊 5. Estatísticas...");
+seja total_alunos = banco.buscar("alunos").contar();
+seja total_aprovados = banco.buscar("alunos").onde("nota_final >= %s", 7.0).contar();
+seja total_reprovados = banco.buscar("alunos").onde("nota_final < %s", 5.0).contar();
+
+imprimir(`   Total: ${total_alunos} alunos`);
+imprimir(`   Aprovados: ${total_aprovados}`);
+imprimir(`   Reprovados: ${total_reprovados}`);
+
+// ── 6. Buscar por ID ──────────────────────────────────
+imprimir("\n🎯 6. Busca por ID...");
+seja aluno1 = banco.buscar_id("alunos", 1);
+se (aluno1) {
+    imprimir(`   Aluno ID 1: ${aluno1.nome} — Matrícula: ${aluno1.matricula}`);
+}
+
+// ── 7. Atualizar registro ─────────────────────────────
+imprimir("\n✏️  7. Atualizando nota da Eva...");
+seja atualizados = banco.atualizar("alunos", {"nota_final": 6.5})
+    .onde("matricula = %s", "2024005")
+    .executar();
+imprimir(`   ${atualizados.tamanho} registro(s) atualizado(s)`);
+
+// Verifica
+seja eva = banco.buscar("alunos").onde("matricula = %s", "2024005").primeiro();
+imprimir(`   Eva agora tem nota: ${eva.nota_final}`);
+
+// ── 8. SQL puro ───────────────────────────────────────
+imprimir("\n🔧 8. SQL puro...");
+seja media = banco.sql("SELECT AVG(nota_final) as media FROM alunos");
+imprimir(`   Média geral: ${media[0].media}`);
+
+seja por_turma = banco.sql(
+    "SELECT turma, COUNT(*) as total, AVG(nota_final) as media " +
+    "FROM alunos GROUP BY turma ORDER BY turma"
+);
+imprimir("\n   Resultados por turma:");
+para (t em por_turma) {
+    imprimir(`     Turma ${t.turma}: ${t.total} alunos, média ${t.media}`);
+}
+
+// ── 9. Transação ──────────────────────────────────────
+imprimir("\n🔄 9. Demonstrando transação...");
+tentar {
+    banco.iniciar();
+    banco.inserir("alunos", {"nome": "Teste Trans", "matricula": "9999", "turma": "3A"});
+    banco.reverter();
+    imprimir("   Transação revertida — registro não foi salvo");
+} capturar (e) {
+    banco.reverter();
+    imprimir(`   Erro: ${e}`);
+}
+
+seja total_final = banco.buscar("alunos").contar();
+imprimir(`   Total de alunos após transação revertida: ${total_final} (correto!)`);
+
+// ── 10. Migração ──────────────────────────────────────
+imprimir("\n🔀 10. Migração — adicionando coluna...");
+seja m = banco.migrar("alunos", {"telefone": "texto", "cidade": "texto"});
+imprimir(`   ${m}`);
+
+// ── Resumo ────────────────────────────────────────────
+imprimir("\n═══════════════════════════════════════════════");
+imprimir("✅ Demonstração concluída com sucesso!");
+imprimir("🗄️  Banco 'escola_advak' criado no PostgreSQL");
+imprimir("📋 Tabelas: professores, alunos, notas");

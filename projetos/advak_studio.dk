@@ -1,0 +1,747 @@
+// ═══════════════════════════════════════════════════════════════════════
+//  ADVAK STUDIO 5.1 — IDE Ultra Moderno
+//  Visual: VS Code Dark+ inspirado, design premium
+// ═══════════════════════════════════════════════════════════════════════
+
+gui.tema("escuro")
+seja jan = gui.janela("⚡ Advak Studio 5.1", 1400, 820)
+
+// ─── PALETA DE CORES (Design System) ────────────────────────────────────
+seja C_BG0    = "#0A0E1A"   // fundo mais escuro
+seja C_BG1    = "#0D1117"   // fundo editor
+seja C_BG2    = "#111827"   // painéis laterais
+seja C_BG3    = "#1C2333"   // sidebar items hover
+seja C_BG4    = "#161B27"   // header / status
+seja C_BORDA  = "#21262D"   // bordas sutis
+seja C_SEL    = "#1F2D3D"   // seleção
+seja C_ACENTO = "#2F81F7"   // azul primário (GitHub style)
+seja C_VERDE  = "#3FB950"   // sucesso
+seja C_AMAREL = "#D29922"   // aviso
+seja C_VERM   = "#F85149"   // erro
+seja C_ROXO   = "#8957E5"   // especial
+seja C_CIANO  = "#39C5CF"   // info
+seja C_TEXTO  = "#E6EDF3"   // texto principal
+seja C_TEXTO2 = "#8B949E"   // texto secundário
+seja C_TEXTO3 = "#484F58"   // texto desabilitado
+
+// ─── ESTADO ─────────────────────────────────────────────────────────────
+seja _arquivo_atual = [""]
+seja _modificado    = [falso]
+seja _executando    = [falso]
+seja _tema_atual    = ["escuro"]
+seja _arquivos_abertos = ["Sem título"]
+
+// ─── SNIPPETS ────────────────────────────────────────────────────────────
+seja SNIPPETS = {
+    "funcao":   "funcao nome(param) {\n    \n}",
+    "classe":   "classe Nome {\n    inicio() {\n        isso.prop = nulo\n    }\n}",
+    "se/senão": "se (condicao) {\n    \n} senão {\n    \n}",
+    "para":     "para (item em lista) {\n    imprimir(item)\n}",
+    "enquanto": "enquanto (condicao) {\n    \n}",
+    "tentar":   "tentar {\n    \n} pegar (erro) {\n    imprimir(erro)\n}",
+    "servidor": "servidor.porta(8080)\nservidor.obter(\"/\", (req) => {\n    retornar html(\"<h1>Olá!</h1>\")\n})\nservidor.iniciar(8080)",
+    "banco":    "seja db = banco_auto(\"app\")\nseja t = db.criar_tabela(\"itens\", {\n    nome: \"texto\",\n    valor: \"numero\"\n})",
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// LAYOUT: Janela principal sem decoração interna
+// ═══════════════════════════════════════════════════════════════════════
+jan.configure(bg=C_BG0)
+
+// ─── BARRA DE TÍTULO CUSTOMIZADA ────────────────────────────────────────
+seja f_titulo = gui.frame(jan, cor=C_BG4)
+f_titulo.configure(height=38)
+f_titulo.pack(fill="x")
+f_titulo.pack_propagate(falso)
+
+// Linha de accent no topo
+seja f_accent = gui.frame(f_titulo, cor=C_ACENTO)
+f_accent.configure(height=2)
+f_accent.pack(fill="x", side="top")
+
+seja f_titulo_inner = gui.frame_horizontal(f_titulo)
+f_titulo_inner.configure(bg=C_BG4)
+
+// Logo + nome
+seja f_logo_area = gui.frame_horizontal(f_titulo_inner)
+f_logo_area.configure(bg=C_BG4, padx=12)
+gui.label(f_logo_area, "⚡", tamanho=14, cor=C_ACENTO).pack(side="left", pady=6)
+gui.label(f_logo_area, " Advak Studio", tamanho=10, cor=C_TEXTO, negrito=verdadeiro).pack(side="left", pady=6)
+gui.label(f_logo_area, " 5.1", tamanho=9, cor=C_TEXTO3).pack(side="left", pady=6)
+
+// Separador vertical
+gui.frame(f_titulo_inner, cor=C_BORDA).configure(width=1)
+
+// Arquivo atual (breadcrumb)
+seja lbl_breadcrumb = gui.label(f_titulo_inner, "  Sem título", tamanho=9, cor=C_TEXTO2)
+lbl_breadcrumb.pack(side="left", padx=8)
+
+seja lbl_modificado = gui.label(f_titulo_inner, "", tamanho=9, cor=C_AMAREL)
+lbl_modificado.pack(side="left")
+
+// Status direita
+seja lbl_status_topo = gui.label(f_titulo_inner, "✅ Pronto", tamanho=9, cor=C_VERDE)
+lbl_status_topo.pack(side="right", padx=16)
+
+// ─── TOOLBAR PRINCIPAL ───────────────────────────────────────────────────
+seja f_toolbar = gui.frame(jan, cor=C_BG4)
+f_toolbar.configure(height=44)
+f_toolbar.pack(fill="x")
+f_toolbar.pack_propagate(falso)
+
+seja f_toolbar_inner = gui.frame_horizontal(f_toolbar)
+f_toolbar_inner.configure(bg=C_BG4)
+
+// Separador sutil (label estreito como separador)
+gui.label(f_toolbar_inner, " | ", tamanho=9, cor=C_TEXTO3).pack(side="left")
+
+// Função para criar botões de toolbar estilizados
+funcao toolbar_btn(pai, emoji, texto_btn, fn, cor_bg, cor_txt) {
+    // Criar botão diretamente no pai sem frame wrapper (evita expand=True do gui.frame)
+    seja btn = gui.botao(pai, emoji + " " + texto_btn, ao_clicar=fn, estilo="primario")
+    btn.configure(bg=cor_bg, fg=cor_txt, relief="flat",
+                  activebackground=C_BG3, activeforeground=cor_txt,
+                  font="Segoe UI 9 bold", padx=12, pady=6, bd=0,
+                  cursor="hand2")
+    btn.pack(side="left", padx=3, pady=6)
+    retornar btn
+}
+
+seja btn_exec  = toolbar_btn(f_toolbar_inner, "▶", "Executar",  () => executar(),  "#1A3A1A", C_VERDE)
+seja btn_parar = toolbar_btn(f_toolbar_inner, "⏹", "Parar",     () => parar(),     "#3A1A1A", C_VERM)
+seja btn_verif = toolbar_btn(f_toolbar_inner, "✔", "Verificar", () => verificar(), "#2A2A1A", C_AMAREL)
+
+// Separador
+gui.label(f_toolbar_inner, " | ", tamanho=9, cor=C_TEXTO3).pack(side="left")
+
+seja btn_salvar = toolbar_btn(f_toolbar_inner, "💾", "Salvar",  () => salvar(), C_BG4, C_TEXTO)
+seja btn_abrir  = toolbar_btn(f_toolbar_inner, "📂", "Abrir",   () => abrir(),  C_BG4, C_TEXTO)
+seja btn_novo   = toolbar_btn(f_toolbar_inner, "📄", "Novo",    () => novo(),   C_BG4, C_TEXTO)
+
+// Separador
+gui.label(f_toolbar_inner, " | ", tamanho=9, cor=C_TEXTO3).pack(side="left")
+
+// Seletor de tema
+seja caixa_tema = gui.caixa_selecao(f_toolbar_inner,
+    opcoes=["🌑 Escuro", "☀️ Claro", "🌊 Oceano", "🌲 Floresta"],
+    valor_inicial="🌑 Escuro")
+caixa_tema.pack(side="left", padx=6, pady=8)
+caixa_tema.configure(width=12, font="Segoe UI 9")
+
+caixa_tema.bind("<<ComboboxSelected>>", (e) => {
+    seja escolha = caixa_tema.get()
+    se (escolha.contem("Claro")) {
+        gui.tema("claro")
+        lbl_status_topo.configure(text="☀️ Tema claro", fg=C_AMAREL)
+    } senão se (escolha.contem("Oceano")) {
+        gui.tema("azul")
+        lbl_status_topo.configure(text="🌊 Tema oceano", fg=C_CIANO)
+    } senão {
+        gui.tema("escuro")
+        lbl_status_topo.configure(text="🌑 Tema escuro", fg=C_TEXTO2)
+    }
+})
+
+// Seletor de snippet
+seja caixa_snippet = gui.caixa_selecao(f_toolbar_inner,
+    opcoes=["⚡ Snippet..."] + SNIPPETS.chaves,
+    valor_inicial="⚡ Snippet...")
+caixa_snippet.pack(side="left", padx=4, pady=8)
+caixa_snippet.configure(width=14, font="Segoe UI 9")
+
+caixa_snippet.bind("<<ComboboxSelected>>", (e) => {
+    seja escolha = caixa_snippet.get()
+    se (escolha != "⚡ Snippet..." e SNIPPETS.contem(escolha)) {
+        editor.insert("insert", "\n" + SNIPPETS[escolha] + "\n")
+        caixa_snippet.set("⚡ Snippet...")
+        editor.focus()
+    }
+})
+
+// ─── CORPO PRINCIPAL (3 colunas) ────────────────────────────────────────
+seja f_corpo = gui.frame_horizontal(jan)
+f_corpo.configure(bg=C_BG0)
+f_corpo.pack(fill="both", expand=verdadeiro)
+
+// ════ COLUNA 1: SIDEBAR ═════════════════════════════════════════════════
+seja f_sidebar = gui.frame(f_corpo, cor=C_BG2)
+f_sidebar.configure(width=220)
+f_sidebar.pack(side="left", fill="y")
+f_sidebar.pack_propagate(falso)
+
+// Abas da sidebar (EXPLORADOR / PESQUISA)
+seja f_sidebar_tabs = gui.frame_horizontal(f_sidebar)
+f_sidebar_tabs.configure(bg=C_BG4, height=32)
+f_sidebar_tabs.pack(fill="x")
+f_sidebar_tabs.pack_propagate(falso)
+
+funcao sidebar_tab(pai, txt, fn) {
+    seja btn = gui.botao(pai, txt, ao_clicar=fn, estilo="secundario")
+    btn.configure(bg=C_BG4, fg=C_TEXTO2, relief="flat", font="Segoe UI 8 bold",
+                  padx=10, pady=6, bd=0, activebackground=C_BG3, cursor="hand2")
+    btn.pack(side="left")
+    retornar btn
+}
+
+sidebar_tab(f_sidebar_tabs, "📁 EXPLORADOR", () => nulo)
+sidebar_tab(f_sidebar_tabs, "🔍", () => nulo)
+
+// Botão de atualizar
+seja btn_refresh = gui.botao(f_sidebar_tabs, "↻",
+    ao_clicar=() => atualizar_explorador(), estilo="secundario")
+btn_refresh.configure(bg=C_BG4, fg=C_TEXTO3, relief="flat", font="Segoe UI 10",
+                      padx=6, pady=4, bd=0, cursor="hand2")
+btn_refresh.pack(side="right", padx=4)
+
+// Raiz do explorador
+seja f_exp_root = gui.frame(f_sidebar, cor=C_BG2)
+f_exp_root.pack(fill="x", padx=4, pady=2)
+
+seja btn_pasta = gui.botao(f_exp_root, "▾ 📁 PROJETOS",
+    ao_clicar=() => nulo, estilo="secundario")
+btn_pasta.configure(bg=C_BG2, fg=C_TEXTO2, relief="flat", anchor="w",
+                    font="Segoe UI 8 bold", padx=8, pady=4, bd=0)
+btn_pasta.pack(fill="x")
+
+// Lista de arquivos
+seja lst_arquivos = gui.lista(f_sidebar, altura=35)
+lst_arquivos.configure(bg=C_BG2, fg=C_TEXTO, selectbackground=C_SEL,
+                       selectforeground=C_ACENTO, relief="flat",
+                       font="Segoe UI 9", activestyle="none", bd=0)
+lst_arquivos.pack(fill="both", expand=verdadeiro, padx=0)
+
+// Scrollbar customizada para lista
+// (tkinter não suporta scrollbar colorida via Advak — omitir)
+
+funcao atualizar_explorador() {
+    lst_arquivos.limpar()
+    seja encontrado = falso
+    seja arquivos = []
+
+    tentar {
+        arquivos = Arquivo.listar("projetos", ".dk")
+        se (arquivos.tamanho > 0) { encontrado = verdadeiro }
+    } pegar (e1) { }
+
+    se (nao encontrado) {
+        tentar {
+            arquivos = Arquivo.listar(".", ".dk")
+            se (arquivos.tamanho > 0) { encontrado = verdadeiro }
+        } pegar (e2) { }
+    }
+
+    se (encontrado) {
+        para (arq em arquivos) {
+            seja nome = texto(arq)
+            se (nome.contem("/") ou nome.contem("\\")) {
+                seja pts = nome.substituir("\\", "/").dividir("/")
+                nome = pts[pts.tamanho - 1]
+            }
+            lst_arquivos.adicionar("   " + nome)
+        }
+    } senão {
+        lst_arquivos.adicionar("  (pasta não encontrada)")
+    }
+}
+
+atualizar_explorador()
+
+lst_arquivos.bind("<<ListboxSelect>>", (e) => {
+    seja sel = lst_arquivos.selecionado()
+    se (sel != nulo e sel.contem(".dk")) {
+        seja nome = sel.aparar()
+        se (nome != "") {
+            abrir_arquivo("projetos/" + nome)
+        }
+    }
+})
+
+// ════ COLUNA 2: EDITOR ══════════════════════════════════════════════════
+seja f_editor_area = gui.frame(f_corpo, cor=C_BG0)
+f_editor_area.pack(side="left", fill="both", expand=verdadeiro)
+
+// Abas de arquivo (tabs)
+seja f_abas_arquivo = gui.frame(f_editor_area, cor=C_BG4)
+f_abas_arquivo.configure(height=34)
+f_abas_arquivo.pack(fill="x")
+f_abas_arquivo.pack_propagate(falso)
+
+seja f_abas_inner = gui.frame_horizontal(f_abas_arquivo)
+f_abas_inner.configure(bg=C_BG4)
+
+// Tab ativa
+seja f_tab_ativa = gui.frame(f_abas_inner, cor=C_BG1)
+f_tab_ativa.pack(side="left", padx=0)
+
+seja lbl_tab_nome = gui.label(f_tab_ativa, "  📄 Sem título  ●  ×",
+    tamanho=9, cor=C_TEXTO)
+lbl_tab_nome.pack(padx=12, pady=8)
+
+// Borda inferior na tab ativa (linha azul)
+seja f_tab_linha = gui.frame(f_tab_ativa, cor=C_ACENTO)
+f_tab_linha.configure(height=2)
+f_tab_linha.pack(fill="x", side="bottom")
+
+// Botão nova tab
+seja btn_nova_tab = gui.botao(f_abas_inner, "  ＋",
+    ao_clicar=() => novo(), estilo="secundario")
+btn_nova_tab.configure(bg=C_BG4, fg=C_TEXTO3, relief="flat",
+                       font="Segoe UI 12", padx=6, pady=4, bd=0, cursor="hand2")
+btn_nova_tab.pack(side="left", padx=2)
+
+// Painel editor + números de linha
+seja f_editor_wrap = gui.frame_horizontal(f_editor_area, cor=C_BG1)
+f_editor_wrap.pack(fill="both", expand=verdadeiro)
+
+// Números de linha
+seja f_num_linhas = gui.frame(f_editor_wrap, cor="#0D1117")
+f_num_linhas.pack(side="left", fill="y")
+
+seja num_linhas_txt = gui.area_texto(f_num_linhas, largura=4, altura=35)
+num_linhas_txt.configure(
+    bg="#0D1117", fg=C_TEXTO3,
+    relief="flat", state="disabled",
+    font="Consolas 11", padx=4, pady=4,
+    cursor="arrow", bd=0
+)
+num_linhas_txt.pack(fill="y", expand=verdadeiro)
+
+// Editor principal
+seja editor = gui.area_texto(f_editor_wrap, largura=80, altura=35)
+editor.configure(
+    bg=C_BG1, fg=C_TEXTO,
+    insertbackground=C_ACENTO,
+    selectbackground="#264F78",
+    selectforeground=C_TEXTO,
+    relief="flat",
+    font="Consolas 11",
+    wrap="none",
+    padx=8, pady=4,
+    bd=0, highlightthickness=0
+)
+editor.pack(side="left", fill="both", expand=verdadeiro)
+
+// Código inicial
+editor.insert("1.0", "// ═══════════════════════════════════════════\n//  Bem-vindo ao Advak Studio 5.1 ⚡\n//  Linguagem de Programação em Português\n// ═══════════════════════════════════════════\n\n// Olá Mundo\nimprimir(\"Olá, Advak!\")\n\n// Variáveis\nseja nome = \"Advak\"\nseja versao = 5.1\nimprimir(\"Linguagem: \" + nome + \" v\" + texto(versao))\n\n// Função\nfuncao saudacao(pessoa) {\n    retornar \"Olá, \" + pessoa + \"! 👋\"\n}\nimprimir(saudacao(\"Programador\"))\n\n// Lista\nseja linguagens = [\"Advak\", \"Python\", \"JavaScript\"]\npara (lang em linguagens) {\n    imprimir(\"  → \" + lang)\n}\n\n// Pressione F5 para executar!\n")
+
+// Atualizar números de linha
+funcao atualizar_num_linhas() {
+    tentar {
+        seja total_raw = editor.index("end-1c")
+        seja total_pts = total_raw.dividir(".")
+        se (total_pts.tamanho < 1) { retornar }
+        seja total = inteiro(total_pts[0])
+
+        num_linhas_txt.configure(state="normal")
+        num_linhas_txt.delete("1.0", "end")
+        seja nums = ""
+        seja i = 1
+        enquanto (i <= total) {
+            nums = nums + texto(i) + "\n"
+            i = i + 1
+        }
+        num_linhas_txt.insert("1.0", nums)
+        num_linhas_txt.configure(state="disabled")
+    } pegar (err) { }
+}
+
+atualizar_num_linhas()
+
+// Atualizar ao editar
+// ─── SYNTAX HIGHLIGHTING — Definição de cores ───────────────────────────
+// Cores estilo VS Code Dark+ para Advak
+
+// ─── SYNTAX HIGHLIGHTING via builtin Python ─────────────────────────────────
+// aplicar_highlight_editor() é um builtin que usa tkinter/re direto
+// Muito mais rápido e sem problemas de escape de strings
+
+funcao aplicar_highlight() {
+    tentar {
+        aplicar_highlight_editor(editor)
+    } pegar (err) {
+        // Ignora erros de highlight silenciosamente
+    }
+}
+
+// Aplicar configuração inicial das tags (feito dentro do builtin)
+aplicar_highlight()
+
+// ── KeyRelease atualizado com highlight ──────────────────────────────────
+editor.bind("<KeyRelease>", (e) => {
+    tentar {
+        seja pos = editor.index("insert")
+        seja pts = pos.dividir(".")
+        se (pts.tamanho >= 2) {
+            seja ln = pts[0]
+            seja col = texto(inteiro(pts[1]) + 1)
+            lbl_cursor.configure(text="  Ln " + ln + "  Col " + col)
+        }
+        atualizar_num_linhas()
+        seja total_raw = editor.index("end-1c")
+        seja total_pts = total_raw.dividir(".")
+        se (total_pts.tamanho >= 1 e total_pts[0] != "New") {
+            lbl_linhas.configure(text=total_pts[0] + " linhas  ")
+        }
+        _modificado[0] = verdadeiro
+        lbl_modificado.configure(text=" ●")
+        lbl_tab_nome.configure(text="  📄 " + (_arquivo_atual[0] != "" ?? _arquivo_atual[0].dividir("/").ultimo() ?? "Sem título") + "  ●  ×")
+        // Aplicar syntax highlighting
+        aplicar_highlight()
+    } pegar (err) { }
+})
+
+// ════ COLUNA 3: PAINEL DIREITO ══════════════════════════════════════════
+seja f_direito = gui.frame(f_corpo, cor=C_BG2)
+f_direito.configure(width=360)
+f_direito.pack(side="left", fill="y")
+f_direito.pack_propagate(falso)
+
+// Abas do painel direito
+seja abas_direito = gui.abas(f_direito)
+
+// ── Aba Console ──────────────────────────────────────────────────────────
+seja tab_console = abas_direito.adicionar("▶ Console")
+
+seja f_console_hdr = gui.frame_horizontal(tab_console)
+f_console_hdr.configure(bg=C_BG2, height=30)
+f_console_hdr.pack(fill="x")
+f_console_hdr.pack_propagate(falso)
+
+gui.label(f_console_hdr, "  Saída:", tamanho=8, cor=C_TEXTO2, negrito=verdadeiro).pack(side="left", pady=4, padx=8)
+
+seja btn_limpar_console = gui.botao(f_console_hdr, "🗑",
+    ao_clicar=() => console_limpar(),
+    estilo="secundario")
+btn_limpar_console.configure(bg=C_BG2, fg=C_TEXTO3, relief="flat",
+                              font="Segoe UI 10", padx=4, pady=2, bd=0, cursor="hand2")
+btn_limpar_console.pack(side="right", padx=6, pady=4)
+
+seja console = gui.area_texto(tab_console, largura=42, altura=28)
+console.configure(
+    state="disabled", bg="#0A0E1A",
+    fg=C_VERDE, relief="flat",
+    font="Consolas 10",
+    padx=10, pady=6, bd=0,
+    highlightthickness=0
+)
+console.pack(fill="both", expand=verdadeiro)
+
+funcao console_escrever(txt, cor_txt) {
+    console.configure(state="normal")
+    console.insert("end", txt + "\n")
+    console.see("end")
+    console.configure(state="disabled")
+}
+
+funcao console_limpar() {
+    console.configure(state="normal")
+    console.delete("1.0", "end")
+    console.configure(state="disabled")
+}
+
+// ── Aba Exemplos ─────────────────────────────────────────────────────────
+seja tab_exemplos = abas_direito.adicionar("📚 Exemplos")
+
+seja f_ex_scroll = gui.frame(tab_exemplos, cor=C_BG2)
+f_ex_scroll.pack(fill="both", expand=verdadeiro, padx=4, pady=4)
+
+seja exemplos = [
+    ["🖐 Olá Mundo", "// Olá Mundo clássico\nimprimir(\"Olá, Advak!\")\nimprimir(\"Versão: 5.1\")"],
+    ["🔢 Fibonacci", "seja fib = memorizar((n) => {\n    se (n <= 1) { retornar n }\n    retornar fib(n-1) + fib(n-2)\n})\npara (i em [0,1,2,3,4,5,6,7,8,9,10]) {\n    imprimir(\"fib(\" + texto(i) + \") = \" + texto(fib(i)))\n}"],
+    ["📋 Lista e Filtros", "seja nums = [1,2,3,4,5,6,7,8,9,10]\nseja pares = nums.filtrar((n) => n % 2 == 0)\nseja dobros = pares.mapear((n) => n * 2)\nseja soma = dobros.reduzir((a,b) => a+b, 0)\nimprimir(\"Pares: \" + texto(pares))\nimprimir(\"Dobros: \" + texto(dobros))\nimprimir(\"Soma: \" + texto(soma))"],
+    ["🏛️ Classes", "classe Animal {\n    inicio(nome, som) {\n        isso.nome = nome\n        isso.som  = som\n    }\n    falar() {\n        imprimir(isso.nome + \" diz: \" + isso.som + \"!\")\n    }\n}\nclasse Cachorro herda Animal {\n    inicio(nome) {\n        super(nome, \"Au Au\")\n        isso.raca = \"Labrador\"\n    }\n}\nseja dog = Cachorro(\"Rex\")\ndog.falar()"],
+    ["🌐 Servidor Web", "servidor.porta(8080)\nservidor.obter(\"/\", (req) => {\n    retornar html(\"<h1>Olá do Advak!</h1>\")\n})\nservidor.obter(\"/api\", (req) => {\n    retornar resposta_json({versao:\"5.1\", ok:verdadeiro})\n})\nimprimir(\"→ http://localhost:8080\")\nservidor.iniciar(8080)"],
+    ["🗄️ Banco de Dados", "seja db = banco_auto(\"demo\")\nseja t = db.criar_tabela(\"itens\", {\n    nome:\"texto\", preco:\"numero\"\n})\nt.inserir({nome:\"Produto A\", preco:29.90})\nt.inserir({nome:\"Produto B\", preco:49.90})\nseja lista = t.buscar()\npara (item em lista) {\n    imprimir(item.nome + \" - R$ \" + texto(item.preco))\n}\nimprimir(\"Total: \" + texto(t.contar()) + \" itens\")"],
+    ["⚠️ Try/Catch", "funcao dividir(a, b) {\n    se (b == 0) { lançar(\"Divisão por zero!\") }\n    retornar a / b\n}\ntentar {\n    imprimir(dividir(10, 2))\n    imprimir(dividir(10, 0))\n} pegar (erro) {\n    imprimir(\"Erro: \" + texto(erro))\n} finalmente {\n    imprimir(\"Pronto.\")\n}"],
+    ["🔄 Async/Await", "assincrona funcao buscar(url) {\n    seja r = aguarda HTTP.json(url)\n    retornar r\n}\nassincrona funcao main() {\n    imprimir(\"Buscando...\")\n    tentar {\n        seja d = aguarda buscar(\"https://api.github.com/zen\")\n        imprimir(texto(d))\n    } pegar (e) {\n        imprimir(\"Offline: \" + texto(e))\n    }\n}\nmain()"],
+]
+
+funcao criar_btn_exemplo(nome_ex, codigo_ex) {
+    seja f_btn = gui.frame(f_ex_scroll, cor=C_BG3)
+    f_btn.pack(fill="x", padx=4, pady=2)
+
+    seja btn = gui.botao(f_btn, nome_ex,
+        ao_clicar=() => {
+            editor.delete("1.0", "end")
+            editor.insert("1.0", codigo_ex)
+            atualizar_num_linhas()
+            _modificado[0] = falso
+            lbl_modificado.configure(text="")
+            lbl_status_topo.configure(text="✅ Exemplo carregado", fg=C_VERDE)
+            lbl_tab_nome.configure(text="  📝 " + nome_ex + "  ×")
+            tentar { abas_direito.selecionar(0) } pegar (e) { }
+        }, estilo="secundario")
+    btn.configure(bg=C_BG3, fg=C_TEXTO, relief="flat",
+                  font="Segoe UI 9", anchor="w",
+                  padx=12, pady=6, bd=0,
+                  activebackground=C_SEL, activeforeground=C_ACENTO,
+                  cursor="hand2")
+    btn.pack(fill="x", ipady=2)
+}
+
+para (ex em exemplos) {
+    criar_btn_exemplo(ex[0], ex[1])
+}
+
+// ── Aba Atalhos ───────────────────────────────────────────────────────────
+seja tab_atalhos = abas_direito.adicionar("⌨ Atalhos")
+
+seja txt_atalhos = gui.area_texto(tab_atalhos, largura=42, altura=28)
+txt_atalhos.configure(bg=C_BG0, fg=C_TEXTO2, relief="flat",
+                       font="Consolas 9", padx=10, pady=8, bd=0, state="normal")
+txt_atalhos.insert("1.0", "━━━ ATALHOS ━━━━━━━━━━━━━━━━━━━━━
+
+  F5        ▶  Executar código
+  F6        ⏹  Parar execução
+  F7        ✔  Verificar sintaxe
+  Ctrl+S    💾  Salvar arquivo
+  Ctrl+N    📄  Novo arquivo
+  Ctrl+O    📂  Abrir arquivo
+
+━━━ SINTAXE ━━━━━━━━━━━━━━━━━━━━━
+
+  seja x = 10
+  fixo PI = 3.14159
+  se (x > 0) { ... } senão { }
+  para (i em lista) { }
+  enquanto (cond) { }
+  funcao f(a, b) { retornar a+b }
+  classe Nome { inicio() {} }
+  tentar { } pegar (e) { }
+  lançar(\"mensagem\")
+  assincrona funcao f() { }
+  seja r = aguarda f()
+
+━━━ TIPOS ━━━━━━━━━━━━━━━━━━━━━━━
+
+  tipo(x)        → nome do tipo
+  texto(x)       → converter texto
+  numero(x)      → converter número
+  inteiro(x)     → arredondar
+
+━━━ LISTA ━━━━━━━━━━━━━━━━━━━━━━━
+
+  lista.tamanho
+  lista.adicionar(x)
+  lista.remover(i)
+  lista.filtrar((x) => x > 0)
+  lista.mapear((x) => x * 2)
+  lista.reduzir((a,b) => a+b, 0)
+  lista.inclui(x)
+  lista.ordenar()
+  lista.inverter()
+
+━━━ STRING ━━━━━━━━━━━━━━━━━━━━━━
+
+  str.tamanho
+  str.maiusculo() / minusculo()
+  str.aparar()
+  str.dividir(sep)
+  str.substituir(a, b)
+  str.contem(sub)
+  str.começa_com(p)
+  str.fatia(ini, fim)
+
+━━━ MATH ━━━━━━━━━━━━━━━━━━━━━━━━
+
+  abs(x)  arred(x,n)  raiz(x)
+  piso(x) teto(x)     potencia(x,n)
+
+")
+txt_atalhos.configure(state="disabled")
+
+// ── Aba Linter ────────────────────────────────────────────────────────────
+seja tab_linter = abas_direito.adicionar("✔ Linter")
+
+seja f_linter_hdr = gui.frame_horizontal(tab_linter)
+f_linter_hdr.configure(bg=C_BG2, height=28)
+f_linter_hdr.pack(fill="x")
+f_linter_hdr.pack_propagate(falso)
+
+gui.label(f_linter_hdr, "  Resultados:", tamanho=8, cor=C_TEXTO2, negrito=verdadeiro).pack(side="left", padx=8)
+
+seja linter_out = gui.area_texto(tab_linter, largura=42, altura=26)
+linter_out.configure(bg=C_BG0, fg=C_AMAREL, relief="flat",
+                      font="Consolas 9", padx=8, pady=6, bd=0)
+linter_out.insert("1.0", "Pressione F7 para verificar o código.\n")
+
+// ═══════════════════════════════════════════════════════════════════════
+// STATUS BAR
+// ═══════════════════════════════════════════════════════════════════════
+seja f_statusbar = gui.frame(jan, cor=C_BG4)
+f_statusbar.configure(height=22)
+f_statusbar.pack(fill="x", side="bottom")
+f_statusbar.pack_propagate(falso)
+
+// Linha de accent no topo da statusbar
+seja f_status_accent = gui.frame(f_statusbar, cor=C_BORDA)
+f_status_accent.configure(height=1)
+f_status_accent.pack(fill="x", side="top")
+
+seja f_status_inner = gui.frame_horizontal(f_statusbar)
+f_status_inner.configure(bg=C_BG4)
+
+// Badge da branch/versão (esquerda)
+seja f_badge = gui.frame(f_status_inner, cor=C_ACENTO)
+f_badge.pack(side="left", fill="y")
+gui.label(f_badge, " ⚡ Advak 5.1 ", tamanho=8, cor="#FFFFFF", negrito=verdadeiro).pack(padx=2, pady=2)
+
+// Cursor (esquerda)
+seja lbl_cursor = gui.label(f_status_inner, "  Ln 1  Col 1", tamanho=8, cor=C_TEXTO2)
+lbl_cursor.pack(side="left", padx=12)
+
+// Separador
+gui.label(f_status_inner, "|", tamanho=8, cor=C_TEXTO3).pack(side="left")
+
+// Total de linhas
+seja lbl_linhas = gui.label(f_status_inner, "  linhas", tamanho=8, cor=C_TEXTO2)
+lbl_linhas.pack(side="left", padx=4)
+
+// Direita: encoding, linguagem
+gui.label(f_status_inner, "Advak", tamanho=8, cor=C_ACENTO, negrito=verdadeiro).pack(side="right", padx=12)
+gui.label(f_status_inner, "|", tamanho=8, cor=C_TEXTO3).pack(side="right")
+gui.label(f_status_inner, "UTF-8", tamanho=8, cor=C_TEXTO2).pack(side="right", padx=8)
+gui.label(f_status_inner, "|", tamanho=8, cor=C_TEXTO3).pack(side="right")
+gui.label(f_status_inner, "CRLF", tamanho=8, cor=C_TEXTO2).pack(side="right", padx=8)
+
+// ═══════════════════════════════════════════════════════════════════════
+// FUNÇÕES PRINCIPAIS
+// ═══════════════════════════════════════════════════════════════════════
+
+funcao executar() {
+    se (_executando[0]) {
+        gui.toast("Já está executando! Pressione F6 para parar.", "aviso", 2000)
+        retornar
+    }
+    seja codigo = editor.get("1.0", "end")
+    se (codigo.aparar() == "") {
+        gui.toast("Editor vazio! Escreva algum código primeiro.", "aviso", 2000)
+        retornar
+    }
+    console_limpar()
+    console_escrever("▶ Executando...\n", C_VERDE)
+    lbl_status_topo.configure(text="⏳ Executando...", fg=C_AMAREL)
+    _executando[0] = verdadeiro
+    tentar { abas_direito.selecionar(0) } pegar (e) { }
+    studio_executar(codigo, console, lbl_status_topo, _executando)
+}
+funcao parar() {
+    // Só mostrar "interrompida" se estava de fato executando
+    se (_executando[0]) {
+        _executando[0] = falso
+        lbl_status_topo.configure(text="⏹ Parado", fg=C_VERM)
+        console_escrever("⏹ Execução interrompida.", C_AMAREL)
+    } senão {
+        gui.toast("Nenhuma execução em andamento.", "info", 1500)
+    }
+}
+
+funcao verificar() {
+    seja codigo = editor.get("1.0", "end")
+    seja arq_temp = "_studio_linter_temp.dk"
+    Arquivo.escrever(arq_temp, codigo)
+
+    linter_out.delete("1.0", "end")
+    tentar { abas_direito.selecionar(3) } pegar (e) { }
+
+    tentar {
+        seja res = OS.executar("advak --verificar " + arq_temp)
+        seja saida = (res.saida ?? "") + (res.erro ?? "")
+        se (saida.contem("Nenhum problema")) {
+            linter_out.configure(fg=C_VERDE)
+            linter_out.insert("1.0", "✅ Nenhum problema encontrado!\n\nCódigo Advak válido.")
+            lbl_status_topo.configure(text="✔ Código OK", fg=C_VERDE)
+        } senão {
+            linter_out.configure(fg=C_AMAREL)
+            linter_out.insert("1.0", saida)
+        }
+    } pegar (e) {
+        linter_out.insert("1.0", "Execute: advak --verificar arquivo.dk")
+    }
+}
+
+funcao salvar() {
+    seja codigo = editor.get("1.0", "end")
+    seja caminho = _arquivo_atual[0]
+
+    se (caminho == "") {
+        caminho = gui.salvar_arquivo(tipos=[["Advak", "*.dk"], ["Todos", "*.*"]])
+        se (caminho == nulo) { retornar }
+        _arquivo_atual[0] = caminho
+    }
+
+    Arquivo.escrever(caminho, codigo)
+    _modificado[0] = falso
+    lbl_modificado.configure(text="")
+
+    seja nome = caminho.substituir("\\", "/").dividir("/").ultimo() ?? caminho
+    lbl_breadcrumb.configure(text="  projetos / " + nome)
+    lbl_tab_nome.configure(text="  📄 " + nome + "  ×")
+    lbl_status_topo.configure(text="💾 Salvo", fg=C_VERDE)
+    gui.toast("Salvo: " + nome, "sucesso", 2000)
+    atualizar_explorador()
+}
+
+funcao abrir() {
+    seja caminho = gui.abrir_arquivo(tipos=[["Advak", "*.dk"], ["Todos", "*.*"]])
+    se (caminho == nulo) { retornar }
+    abrir_arquivo(caminho)
+}
+
+funcao abrir_arquivo(caminho) {
+    tentar {
+        seja conteudo = Arquivo.ler(caminho)
+        editor.delete("1.0", "end")
+        editor.insert("1.0", conteudo)
+        atualizar_num_linhas()
+        _arquivo_atual[0] = caminho
+        _modificado[0] = falso
+        lbl_modificado.configure(text="")
+        seja nome = caminho.substituir("\\", "/").dividir("/").ultimo() ?? caminho
+        lbl_breadcrumb.configure(text="  projetos / " + nome)
+        lbl_tab_nome.configure(text="  📄 " + nome + "  ×")
+        lbl_status_topo.configure(text="📂 " + nome, fg=C_VERDE)
+        tentar { abas_direito.selecionar(0) } pegar (e) { }
+        console_limpar()
+        // Colorir sintaxe do arquivo aberto
+        aplicar_highlight()
+    } pegar (e) {
+        gui.aviso("Erro ao abrir:\n" + texto(e))
+    }
+}
+
+funcao novo() {
+    se (_modificado[0]) {
+        se (nao gui.confirmar("Arquivo modificado. Descartar mudanças?")) {
+            retornar
+        }
+    }
+    editor.delete("1.0", "end")
+    editor.insert("1.0", "// Novo arquivo Advak\nimprimir(\"Olá!\")\n")
+    atualizar_num_linhas()
+    aplicar_highlight()
+    _arquivo_atual[0] = ""
+    _modificado[0] = falso
+    lbl_modificado.configure(text="")
+    lbl_breadcrumb.configure(text="  Sem título")
+    lbl_tab_nome.configure(text="  📄 Sem título  ×")
+    lbl_status_topo.configure(text="📄 Novo arquivo", fg=C_VERDE)
+}
+
+// ─── ATALHOS DE TECLADO ──────────────────────────────────────────────────
+jan.bind("<F5>",        (e) => { executar() })
+jan.bind("<F6>",        (e) => parar())
+jan.bind("<F7>",        (e) => verificar())
+jan.bind("<Control-s>", (e) => salvar())
+jan.bind("<Control-S>", (e) => salvar())
+jan.bind("<Control-n>", (e) => novo())
+jan.bind("<Control-N>", (e) => novo())
+jan.bind("<Control-o>", (e) => abrir())
+jan.bind("<Control-O>", (e) => abrir())
+
+// ─── INICIALIZAÇÃO ────────────────────────────────────────────────────────
+atualizar_num_linhas()
+lbl_status_topo.configure(text="✅ Advak Studio 5.1 pronto!", fg=C_VERDE)
+gui.toast("⚡ Advak Studio 5.1  —  F5 para executar", "sucesso", 4000)
+
+gui.iniciar()

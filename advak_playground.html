@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Advak 2.0 — IDE Playground</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap');
+
+  :root {
+    --bg:        #0d0f14;
+    --panel:     #13161e;
+    --border:    #1e2433;
+    --accent:    #7c5cfc;
+    --accent2:   #00d4aa;
+    --accent3:   #ff6b6b;
+    --text:      #e2e8f0;
+    --muted:     #6b7891;
+    --keyword:   #bd93f9;
+    --string:    #f1fa8c;
+    --number:    #ff79c6;
+    --comment:   #6272a4;
+    --builtin:   #50fa7b;
+    --operator:  #ff79c6;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.2rem;
+    font-weight: 800;
+  }
+
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+
+  .badge {
+    background: var(--accent);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  /* Botões */
+  .btn {
+    padding: 7px 16px;
+    border-radius: 8px;
+    border: none;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+  }
+  .btn-primary:hover { background: #9070ff; transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-secondary {
+    background: var(--border);
+    color: var(--text);
+  }
+  .btn-secondary:hover { background: #2a3048; }
+
+  .btn-ai {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: white;
+  }
+  .btn-ai:hover { opacity: 0.9; transform: translateY(-1px); }
+
+  /* Layout principal */
+  .workspace {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 220px;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+
+  .sidebar-title {
+    padding: 12px 16px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .example-list { padding: 8px; overflow-y: auto; flex: 1; }
+
+  .example-item {
+    padding: 8px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-bottom: 2px;
+    transition: all 0.12s;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .example-item:hover { background: var(--border); color: var(--text); }
+  .example-item.active { background: rgba(124,92,252,0.2); color: var(--accent); }
+
+  .example-icon { font-size: 14px; width: 18px; text-align: center; }
+
+  /* Editor */
+  .editor-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .editor-tabs {
+    display: flex;
+    align-items: center;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 0 12px;
+    flex-shrink: 0;
+  }
+
+  .tab {
+    padding: 10px 16px;
+    font-size: 0.78rem;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.12s;
+  }
+  .tab.active { color: var(--text); border-bottom-color: var(--accent); }
+
+  .editor-wrap {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+  }
+
+  .line-numbers {
+    padding: 16px 8px;
+    background: var(--panel);
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    text-align: right;
+    user-select: none;
+    min-width: 44px;
+    border-right: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  #code-input {
+    flex: 1;
+    background: var(--bg);
+    color: transparent;
+    caret-color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    padding: 16px 16px 16px 12px;
+    border: none;
+    outline: none;
+    resize: none;
+    overflow-y: auto;
+    white-space: pre;
+    position: absolute;
+    top: 0; left: 44px; right: 0; bottom: 0;
+    z-index: 2;
+    spellcheck: false;
+  }
+
+  #code-highlight {
+    position: absolute;
+    top: 0; left: 44px; right: 0; bottom: 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    padding: 16px 16px 16px 12px;
+    white-space: pre;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Output */
+  .output-panel {
+    height: 220px;
+    background: var(--panel);
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+
+  .output-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .output-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+  .status-dot.running { background: var(--accent2); animation: pulse 1s infinite; }
+  .status-dot.error   { background: var(--accent3); }
+  .status-dot.ok      { background: var(--accent2); }
+
+  @keyframes pulse {
+    0%,100% { opacity: 1; }
+    50%      { opacity: 0.4; }
+  }
+
+  #output {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    line-height: 1.7;
+  }
+
+  .out-line { margin-bottom: 2px; }
+  .out-error { color: var(--accent3); }
+  .out-ok    { color: var(--accent2); }
+  .out-info  { color: var(--accent); }
+  .out-ai    { color: #ffd700; }
+
+  /* AI Panel */
+  .ai-panel {
+    width: 280px;
+    background: var(--panel);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
+
+  .ai-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+    font-size: 0.8rem; font-weight: 700;
+  }
+
+  .ai-icon {
+    width: 24px; height: 24px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+  }
+
+  .ai-key-input {
+    display: flex;
+    gap: 6px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .ai-key-input input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 8px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    outline: none;
+  }
+  .ai-key-input input:focus { border-color: var(--accent); }
+
+  .ai-chat {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .ai-msg {
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    border: 1px solid var(--border);
+  }
+  .ai-msg.user { background: rgba(124,92,252,0.15); border-color: rgba(124,92,252,0.3); }
+  .ai-msg.assistant { background: rgba(0,212,170,0.1); border-color: rgba(0,212,170,0.2); }
+  .ai-msg.error { border-color: rgba(255,107,107,0.3); color: var(--accent3); }
+
+  .ai-msg-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .ai-input-area {
+    padding: 10px 12px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .ai-textarea {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 0.78rem;
+    resize: none;
+    outline: none;
+    height: 60px;
+  }
+  .ai-textarea:focus { border-color: var(--accent); }
+
+  /* Highlight colors */
+  .kw  { color: var(--keyword); }
+  .str { color: var(--string); }
+  .num { color: var(--number); }
+  .cmt { color: var(--comment); }
+  .blt { color: var(--builtin); }
+  .op  { color: var(--operator); }
+  .id  { color: var(--text); }
+  .tpl { color: var(--string); }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="logo">
+    <div class="logo-icon">⚡</div>
+    <span>Advak</span>
+    <span class="badge">v2.0</span>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-secondary" onclick="clearOutput()">🗑 Limpar</button>
+    <button class="btn btn-secondary" onclick="checkSyntax()">🔍 Sintaxe</button>
+    <button class="btn btn-primary" onclick="runCode()">▶ Executar</button>
+  </div>
+</div>
+
+<div class="workspace">
+
+  <!-- Sidebar: Exemplos -->
+  <div class="sidebar">
+    <div class="sidebar-title">Exemplos</div>
+    <div class="example-list" id="example-list"></div>
+  </div>
+
+  <!-- Área do editor -->
+  <div class="editor-area" style="position:relative;">
+    <div class="editor-tabs">
+      <div class="tab active">programa.dk</div>
+    </div>
+
+    <div class="editor-wrap" style="flex:1; position:relative; overflow:hidden;">
+      <div class="line-numbers" id="line-numbers">1</div>
+      <div id="code-highlight" aria-hidden="true"></div>
+      <textarea id="code-input" autocomplete="off" autocorrect="off" autocapitalize="off"
+                spellcheck="false" placeholder="// Escreva seu código Advak aqui..."></textarea>
+    </div>
+
+    <!-- Output -->
+    <div class="output-panel">
+      <div class="output-header">
+        <div class="output-title">
+          <div class="status-dot" id="status-dot"></div>
+          SAÍDA
+        </div>
+        <span style="font-size:0.7rem; color:var(--muted)" id="exec-time"></span>
+      </div>
+      <div id="output"></div>
+    </div>
+  </div>
+
+  <!-- Painel de IA -->
+  <div class="ai-panel">
+    <div class="ai-header">
+      <div class="ai-icon">🤖</div>
+      IA Assistente
+    </div>
+    <div class="ai-key-input">
+      <input type="password" id="api-key" placeholder="ANTHROPIC_API_KEY (opcional)">
+    </div>
+    <div class="ai-chat" id="ai-chat">
+      <div class="ai-msg assistant">
+        <div class="ai-msg-label">Assistente</div>
+        Olá! Sou a IA integrada ao Advak 2.0. Posso ajudar a escrever código, explicar conceitos ou gerar exemplos.<br><br>
+        Use no código: <code style="color:#ffd700">ai_perguntar("sua pergunta")</code>
+      </div>
+    </div>
+    <div class="ai-input-area">
+      <textarea class="ai-textarea" id="ai-input"
+                placeholder="Pergunte algo sobre Advak ou peça para gerar código..."></textarea>
+      <button class="btn btn-ai" onclick="askAI()" style="width:100%; justify-content:center;">
+        🤖 Enviar para IA
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Exemplos ──────────────────────────────────────────────────────────────────
+const EXAMPLES = [
+  { icon: '👋', name: 'Olá Mundo', code:
+`// Primeiro programa em Advak!
+seja nome = "Arimatea";
+imprimir(\`Olá, \${nome}!\`);
+imprimir("Bem-vindo ao Advak 2.0 🚀");`
+  },
+  { icon: '🔢', name: 'Variáveis e Tipos', code:
+`seja inteiro = 42;
+seja decimal = 3.14;
+seja texto   = "Advak";
+seja ativo   = verdadeiro;
+seja vazio   = nulo;
+
+imprimir(\`Inteiro: \${inteiro}\`);
+imprimir(\`Decimal: \${decimal}\`);
+imprimir(\`Texto: \${texto}\`);
+imprimir(\`Ativo: \${ativo}\`);
+imprimir(\`Vazio: \${vazio ?? "nulo!"}\`);`
+  },
+  { icon: '⚡', name: 'Funções', code:
+`// Função tradicional
+função somar(a, b) {
+  retornar a + b;
+}
+
+// Lambda / arrow
+seja dobrar = (x) => x * 2;
+seja quadrado = (n) => n ** 2;
+
+imprimir(somar(15, 27));
+imprimir(dobrar(8));
+imprimir(quadrado(9));
+
+// Função com valor padrão
+função saudar(nome, saudacao = "Olá") {
+  retornar \`\${saudacao}, \${nome}!\`;
+}
+imprimir(saudar("Mundo"));
+imprimir(saudar("Dev", "Oi"));`
+  },
+  { icon: '🔀', name: 'Pipeline |>', code:
+`seja dobrar   = (x) => x * 2;
+seja somar10  = (x) => x + 10;
+seja quadrado = (x) => x ** 2;
+
+// Pipeline em cadeia
+seja resultado = 3 |> dobrar |> somar10 |> quadrado;
+imprimir(\`3 → ×2 → +10 → ²  =  \${resultado}\`);
+
+// Com funções nomeadas
+função filtrar_par(lst) {
+  seja saida = [];
+  para (item em lst) {
+    se (item % 2 == 0) {
+      saida.adicionar(item);
+    }
+  }
+  retornar saida;
+}
+
+seja nums = [1,2,3,4,5,6,7,8];
+imprimir(nums);`
+  },
+  { icon: '📦', name: 'Listas e Mapas', code:
+`// Lista
+seja frutas = ["maçã", "banana", "laranja"];
+imprimir(\`Frutas: \${frutas}\`);
+imprimir(\`Tamanho: \${frutas.tamanho}\`);
+frutas.adicionar("uva");
+imprimir(\`Depois: \${frutas}\`);
+
+// Mapa (objeto)
+seja pessoa = {
+  nome: "Arimatea",
+  cidade: "Arraial",
+  profissao: "Professor"
+};
+imprimir(\`Nome: \${pessoa.nome}\`);
+imprimir(\`Cidade: \${pessoa.cidade}\`);
+
+// Lista de mapas
+seja alunos = [
+  {nome: "Ana", nota: 85},
+  {nome: "Bob", nota: 72},
+  {nome: "Cia", nota: 93}
+];
+para (a em alunos) {
+  imprimir(\`\${a.nome}: \${a.nota}\`);
+}`
+  },
+  { icon: '🏛️', name: 'Classes', code:
+`classe Veiculo {
+  construtor(marca, modelo, ano) {
+    isso.marca  = marca;
+    isso.modelo = modelo;
+    isso.ano    = ano;
+  }
+
+  descricao() {
+    retornar \`\${isso.marca} \${isso.modelo} (\${isso.ano})\`;
+  }
+}
+
+classe Carro herda Veiculo {
+  construtor(marca, modelo, ano, portas) {
+    isso.marca  = marca;
+    isso.modelo = modelo;
+    isso.ano    = ano;
+    isso.portas = portas;
+  }
+
+  descricao() {
+    retornar \`\${isso.marca} \${isso.modelo} - \${isso.portas} portas\`;
+  }
+}
+
+seja v = novo Veiculo("Honda", "Civic", 2023);
+seja c = novo Carro("Toyota", "Corolla", 2024, 4);
+
+imprimir(v.descricao());
+imprimir(c.descricao());`
+  },
+  { icon: '🎯', name: 'Match / Case', code:
+`// Pattern matching moderno
+função classificarNota(nota) {
+  combinar(verdadeiro) {
+    caso nota >= 90: retornar "🏆 Excelente";
+    caso nota >= 70: retornar "✅ Aprovado";
+    caso nota >= 50: retornar "⚠️ Recuperação";
+    padrão: retornar "❌ Reprovado";
+  }
+}
+
+seja notas = [95, 78, 55, 30];
+para (n em notas) {
+  imprimir(\`Nota \${n}: \${classificarNota(n)}\`);
+}
+
+// Match com valores exatos
+seja dia = 3;
+combinar(dia) {
+  caso 1: imprimir("Segunda");
+  caso 2: imprimir("Terça");
+  caso 3: imprimir("Quarta");
+  caso 4: imprimir("Quinta");
+  caso 5: imprimir("Sexta");
+  padrão: imprimir("Fim de semana");
+}`
+  },
+  { icon: '🛡️', name: 'Exceções', code:
+`função dividir(a, b) {
+  se (b == 0) {
+    lançar "Divisão por zero não é permitida!";
+  }
+  retornar a / b;
+}
+
+// Teste seguro
+tentar {
+  seja r1 = dividir(10, 2);
+  imprimir(\`10 ÷ 2 = \${r1}\`);
+
+  seja r2 = dividir(5, 0);
+  imprimir(r2);
+} capturar (erro) {
+  imprimir(\`❌ Erro capturado: \${erro}\`);
+} finalmente {
+  imprimir("✓ Bloco finally sempre executa");
+}`
+  },
+  { icon: '🤖', name: 'IA Nativa', code:
+`// ── Funções de IA disponíveis ──────────────────
+// (Configure sua API Key no painel à direita)
+
+// 1. Fazer uma pergunta
+// seja resposta = ai_perguntar("O que é algoritmo?");
+// imprimir(resposta);
+
+// 2. Classificar texto
+// seja sentimento = ai_classificar(
+//   "Adorei o curso de programação!",
+//   ["positivo", "negativo", "neutro"]
+// );
+// imprimir(\`Sentimento: \${sentimento}\`);
+
+// 3. Transformar texto
+// seja formal = ai_transformar(
+//   "oi tudo bem como vai",
+//   "Reescreva de forma profissional"
+// );
+// imprimir(formal);
+
+// 4. Resumir texto
+// seja resumo = ai_resumir(
+//   "Advak é uma linguagem de programação moderna..."
+// );
+// imprimir(resumo);
+
+// 5. Gerar conteúdo
+// seja poema = ai_gerar("Escreva um haiku sobre programação");
+// imprimir(poema);
+
+imprimir("Configure sua API Key e descomente os exemplos!");
+imprimir("Ou use o painel de IA à direita para conversar →");`
+  },
+];
+
+// ── Renderiza lista de exemplos ──────────────────────────────────────────────
+const exList = document.getElementById('example-list');
+EXAMPLES.forEach((ex, i) => {
+  const div = document.createElement('div');
+  div.className = 'example-item' + (i === 0 ? ' active' : '');
+  div.innerHTML = `<span class="example-icon">${ex.icon}</span>${ex.name}`;
+  div.onclick = () => {
+    document.querySelectorAll('.example-item').forEach(d => d.classList.remove('active'));
+    div.classList.add('active');
+    setCode(ex.code.trim());
+  };
+  exList.appendChild(div);
+});
+
+// Carrega primeiro exemplo
+setCode(EXAMPLES[0].code.trim());
+
+// ── Editor com highlight ─────────────────────────────────────────────────────
+const input   = document.getElementById('code-input');
+const highlight = document.getElementById('code-highlight');
+const lineNums  = document.getElementById('line-numbers');
+
+const KEYWORDS = /\b(seja|fixo|função|retornar|se|senão|enquanto|para|em|combinar|caso|padrão|tentar|capturar|finalmente|lançar|classe|herda|novo|isso|async|aguarda|verdadeiro|falso|nulo|let|const|function|return|if|else|while|for|match|case|default|try|catch|finally|throw|class|extends|new|this|true|false|null|in|of)\b/g;
+const BUILTINS = /\b(imprimir|entrada|ai_perguntar|ai_classificar|ai_transformar|ai_resumir|ai_gerar|print|input|Math|Lista|Texto|JSON)\b/g;
+const STRINGS  = /(["'])(?:(?!\1)[^\\]|\\.)*\1/g;
+const TMPL     = /`[^`]*`/g;
+const NUMBERS  = /\b\d+\.?\d*\b/g;
+const COMMENTS = /\/\/[^\n]*/g;
+const BLOCK_COMMENTS = /\/\*[\s\S]*?\*\//g;
+const OPERATORS = /(\|>|\?\?|===|!==|==|!=|<=|>=|\*\*|&&|\|\||=>|[+\-*/%<>=!])/g;
+
+function tokenize(code) {
+  let html = code
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  // Estratégia: marcadores placeholder para não reprocessar
+  const segments = [];
+  let idx = 0;
+
+  // Coleta todas as regiões especiais (comments, strings, templates)
+  const regions = [];
+  let m;
+  const findAll = (re, cls) => {
+    re.lastIndex = 0;
+    while ((m = re.exec(code)) !== null) {
+      regions.push({start: m.index, end: m.index + m[0].length, cls, raw: m[0]});
+    }
+  };
+  findAll(BLOCK_COMMENTS, 'cmt');
+  findAll(COMMENTS, 'cmt');
+  findAll(TMPL, 'tpl');
+  findAll(STRINGS, 'str');
+
+  // Ordena por posição
+  regions.sort((a,b) => a.start - b.start);
+
+  // Remove sobreposições
+  const clean = [];
+  let last = 0;
+  for (const r of regions) {
+    if (r.start >= last) { clean.push(r); last = r.end; }
+  }
+
+  // Monta HTML
+  let result = '';
+  let pos = 0;
+  for (const r of clean) {
+    if (r.start > pos) {
+      result += colorize(code.slice(pos, r.start));
+    }
+    const escaped = r.raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    result += `<span class="${r.cls}">${escaped}</span>`;
+    pos = r.end;
+  }
+  if (pos < code.length) result += colorize(code.slice(pos));
+  return result;
+}
+
+function colorize(code) {
+  let escaped = code.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  // Aplica cores
+  escaped = escaped.replace(KEYWORDS, '<span class="kw">$&</span>');
+  escaped = escaped.replace(BUILTINS, '<span class="blt">$&</span>');
+  escaped = escaped.replace(NUMBERS, '<span class="num">$&</span>');
+  escaped = escaped.replace(OPERATORS, '<span class="op">$&</span>');
+  return escaped;
+}
+
+function updateHighlight() {
+  const code = input.value;
+  highlight.innerHTML = tokenize(code) + '\n';
+  updateLineNumbers(code);
+  syncScroll();
+}
+
+function updateLineNumbers(code) {
+  const lines = code.split('\n').length;
+  lineNums.innerHTML = Array.from({length: lines}, (_, i) => i + 1).join('\n');
+}
+
+function syncScroll() {
+  highlight.scrollTop  = input.scrollTop;
+  highlight.scrollLeft = input.scrollLeft;
+  lineNums.scrollTop   = input.scrollTop;
+}
+
+function setCode(code) {
+  input.value = code;
+  updateHighlight();
+}
+
+input.addEventListener('input', updateHighlight);
+input.addEventListener('scroll', syncScroll);
+input.addEventListener('keydown', e => {
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const s = input.selectionStart, end = input.selectionEnd;
+    input.value = input.value.substring(0, s) + '  ' + input.value.substring(end);
+    input.selectionStart = input.selectionEnd = s + 2;
+    updateHighlight();
+  }
+  if (e.key === 'Enter') {
+    const s = input.selectionStart;
+    const lines = input.value.substring(0, s).split('\n');
+    const currentLine = lines[lines.length - 1];
+    const indent = currentLine.match(/^(\s*)/)[1];
+    const endsBlock = currentLine.trimEnd().endsWith('{');
+    const extraIndent = endsBlock ? '  ' : '';
+    setTimeout(() => {
+      const cur = input.selectionStart;
+      input.value = input.value.substring(0, cur) + indent + extraIndent + input.value.substring(cur);
+      input.selectionStart = input.selectionEnd = cur + indent.length + extraIndent.length;
+      updateHighlight();
+    }, 0);
+  }
+});
+
+// ── Interpretador JavaScript (subset Advak para rodar no browser) ────────────
+class AdvakRuntime {
+  constructor(apiKey) {
+    this.apiKey = apiKey;
+    this.output = [];
+    this.scope = {};
+  }
+
+  print(msg) {
+    this.output.push({ type: 'out', text: String(msg) });
+  }
+
+  error(msg) {
+    this.output.push({ type: 'error', text: '❌ ' + msg });
+  }
+
+  info(msg) {
+    this.output.push({ type: 'info', text: msg });
+  }
+
+  async run(code) {
+    // Converte Advak → JS e executa
+    let js = this.transpile(code);
+    try {
+      const fn = new Function('__rt', '__api', `
+        "use strict";
+        const imprimir = (...args) => __rt.print(args.map(a => __rt.toStr(a)).join(' '));
+        const print = imprimir;
+        const entrada = (p) => prompt(p||'');
+        const input = entrada;
+        const verdadeiro = true, falso = false, nulo = null;
+        const ai_perguntar = (p) => __rt.aiCall(p);
+        const ai_classificar = (t, cats) => __rt.aiCall(t, 'Classifique em UMA de: '+cats+'. Responda APENAS a categoria.');
+        const ai_transformar = (d, i) => __rt.aiCall((i||'Melhore')+':\\n\\n'+d);
+        const ai_resumir = (t) => __rt.aiCall(t, 'Resuma em português de forma concisa.');
+        const ai_gerar = (i) => __rt.aiCall(i, 'Você é criativo. Responda em português.');
+        const Math2 = Math;
+        ${js}
+      `);
+      await fn(this, this.apiKey);
+    } catch(e) {
+      this.error(e.message || e);
+    }
+    return this.output;
+  }
+
+  toStr(v) {
+    if (v === null || v === undefined) return 'nulo';
+    if (v === true) return 'verdadeiro';
+    if (v === false) return 'falso';
+    if (Array.isArray(v)) return '[' + v.map(x=>this.toStr(x)).join(', ') + ']';
+    if (typeof v === 'object') {
+      const pairs = Object.entries(v).map(([k,val]) => `${k}: ${this.toStr(val)}`).join(', ');
+      return '{' + pairs + '}';
+    }
+    return String(v);
+  }
+
+  async aiCall(prompt, system) {
+    const key = this.apiKey || document.getElementById('api-key').value;
+    if (!key) {
+      return '[IA] Configure sua API Key no painel à direita para usar funções de IA';
+    }
+    try {
+      const body = {
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 512,
+        messages: [{ role: 'user', content: String(prompt) }]
+      };
+      if (system) body.system = system;
+
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': key,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify(body)
+      });
+      const data = await resp.json();
+      if (data.error) return `[Erro IA] ${data.error.message}`;
+      return data.content[0].text;
+    } catch(e) {
+      return `[Erro IA] ${e.message}`;
+    }
+  }
+
+  transpile(code) {
+    let js = code;
+
+    // Comentários — já são iguais
+
+    // Template strings — já são iguais (backtick)
+
+    // Palavras-chave PT → JS
+    const kw = [
+      [/\bseja\b/g, 'let'],
+      [/\bfixo\b/g, 'const'],
+      [/\bfunção\b/g, 'function'],
+      [/\bretornar\b/g, 'return'],
+      [/\bsenão\b/g, 'else'],
+      [/\benquanto\b/g, 'while'],
+      [/\bpara\b/g, 'for'],
+      [/\bcombinar\b/g, 'switch_'],
+      [/\bcaso\b/g, 'case'],
+      [/\bpadrão\b/g, 'default'],
+      [/\btentar\b/g, 'try'],
+      [/\bcapturar\b/g, 'catch'],
+      [/\bfinalmente\b/g, 'finally'],
+      [/\blançar\b/g, 'throw'],
+      [/\bclasse\b/g, 'class'],
+      [/\bherda\b/g, 'extends'],
+      [/\bnovo\b/g, 'new'],
+      [/\bverdadeiro\b/g, 'true'],
+      [/\bfalso\b/g, 'false'],
+      [/\bnulo\b/g, 'null'],
+      [/\bissо\b/g, 'this'],
+      [/\baguarda\b/g, 'await'],
+      [/\bse\b(?!\s*\(.*\)\s*\{)/g, 'if_'],
+    ];
+    // Proteção para strings e comentários
+    const protected_regions = [];
+    const protect = (src) => {
+      return src.replace(/`[^`]*`|"[^"]*"|'[^']*'|\/\/[^\n]*/g, m => {
+        const idx = protected_regions.length;
+        protected_regions.push(m);
+        return `__STR${idx}__`;
+      });
+    };
+    const unprotect = (src) => {
+      return src.replace(/__STR(\d+)__/g, (_, i) => protected_regions[parseInt(i)]);
+    };
+
+    js = protect(js);
+    for (const [from, to] of kw) {
+      js = js.replace(from, to);
+    }
+
+    // se → if (deve ter parênteses)
+    js = js.replace(/\bse\b\s*\(/g, 'if (');
+    js = js.replace(/\bif_\b\s*\(/g, 'if (');
+    js = js.replace(/\bif_\b/g, 'if');
+
+    // para (x em y) → for (const x of y)
+    js = js.replace(/\bfor\s*\((\w+)\s+(?:em|in|of)\s+([^)]+)\)/g, 'for (const $1 of $2)');
+
+    // switch_ → switch
+    js = js.replace(/\bswitch_\b/g, 'switch');
+
+    // isso → this
+    js = js.replace(/\bissо\b/g, 'this');
+    js = js.replace(/\bisso\b/g, 'this');
+
+    // construtor → constructor
+    js = js.replace(/\bconstrutor\b/g, 'constructor');
+
+    // Pipeline |> 
+    // a |> fn  →  fn(a)
+    // Processa múltiplos pipelines da esquerda para a direita
+    let prev = '';
+    while (prev !== js) {
+      prev = js;
+      js = js.replace(/([^|])\|>\s*(\w+)/g, '$2($1)');
+    }
+
+    // Propriedades de lista PT
+    js = js.replace(/\.adicionar\(/g, '.push(');
+    js = js.replace(/\.remover\(/g, '.pop(');
+    js = js.replace(/\.tamanho\b/g, '.length');
+    js = js.replace(/\.comprimento\b/g, '.length');
+    js = js.replace(/\.ordenar\(/g, '.sort(');
+    js = js.replace(/\.inverter\(/g, '.reverse(');
+    js = js.replace(/\.maiúsculo\(/g, '.toUpperCase(');
+    js = js.replace(/\.minúsculo\(/g, '.toLowerCase(');
+    js = js.replace(/\.aparar\(/g, '.trim(');
+    js = js.replace(/\.dividir\(/g, '.split(');
+    js = js.replace(/\.substituir\(/g, '.replace(');
+
+    // imprimir async wrapper
+    js = js.replace(/\bai_perguntar\(/g, 'await ai_perguntar(');
+    js = js.replace(/\bai_classificar\(/g, 'await ai_classificar(');
+    js = js.replace(/\bai_transformar\(/g, 'await ai_transformar(');
+    js = js.replace(/\bai_resumir\(/g, 'await ai_resumir(');
+    js = js.replace(/\bai_gerar\(/g, 'await ai_gerar(');
+
+    js = unprotect(js);
+
+    // Envolve em async function se necessário
+    if (js.includes('await ')) {
+      js = `(async () => { ${js} })();`;
+    }
+
+    return js;
+  }
+}
+
+// ── Execução ─────────────────────────────────────────────────────────────────
+async function runCode() {
+  const code = input.value;
+  const outputDiv = document.getElementById('output');
+  const dot = document.getElementById('status-dot');
+  const timeEl = document.getElementById('exec-time');
+
+  outputDiv.innerHTML = '';
+  dot.className = 'status-dot running';
+  timeEl.textContent = '';
+
+  const t0 = performance.now();
+  const apiKey = document.getElementById('api-key').value;
+  const rt = new AdvakRuntime(apiKey);
+
+  try {
+    const lines = await rt.run(code);
+    lines.forEach(l => {
+      const div = document.createElement('div');
+      div.className = 'out-line ' + (l.type === 'error' ? 'out-error' : l.type === 'info' ? 'out-info' : '');
+      div.textContent = l.text;
+      outputDiv.appendChild(div);
+    });
+    const hasError = lines.some(l => l.type === 'error');
+    dot.className = 'status-dot ' + (hasError ? 'error' : 'ok');
+  } catch(e) {
+    const div = document.createElement('div');
+    div.className = 'out-line out-error';
+    div.textContent = '❌ ' + e.message;
+    outputDiv.appendChild(div);
+    dot.className = 'status-dot error';
+  }
+
+  const elapsed = (performance.now() - t0).toFixed(1);
+  timeEl.textContent = `${elapsed}ms`;
+}
+
+function clearOutput() {
+  document.getElementById('output').innerHTML = '';
+  document.getElementById('status-dot').className = 'status-dot';
+  document.getElementById('exec-time').textContent = '';
+}
+
+function checkSyntax() {
+  const code = input.value;
+  const outputDiv = document.getElementById('output');
+  outputDiv.innerHTML = '';
+  // Transpila e verifica
+  const rt = new AdvakRuntime('');
+  try {
+    const js = rt.transpile(code);
+    new Function(js);
+    const div = document.createElement('div');
+    div.className = 'out-line out-ok';
+    div.textContent = '✅ Sintaxe válida!';
+    outputDiv.appendChild(div);
+    document.getElementById('status-dot').className = 'status-dot ok';
+  } catch(e) {
+    const div = document.createElement('div');
+    div.className = 'out-line out-error';
+    div.textContent = '❌ Erro: ' + e.message;
+    outputDiv.appendChild(div);
+    document.getElementById('status-dot').className = 'status-dot error';
+  }
+}
+
+// Ctrl+Enter executa
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    runCode();
+  }
+});
+
+// ── Painel de IA ─────────────────────────────────────────────────────────────
+async function askAI() {
+  const q = document.getElementById('ai-input').value.trim();
+  if (!q) return;
+
+  const chat = document.getElementById('ai-chat');
+  const key = document.getElementById('api-key').value;
+
+  // Mensagem do usuário
+  const uDiv = document.createElement('div');
+  uDiv.className = 'ai-msg user';
+  uDiv.innerHTML = `<div class="ai-msg-label">Você</div>${q.replace(/</g,'&lt;')}`;
+  chat.appendChild(uDiv);
+  document.getElementById('ai-input').value = '';
+
+  // Loading
+  const lDiv = document.createElement('div');
+  lDiv.className = 'ai-msg assistant';
+  lDiv.innerHTML = `<div class="ai-msg-label">IA</div><em>Pensando...</em>`;
+  chat.appendChild(lDiv);
+  chat.scrollTop = chat.scrollHeight;
+
+  try {
+    if (!key) {
+      lDiv.innerHTML = `<div class="ai-msg-label">IA</div>Configure sua API Key acima para usar o assistente de IA.`;
+      return;
+    }
+
+    // Sistema especializado em Advak
+    const systemPrompt = `Você é um assistente especializado na linguagem de programação Advak 2.0.
+Advak é uma linguagem moderna com sintaxe em português brasileiro.
+Palavras-chave: seja, fixo, função, retornar, se, senão, enquanto, para, combinar, caso, padrão, tentar, capturar, lançar, classe, herda, novo, isso, imprimir, verdadeiro, falso, nulo.
+Funções de IA nativas: ai_perguntar, ai_classificar, ai_transformar, ai_resumir, ai_gerar.
+Responda em português, seja conciso e forneça exemplos de código quando relevante.`;
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': key,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 800,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: q }]
+      })
+    });
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message);
+    const text = data.content[0].text;
+    lDiv.className = 'ai-msg assistant';
+    lDiv.innerHTML = `<div class="ai-msg-label">IA Advak</div>${text.replace(/</g,'&lt;').replace(/\n/g,'<br>')}`;
+
+    // Verifica se a resposta tem código e oferece inserir
+    if (text.includes('função') || text.includes('seja') || text.includes('imprimir')) {
+      const btn = document.createElement('button');
+      btn.className = 'btn btn-secondary';
+      btn.style = 'margin-top:6px; font-size:0.7rem; padding:4px 8px;';
+      btn.textContent = '⬆ Inserir no editor';
+      btn.onclick = () => {
+        const codeMatch = text.match(/```(?:advak|dk)?\n?([\s\S]*?)```/);
+        if (codeMatch) setCode(codeMatch[1].trim());
+      };
+      lDiv.appendChild(btn);
+    }
+  } catch(e) {
+    lDiv.className = 'ai-msg error';
+    lDiv.innerHTML = `<div class="ai-msg-label">Erro</div>${e.message}`;
+  }
+
+  chat.scrollTop = chat.scrollHeight;
+}
+
+document.getElementById('ai-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    askAI();
+  }
+});
+</script>
+</body>
+</html>

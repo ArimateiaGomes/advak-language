@@ -1,0 +1,357 @@
+// ═══════════════════════════════════════════════════════════════════════
+//  ADVAK 5.0 — Sistema de Cadastro de Alunos
+//  Execute: advak projetos\cadastro.dk
+// ═══════════════════════════════════════════════════════════════════════
+
+gui.tema("escuro")
+seja jan = gui.janela("📋 Cadastro de Alunos — Advak 5.0", 950, 650)
+
+// ── Dados em memória ──────────────────────────────────────────────────
+seja alunos = []
+seja _editando = [-1]   // índice do aluno sendo editado (-1 = novo)
+
+// ── Layout principal ──────────────────────────────────────────────────
+seja f_principal = gui.frame_horizontal(jan)
+
+// ── PAINEL ESQUERDO: Formulário ───────────────────────────────────────
+seja f_form = gui.frame(f_principal, cor="#1E293B")
+f_form.posicionar(lado="left", preencher="y", expandir=falso)
+f_form.configure(width=320)
+f_form.pack_propagate(falso)
+
+gui.label(f_form, "  📋 Dados do Aluno",
+    negrito=verdadeiro, tamanho=12, cor="#3B82F6")
+gui.separador(f_form)
+
+// Campos do formulário
+gui.label(f_form, "  Nome completo:", tamanho=9, cor="#94A3B8")
+seja c_nome = gui.campo(f_form, placeholder="Ex: João da Silva", largura=35)
+
+gui.label(f_form, "  Matrícula:", tamanho=9, cor="#94A3B8")
+seja c_matricula = gui.campo(f_form, placeholder="Ex: 2024001", largura=35)
+
+gui.label(f_form, "  Turma:", tamanho=9, cor="#94A3B8")
+seja c_turma = gui.caixa_selecao(f_form,
+    opcoes=["1º Ano A", "1º Ano B", "2º Ano A", "2º Ano B",
+            "3º Ano A", "3º Ano B"],
+    valor_inicial="1º Ano A")
+
+gui.label(f_form, "  Nota (0-10):", tamanho=9, cor="#94A3B8")
+seja c_nota = gui.campo(f_form, placeholder="Ex: 8.5", largura=35)
+
+gui.label(f_form, "  Telefone:", tamanho=9, cor="#94A3B8")
+seja c_fone = gui.campo(f_form, placeholder="Ex: (89) 99999-9999", largura=35)
+
+gui.separador(f_form)
+
+// Botões do formulário
+seja f_btns = gui.frame_horizontal(f_form)
+seja btn_salvar = gui.botao(f_btns, "💾 Salvar",
+    ao_clicar=() => salvar_aluno(),
+    estilo="sucesso", largura=14)
+btn_salvar.pack(lado="esquerda", espaco_x=3, espaco_y=5)
+
+seja btn_limpar = gui.botao(f_btns, "🗑️ Limpar",
+    ao_clicar=() => limpar_form(),
+    estilo="secundario", largura=14)
+btn_limpar.pack(lado="esquerda", espaco_x=3, espaco_y=5)
+
+gui.separador(f_form)
+
+// Estatísticas
+seja lbl_total  = gui.label(f_form, "  Total: 0 alunos", tamanho=9, cor="#64748B")
+seja lbl_media  = gui.label(f_form, "  Média da turma: —", tamanho=9, cor="#64748B")
+seja lbl_aprovados = gui.label(f_form, "  Aprovados (≥6): 0", tamanho=9, cor="#22C55E")
+seja lbl_reprovados = gui.label(f_form, "  Reprovados (<6): 0", tamanho=9, cor="#EF4444")
+
+// ── PAINEL DIREITO: Lista de alunos ──────────────────────────────────
+seja f_lista = gui.frame(f_principal, cor="#0F172A")
+
+// Barra de busca
+seja f_topo = gui.frame_horizontal(f_lista)
+gui.label(f_topo, " 🔍 Buscar:", tamanho=9, cor="#94A3B8")
+seja c_busca = gui.campo(f_topo, placeholder="Nome ou matrícula...",
+    largura=30, ao_mudar=(v) => filtrar(v))
+c_busca.pack(lado="esquerda", espaco_x=5, espaco_y=5)
+
+seja btn_exportar = gui.botao(f_topo, "📄 Exportar",
+    ao_clicar=() => exportar_csv(),
+    estilo="secundario")
+btn_exportar.pack(lado="direita", espaco_x=5)
+
+// Tabela
+seja colunas = ["Matrícula", "Nome", "Turma", "Nota", "Situação", "Telefone"]
+seja tabela = gui.tabela(f_lista,
+    colunas=colunas,
+    altura=18,
+    ao_selecionar=(linha) => selecionar_aluno(linha))
+
+// Botões da tabela
+seja f_btns2 = gui.frame_horizontal(f_lista)
+seja btn_editar = gui.botao(f_btns2, "✏️ Editar",
+    ao_clicar=() => editar_selecionado(),
+    estilo="primario")
+btn_editar.pack(lado="esquerda", espaco_x=5, espaco_y=5)
+
+seja btn_excluir = gui.botao(f_btns2, "❌ Excluir",
+    ao_clicar=() => excluir_selecionado(),
+    estilo="perigo")
+btn_excluir.pack(lado="esquerda", espaco_x=5)
+
+seja btn_limpar_tudo = gui.botao(f_btns2, "🗑️ Limpar Tudo",
+    ao_clicar=() => {
+        se (gui.confirmar("Excluir TODOS os alunos?")) {
+            alunos.limpar()
+            atualizar_tabela(alunos)
+            atualizar_stats()
+            status.mensagem("  Todos os registros removidos")
+        }
+    }, estilo="perigo")
+btn_limpar_tudo.pack(lado="esquerda", espaco_x=5)
+
+// Status bar
+seja status = gui.barra_status(jan,
+    "  Bem-vindo! Preencha o formulário e clique em Salvar.")
+
+// ═══════════════════════════════════════════════════════════════════════
+//  FUNÇÕES
+// ═══════════════════════════════════════════════════════════════════════
+
+função situacao(nota) {
+    seja n = numero(nota)
+    se (n >= 7) { retornar "✅ Aprovado" }
+    se (n >= 5) { retornar "⚠️ Recuperação" }
+    retornar "❌ Reprovado"
+}
+
+função cor_nota(nota) {
+    seja n = numero(nota)
+    se (n >= 7) { retornar "green" }
+    se (n >= 5) { retornar "orange" }
+    retornar "red"
+}
+
+função limpar_form() {
+    c_nome.limpar()
+    c_matricula.limpar()
+    c_nota.limpar()
+    c_fone.limpar()
+    _editando[0] = -1
+    btn_salvar.configure(text="💾 Salvar")
+    status.mensagem("  Formulário limpo. Pronto para novo cadastro.")
+}
+
+função atualizar_stats() {
+    seja total = alunos.tamanho
+    lbl_total.configure(text="  Total: " + texto(total) + " aluno(s)")
+
+    se (total == 0) {
+        lbl_media.configure(text="  Média da turma: —")
+        lbl_aprovados.configure(text="  Aprovados (≥7): 0")
+        lbl_reprovados.configure(text="  Reprovados (<5): 0")
+        retornar
+    }
+
+    seja soma = 0
+    seja aprov = 0
+    seja reprov = 0
+    seja recup = 0
+    para (a em alunos) {
+        seja n = numero(a.nota)
+        soma += n
+        se (n >= 7) { aprov++ }
+        senão se (n >= 5) { recup++ }
+        senão { reprov++ }
+    }
+    seja media = soma / total
+    lbl_media.configure(text="  Média: " + texto(arred(media, 2)))
+    lbl_aprovados.configure(text="  Aprovados (≥7): " + texto(aprov))
+    lbl_reprovados.configure(text="  Reprovados (<5): " + texto(reprov))
+}
+
+função atualizar_tabela(lista) {
+    tabela.limpar()
+    para (a em lista) {
+        tabela.adicionar([
+            a.matricula,
+            a.nome,
+            a.turma,
+            a.nota,
+            situacao(a.nota),
+            a.fone
+        ])
+    }
+}
+
+função filtrar(busca) {
+    se (busca.aparar() == "") {
+        atualizar_tabela(alunos)
+        retornar
+    }
+    seja b = busca.minusculo()
+    seja filtrados = alunos.filtrar((a) =>
+        a.nome.minusculo().contem(b) ou
+        a.matricula.minusculo().contem(b) ou
+        a.turma.minusculo().contem(b))
+    atualizar_tabela(filtrados)
+    status.mensagem("  " + texto(filtrados.tamanho) + " resultado(s) para: " + busca)
+}
+
+função salvar_aluno() {
+    // Validação
+    seja nome = c_nome.get().aparar()
+    seja mat  = c_matricula.get().aparar()
+    seja nota_str = c_nota.get().aparar()
+    seja fone = c_fone.get().aparar()
+    seja turma = c_turma.get()
+
+    se (nome == "") {
+        gui.aviso("O campo Nome é obrigatório!")
+        retornar
+    }
+    se (mat == "") {
+        gui.aviso("O campo Matrícula é obrigatório!")
+        retornar
+    }
+    se (nota_str == "") {
+        gui.aviso("O campo Nota é obrigatório!")
+        retornar
+    }
+
+    seja nota = numero(nota_str)
+    se (nota < 0 ou nota > 10) {
+        gui.aviso("Nota deve estar entre 0 e 10!")
+        retornar
+    }
+
+    // Verificar matrícula duplicada (só em novo cadastro)
+    se (_editando[0] == -1) {
+        seja duplicado = alunos.algum((a) => a.matricula == mat)
+        se (duplicado) {
+            gui.aviso("Matrícula " + mat + " já cadastrada!")
+            retornar
+        }
+    }
+
+    seja aluno = {
+        nome: nome,
+        matricula: mat,
+        turma: turma,
+        nota: nota_str,
+        fone: fone
+    }
+
+    se (_editando[0] == -1) {
+        // Novo aluno
+        alunos.adicionar(aluno)
+        gui.toast("Aluno " + nome + " cadastrado!", "sucesso", 3000)
+        status.mensagem("  ✅ " + nome + " cadastrado com sucesso!")
+    } senão {
+        // Editar existente
+        alunos[_editando[0]] = aluno
+        gui.toast("Aluno " + nome + " atualizado!", "info", 3000)
+        status.mensagem("  ✅ " + nome + " atualizado com sucesso!")
+    }
+
+    atualizar_tabela(alunos)
+    atualizar_stats()
+    limpar_form()
+}
+
+função selecionar_aluno(linha) {
+    // linha é {Matrícula: ..., Nome: ..., ...}
+    status.mensagem("  Selecionado: " + linha["Nome"] + " — clique Editar para modificar")
+}
+
+função editar_selecionado() {
+    seja sel = tabela.selecionado()
+    se (sel == nulo) {
+        gui.aviso("Selecione um aluno na tabela primeiro!")
+        retornar
+    }
+
+    // Encontrar o aluno na lista
+    seja mat_sel = sel[0]
+    seja idx = -1
+    seja i = 0
+    para (a em alunos) {
+        se (a.matricula == mat_sel) { idx = i }
+        i++
+    }
+
+    se (idx == -1) { retornar }
+
+    seja a = alunos[idx]
+    c_nome.definir(a.nome)
+    c_matricula.definir(a.matricula)
+    c_nota.definir(a.nota)
+    c_fone.definir(a.fone)
+    _editando[0] = idx
+    btn_salvar.configure(text="💾 Atualizar")
+    status.mensagem("  Editando: " + a.nome + " — modifique os dados e clique Atualizar")
+}
+
+função excluir_selecionado() {
+    seja sel = tabela.selecionado()
+    se (sel == nulo) {
+        gui.aviso("Selecione um aluno na tabela primeiro!")
+        retornar
+    }
+
+    seja nome_sel = sel[1]
+    se (gui.confirmar("Excluir o aluno " + nome_sel + "?")) {
+        seja mat_sel = sel[0]
+        seja novos = alunos.filtrar((a) => a.matricula != mat_sel)
+        alunos.limpar()
+        para (a em novos) { alunos.adicionar(a) }
+        atualizar_tabela(alunos)
+        atualizar_stats()
+        limpar_form()
+        gui.toast(nome_sel + " removido", "aviso", 2000)
+        status.mensagem("  Aluno " + nome_sel + " excluído.")
+    }
+}
+
+função exportar_csv() {
+    se (alunos.tamanho == 0) {
+        gui.aviso("Nenhum aluno cadastrado para exportar!")
+        retornar
+    }
+    seja caminho = gui.salvar_arquivo()
+    se (caminho == nulo) { retornar }
+    se (nao caminho.termina(".csv")) { caminho = caminho + ".csv" }
+
+    seja linhas = ["Matrícula,Nome,Turma,Nota,Situação,Telefone"]
+    para (a em alunos) {
+        linhas.adicionar(
+            a.matricula + "," +
+            a.nome + "," +
+            a.turma + "," +
+            a.nota + "," +
+            situacao(a.nota) + "," +
+            a.fone
+        )
+    }
+    // Escrever arquivo
+    sistema.escrever(caminho, linhas.unir("\n"))
+    gui.toast("Exportado: " + caminho, "sucesso", 4000)
+    status.mensagem("  ✅ Exportado para " + caminho)
+}
+
+// ── Dados de exemplo ──────────────────────────────────────────────────
+função carregar_exemplos() {
+    seja exemplos = [
+        {nome: "Ana Silva",      matricula: "2024001", turma: "1º Ano A", nota: "9.5", fone: "(89) 99111-1111"},
+        {nome: "Bruno Costa",    matricula: "2024002", turma: "1º Ano A", nota: "7.0", fone: "(89) 99222-2222"},
+        {nome: "Carla Matos",    matricula: "2024003", turma: "2º Ano B", nota: "5.5", fone: "(89) 99333-3333"},
+        {nome: "Diego Souza",    matricula: "2024004", turma: "2º Ano B", nota: "3.0", fone: "(89) 99444-4444"},
+        {nome: "Elena Ferreira", matricula: "2024005", turma: "3º Ano A", nota: "8.5", fone: "(89) 99555-5555"}
+    ]
+    para (e em exemplos) { alunos.adicionar(e) }
+    atualizar_tabela(alunos)
+    atualizar_stats()
+    status.mensagem("  5 alunos de exemplo carregados!")
+}
+
+carregar_exemplos()
+gui.iniciar()

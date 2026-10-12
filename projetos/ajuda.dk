@@ -1,0 +1,373 @@
+// ═══════════════════════════════════════════════════════════════════════
+//  ADVAK 5.0 — GUIA INTERATIVO DE PROGRAMAÇÃO
+//  Execute: advak projetos\ajuda.dk
+// ═══════════════════════════════════════════════════════════════════════
+
+gui.tema("escuro")
+seja jan = gui.janela("Advak 5.0 — Guia Interativo", 1200, 780)
+
+// ═══════════════════════════════════════════════════════════════════════
+//  LIÇÕES
+// ═══════════════════════════════════════════════════════════════════════
+
+fixo LICOES = [
+    {
+        id: 1, icone: "🚀", nivel: "Iniciante",
+        titulo: "Olá, Advak!",
+        descricao: "Seu primeiro programa em Advak 5.0",
+        teoria: "Advak é uma linguagem moderna com sintaxe em português.\nUse imprimir() para mostrar texto na tela.\n\nTipos de dados:\n  Número:   42, 3.14\n  Texto:    \"olá\", 'mundo'\n  Booleano: verdadeiro, falso\n  Nulo:     nulo\n  Lista:    [1, 2, 3]\n  Mapa:     {chave: valor}\n\nTemplate strings com ${}:\n  seja nome = \"Advak\"\n  imprimir(`Olá, ${nome}!`)\n\nOperações básicas:\n  +  adição       -  subtração\n  *  multiplicação /  divisão\n  %  resto        ** potência",
+        codigo: "// Meu primeiro programa Advak!\nimprimir(\"Olá, Mundo!\")\n\nseja nome = \"Advak 5.0\"\nseja versao = 5.0\nimprimir(`Bem-vindo ao ${nome}!`)\nimprimir(`Versão: ${versao}`)\n\nseja soma = 10 + 32\nimprimir(`10 + 32 = ${soma}`)\n\nseja lista = [1, 2, 3, 4, 5]\nimprimir(`Lista: ${lista}`)\nimprimir(`Tamanho: ${lista.tamanho}`)\n\nseja mapa = {linguagem: \"Advak\", versao: 5}\nimprimir(`Linguagem: ${mapa.linguagem}`)",
+        exercicio: "Crie variáveis com seu nome, cidade e ano de nascimento. Imprima uma apresentação completa."
+    },
+    {
+        id: 2, icone: "📦", nivel: "Iniciante",
+        titulo: "Variáveis e Tipos",
+        descricao: "seja, fixo e manipulação de dados",
+        teoria: "Dois tipos de declaração:\n\n  seja x = 10      variável (pode mudar)\n  fixo PI = 3.14   constante (nunca muda)\n\nOperações com texto:\n  texto.tamanho        comprimento\n  texto.maiusculo()    EM MAIÚSCULAS\n  texto.minusculo()    em minúsculas\n  texto.aparar()       remove espaços\n  texto.dividir(\" \")   divide em lista\n  texto.contem(\"x\")    verifica conteúdo\n\nOperações com listas:\n  lista.adicionar(x)   adiciona item\n  lista.remover()      remove último\n  lista[0]             primeiro item\n  lista.tamanho        quantidade\n  lista.contem(x)      verifica item\n  lista.map(fn)        transforma\n  lista.filtrar(fn)    filtra",
+        codigo: "seja pontos = 100\npontos = pontos + 50\nimprimir(`Pontos: ${pontos}`)\n\nfixo MAXIMO = 1000\nimprimir(`Máximo: ${MAXIMO}`)\n\n// Operações com texto\nseja frase = \"  Advak é incrível!  \"\nimprimir(frase.aparar())\nimprimir(frase.maiusculo())\nimprimir(`Tamanho: ${frase.aparar().tamanho}`)\n\n// Listas\nseja numeros = [10, 20, 30]\nnumeros.adicionar(40)\nimprimir(`Lista: ${numeros}`)\nimprimir(`Primeiro: ${numeros[0]}`)\n\n// Map e filtrar\nseja dobros = numeros.map((n) => n * 2)\nimprimir(`Dobros: ${dobros}`)\nseja grandes = numeros.filtrar((n) => n > 15)\nimprimir(`Maiores que 15: ${grandes}`)",
+        exercicio: "Crie uma lista com 5 frutas favoritas. Use .map() para deixar todas em MAIÚSCULAS e .filtrar() para pegar as que têm mais de 5 letras."
+    },
+    {
+        id: 3, icone: "🔀", nivel: "Iniciante",
+        titulo: "Condicionais",
+        descricao: "se, senão e lógica condicional",
+        teoria: "Controle o fluxo com condicionais:\n\n  se (condição) {\n      executa se verdadeiro\n  } senão se (outra) {\n      outra condição\n  } senão {\n      caso padrão\n  }\n\nOperadores de comparação:\n  ==   igual        !=  diferente\n  >    maior        <   menor\n  >=   maior/igual  <=  menor/igual\n\nOperadores lógicos:\n  &&   E  (ambos verdadeiros)\n  ||   OU (pelo menos um verdadeiro)\n  !    NÃO (inverte)\n\nTernário (uma linha):\n  resultado = cond ? se_sim : se_nao",
+        codigo: "seja nota = 8.5\n\nse (nota >= 9.0) {\n    imprimir(\"Excelente! ⭐\")\n} senão se (nota >= 7.0) {\n    imprimir(\"Aprovado! ✅\")\n} senão se (nota >= 5.0) {\n    imprimir(\"Recuperação ⚠️\")\n} senão {\n    imprimir(\"Reprovado ❌\")\n}\n\n// Ternário\nseja status = nota >= 7.0 ? \"aprovado\" : \"reprovado\"\nimprimir(`Status: ${status}`)\n\n// Operadores lógicos\nseja idade = 20\nseja tem_carteira = verdadeiro\nse (idade >= 18 && tem_carteira) {\n    imprimir(\"Pode dirigir! 🚗\")\n}\n\n// Negação\nseja chovendo = falso\nse (!chovendo) {\n    imprimir(\"Dia ensolarado! ☀️\")\n}",
+        exercicio: "Crie uma variável 'temperatura'. Imprima 'muito frio' se < 10, 'frio' se 10-20, 'agradável' se 20-30, 'quente' se > 30."
+    },
+    {
+        id: 4, icone: "🔄", nivel: "Iniciante",
+        titulo: "Laços de Repetição",
+        descricao: "para, enquanto — iterar e repetir",
+        teoria: "Três tipos de laço em Advak:\n\n1. para (item em lista)\n   Itera sobre cada elemento de uma coleção\n\n2. enquanto (condição)\n   Repete enquanto a condição for verdadeira\n\n3. para clássico\n   para (seja i = 0; i < 10; i = i + 1)\n\nControle de fluxo:\n  quebrar   → sai do laço imediatamente\n  continuar → pula para a próxima iteração\n\nDica elegante — use map e filtrar:\n  lista.map((x) => x * 2)          transforma\n  lista.filtrar((x) => x > 5)      filtra",
+        codigo: "// Para em lista\nseja frutas = [\"maçã\", \"banana\", \"laranja\"]\npara (fruta em frutas) {\n    imprimir(`Fruta: ${fruta}`)\n}\n\n// Enquanto\nseja n = 1\nenquanto (n <= 5) {\n    imprimir(`${n} × 7 = ${n * 7}`)\n    n = n + 1\n}\n\n// Quebrar e continuar\npara (i em [1,2,3,4,5,6,7,8,9,10]) {\n    se (i % 2 == 0) { continuar }\n    se (i > 7) { quebrar }\n    imprimir(`Ímpar: ${i}`)\n}\n\n// Somar lista\nseja total = 0\nseja valores = [10, 25, 8, 42, 15]\npara (v em valores) { total = total + v }\nimprimir(`Soma: ${total}`)",
+        exercicio: "Use um laço para calcular e imprimir a tabuada do 9 (de 1 a 10), no formato: 9 x 1 = 9"
+    },
+    {
+        id: 5, icone: "⚙️", nivel: "Intermediário",
+        titulo: "Funções",
+        descricao: "Criando funções reutilizáveis",
+        teoria: "Funções encapsulam lógica reutilizável:\n\n  função nome(p1, p2 = padrão) {\n      retornar resultado\n  }\n\nRecursos:\n  Parâmetros padrão  função f(x, y = 0)\n  Arrow function     (x) => x * 2\n  Spread             função f(...args)\n  Recursão           função chama a si\n  Pipeline           valor |> função\n\nFunções são valores — você pode:\n  Passar como argumento\n  Retornar de outra função\n  Armazenar em variável\n\nFunções puras sempre retornam\no mesmo resultado para os mesmos args.",
+        codigo: "// Função com parâmetro padrão\nfunção saudar(nome, titulo = \"Sr(a)\") {\n    retornar `Olá, ${titulo} ${nome}!`\n}\nimprimir(saudar(\"Ana\", \"Dra\"))\nimprimir(saudar(\"Carlos\"))\n\n// Arrow functions\nseja dobrar = (x) => x * 2\nseja quadrado = (x) => x * x\nimprimir(dobrar(7))\nimprimir(quadrado(5))\n\n// Recursão — fatorial\nfunção fatorial(n) {\n    se (n <= 1) { retornar 1 }\n    retornar n * fatorial(n - 1)\n}\nimprimir(`5! = ${fatorial(5)}`)\nimprimir(`10! = ${fatorial(10)}`)\n\n// Pipeline\nseja res = 3 |> dobrar |> quadrado\nimprimir(`3 → dobrar → quadrado = ${res}`)",
+        exercicio: "Crie uma função 'fibonacci(n)' que retorna o n-ésimo número da sequência de Fibonacci. Teste: fibonacci(10) = 55."
+    },
+    {
+        id: 6, icone: "🏗️", nivel: "Intermediário",
+        titulo: "Classes e OOP",
+        descricao: "Programação Orientada a Objetos",
+        teoria: "Classes organizam dados e comportamentos:\n\n  classe Animal {\n      construtor(nome) {\n          isso.nome = nome\n      }\n      falar() { retornar \"...\" }\n  }\n\n  classe Cachorro herda Animal {\n      falar() { retornar \"Au!\" }\n  }\n\nConceitos fundamentais:\n  isso        objeto atual\n  herda       herança de outra classe\n  super()     chama construtor pai\n  novo        cria instância\n  e_instancia verifica tipo\n  get/set     propriedades calculadas\n\nPilares da OOP:\n  Encapsulamento  dados + comportamento juntos\n  Herança         reutiliza código do pai\n  Polimorfismo    mesmo método, comportamentos diferentes",
+        codigo: "classe Veiculo {\n    construtor(marca, vel_max) {\n        isso.marca = marca\n        isso.vel_max = vel_max\n        isso.velocidade = 0\n    }\n    acelerar(v) {\n        isso.velocidade = isso.velocidade + v\n        se (isso.velocidade > isso.vel_max) {\n            isso.velocidade = isso.vel_max\n        }\n    }\n    freiar() { isso.velocidade = 0 }\n    status() {\n        retornar `${isso.marca}: ${isso.velocidade}/${isso.vel_max} km/h`\n    }\n}\n\nclasse Moto herda Veiculo {\n    construtor(marca) { super(marca, 200) }\n    empinar() { retornar `${isso.marca} empinando! 🏍️` }\n}\n\nseja carro = novo Veiculo(\"Toyota\", 160)\ncarro.acelerar(80)\ncarro.acelerar(100)\nimprimir(carro.status())\n\nseja moto = novo Moto(\"Honda\")\nmoto.acelerar(150)\nimprimir(moto.status())\nimprimir(moto.empinar())\nimprimir(moto e_instancia Veiculo)",
+        exercicio: "Crie classe 'ContaBancaria' com saldo, depositar(v) e sacar(v) (não deixa ficar negativo). Teste: deposita 1000, saca 300, saca 900 (deve falhar)."
+    },
+    {
+        id: 7, icone: "🎯", nivel: "Intermediário",
+        titulo: "Pattern Matching",
+        descricao: "combinar — mais poderoso que switch",
+        teoria: "Pattern matching verifica padrões:\n\n  combinar valor {\n    caso padrão se guarda => resultado\n    caso {campo}          => objeto\n    caso [h, ...t]        => lista\n    caso Tipo(x)          => tipo ADT\n    caso _                => qualquer coisa\n  }\n\nGuards (se) filtram dentro do padrão.\nCom => retorna valor (expressão).\nCom : executa bloco de código.\n\nPadrões disponíveis:\n  Literal   42, \"texto\", verdadeiro\n  Bind      x  (captura o valor em x)\n  Wildcard  _  (ignora, sempre casa)\n  Guard     caso x se x > 0\n  Object    {nome, idade}\n  Array     [primeiro, ...resto]\n  Type      Numero(n), Circulo(r)",
+        codigo: "// Guards\nfunção classificar(n) {\n    retornar combinar n {\n        caso x se x < 0   => \"negativo\"\n        caso 0            => \"zero\"\n        caso x se x < 10  => \"pequeno\"\n        caso x se x < 100 => \"médio\"\n        caso _            => \"grande\"\n    }\n}\nimprimir(classificar(-5))\nimprimir(classificar(0))\nimprimir(classificar(7))\nimprimir(classificar(42))\nimprimir(classificar(999))\n\n// Object pattern\nfunção descrever(p) {\n    retornar combinar p {\n        caso {nome, idade} se idade < 18 =>\n            `${nome} é menor de idade`\n        caso {nome, cargo} =>\n            `${nome} trabalha como ${cargo}`\n        caso {nome} => `Olá, ${nome}!`\n    }\n}\nimprimir(descrever({nome: \"Bia\", idade: 15}))\nimprimir(descrever({nome: \"Ana\", cargo: \"Dev\"}))",
+        exercicio: "Crie uma função 'forma_geometrica(lados)' usando pattern matching: 3=triângulo, 4=quadrilátero, 5=pentágono, outros=polígono."
+    },
+    {
+        id: 8, icone: "🧬", nivel: "Avançado",
+        titulo: "Tipos Algébricos",
+        descricao: "ADTs estilo Haskell — dados compostos",
+        teoria: "Tipos Algébricos (ADTs) definem formas de dados:\n\n  tipo Nome {\n      Variante1,                    sem dados\n      Variante2(campo),             1 campo\n      Variante3(campo1, campo2)     N campos\n  }\n\nUse com pattern matching para processar\ncada variante com segurança total.\n\nPadrões clássicos da programação funcional:\n\n  Opcional → Nenhum | Algum(valor)\n  Resultado→ Ok(v)  | Erro(msg)\n  Lista    → Vazia  | Cons(head, tail)\n  Árvore   → Folha  | No(esq, val, dir)\n\nVantagens:\n  Impossível representar estado inválido\n  Compilador força tratar todos os casos\n  Código autodocumentado e expressivo",
+        codigo: "// Tipo Opcional (como Maybe do Haskell)\ntipo Opcional { Nenhum, Algum(valor) }\n\nfunção dividir(a, b) {\n    se (b == 0) { retornar Nenhum }\n    retornar Algum(a / b)\n}\n\nfunção mostrar(opt) {\n    retornar combinar opt {\n        caso Algum(v) => `Resultado: ${v}`\n        caso Nenhum   => \"Erro: divisão por zero\"\n    }\n}\nimprimir(mostrar(dividir(10, 2)))\nimprimir(mostrar(dividir(10, 0)))\n\n// Árvore binária\ntipo Arvore { Folha, No(esq, val, dir) }\n\nfunção soma_arvore(a) {\n    retornar combinar a {\n        caso Folha => 0\n        caso No(e, v, d) => soma_arvore(e) + v + soma_arvore(d)\n    }\n}\n\nseja arv = No(No(Folha, 1, Folha), 2, No(Folha, 3, Folha))\nimprimir(`Soma: ${soma_arvore(arv)}`)",
+        exercicio: "Crie tipo Forma com Circulo(r), Retangulo(l,a) e Triangulo(b,h). Use pattern matching para calcular a área de cada forma."
+    },
+    {
+        id: 9, icone: "🧠", nivel: "Avançado",
+        titulo: "Lógica / Prolog",
+        descricao: "Programação lógica nativa",
+        teoria: "Advak integra um motor Prolog completo!\n\n  fato predicado(argumento1, argumento2)\n\n  regra conclusao(X, Z) :-\n      premissa1(X, Y),\n      premissa2(Y, Z)\n\n  consultar predicado(valor, X)\n  imprimir(_solucoes)\n\nO motor usa unificação e backtracking\npara encontrar TODAS as soluções.\n\nRegras:\n  Variáveis começam com Maiúscula: X, Y, Z\n  Átomos são em minúsculas: joao, maria\n  :- significa 'se' (se premissas, então)\n  , significa 'e' entre premissas\n\n_solucoes contém lista de {X: valor}\npara cada solução encontrada.",
+        codigo: "// Base de conhecimento\nfato pai(\"joão\", \"maria\")\nfato pai(\"joão\", \"pedro\")\nfato pai(\"pedro\", \"ana\")\nfato pai(\"pedro\", \"lucas\")\nfato pai(\"maria\", \"bia\")\n\n// Regras derivadas\nregra avo(X, Z) :- pai(X, Y), pai(Y, Z)\nregra bisavo(X, W) :- pai(X, Y), avo(Y, W)\n\n// Consultas\nconsultar pai(\"joão\", X)\nimprimir(`Filhos de João: ${_solucoes}`)\n\nconsultar avo(\"joão\", X)\nimprimir(`Netos de João: ${_solucoes}`)\n\nconsultar bisavo(\"joão\", X)\nimprimir(`Bisnetos de João: ${_solucoes}`)\n\n// Consulta simétrica\nfato gosta(\"ana\", \"futebol\")\nfato gosta(\"lucas\", \"futebol\")\nfato gosta(\"bia\", \"música\")\nregra amigos(X, Y) :- gosta(X, Z), gosta(Y, Z)\nconsultar amigos(\"ana\", X)\nimprimir(`Amigos de Ana: ${_solucoes}`)",
+        exercicio: "Adicione fatos de 'mora_em(pessoa, cidade)' e crie regra 'vizinhos(X,Y)' quando moram na mesma cidade. Consulte os vizinhos de alguém."
+    },
+    {
+        id: 10, icone: "⚡", nivel: "Avançado",
+        titulo: "Generators",
+        descricao: "Sequências lazy com produzir/yield",
+        teoria: "Generators produzem valores sob demanda:\n\n  função gerador nome(params) {\n      produzir valor1\n      enquanto (cond) {\n          produzir proximo\n      }\n  }\n\n  para (v em nome()) {\n      // recebe um valor por vez\n  }\n\nVantagens sobre listas normais:\n  Lazy      só calcula quando pedido\n  Infinito  pode gerar infinitos valores\n  Eficiente não carrega tudo na memória\n  Elegante  código limpo e expressivo\n\nUso prático:\n  Sequências matemáticas\n  Leitura de arquivos grandes\n  Streams de dados em tempo real\n  Paginação de resultados",
+        codigo: "// Generator de Fibonacci infinito\nfunção gerador fibonacci() {\n    seja a = 0\n    seja b = 1\n    enquanto (verdadeiro) {\n        produzir a\n        seja temp = a + b\n        a = b\n        b = temp\n    }\n}\n\n// Coleta os primeiros 10\nseja seq = []\nseja count = 0\npara (n em fibonacci()) {\n    se (count >= 10) { quebrar }\n    seq.adicionar(n)\n    count = count + 1\n}\nimprimir(`Fibonacci: ${seq}`)\n\n// Generator de primos até limite\nfunção gerador primos(ate) {\n    função e_primo(n) {\n        se (n < 2) { retornar falso }\n        seja i = 2\n        enquanto (i * i <= n) {\n            se (n % i == 0) { retornar falso }\n            i = i + 1\n        }\n        retornar verdadeiro\n    }\n    seja n = 2\n    enquanto (n <= ate) {\n        se (e_primo(n)) { produzir n }\n        n = n + 1\n    }\n}\n\nseja lista_p = []\npara (p em primos(50)) { lista_p.adicionar(p) }\nimprimir(`Primos até 50: ${lista_p}`)",
+        exercicio: "Crie um generator de números triangulares: 1, 3, 6, 10, 15... (n*(n+1)/2 para n=1,2,3...). Colete os primeiros 10."
+    }
+]
+
+// ═══════════════════════════════════════════════════════════════════════
+//  LAYOUT PRINCIPAL
+// ═══════════════════════════════════════════════════════════════════════
+
+seja f_principal = gui.frame_horizontal(jan)
+
+// ── SIDEBAR ──────────────────────────────────────────────────────────
+seja sidebar = gui.frame(f_principal, cor="#0F172A")
+sidebar.posicionar(lado="left", preencher="y", expandir=falso, espaco_x=0, espaco_y=0)
+sidebar.configure(width=220)
+sidebar.pack_propagate(falso)
+
+gui.label(sidebar, "  📚 Advak 5.0", negrito=verdadeiro, tamanho=13, cor="#3B82F6")
+gui.label(sidebar, "  Guia Interativo", tamanho=9, cor="#64748B")
+gui.separador(sidebar)
+
+gui.label(sidebar, "  Progresso:", tamanho=9, cor="#64748B")
+seja barra_geral = gui.barra_progresso(sidebar, valor=0, maximo=10)
+seja lbl_prog = gui.label(sidebar, "  0 / 10 lições", tamanho=9, cor="#22C55E")
+gui.separador(sidebar)
+gui.label(sidebar, "  LIÇÕES", tamanho=8, cor="#64748B", negrito=verdadeiro)
+
+// Estado global simples
+seja _licao_atual = [0]
+seja _completadas = [[]]
+
+// Botões da sidebar
+seja botoes_sb = []
+
+função criar_btn(licao, idx) {
+    seja txt = `  ${licao.icone} ${licao.titulo}`
+    seja btn = gui.botao(sidebar, txt,
+        ao_clicar=função(_i=idx) { carregar_licao(_i) },
+        estilo="secundario", largura=28)
+    botoes_sb.adicionar(btn)
+}
+
+para (i em [0,1,2,3,4,5,6,7,8,9]) {
+    criar_btn(LICOES[i], i)
+}
+
+gui.separador(sidebar)
+gui.label(sidebar, "  🟢 Iniciante", tamanho=9, cor="#22C55E")
+gui.label(sidebar, "  🟡 Intermediário", tamanho=9, cor="#EAB308")
+gui.label(sidebar, "  🔴 Avançado", tamanho=9, cor="#EF4444")
+
+// ── ÁREA PRINCIPAL ───────────────────────────────────────────────────
+seja f_conteudo = gui.frame(f_principal, cor="#0F172A")
+
+// Header
+seja f_hdr = gui.frame(f_conteudo, cor="#1E293B")
+seja f_hdr_h = gui.frame_horizontal(f_hdr)
+
+seja lbl_icone = gui.label(f_hdr_h, "📚", tamanho=18)
+lbl_icone.pack(lado="esquerda", espaco_x=10, espaco_y=8)
+
+seja f_hdr_txt = gui.frame(f_hdr_h, cor="#1E293B")
+f_hdr_txt.pack(lado="esquerda", preencher="ambos", expandir=verdadeiro)
+seja lbl_titulo = gui.label(f_hdr_txt, "Selecione uma lição", negrito=verdadeiro, tamanho=15, cor="#3B82F6")
+seja lbl_desc   = gui.label(f_hdr_txt, "Clique em uma lição na barra lateral para começar", tamanho=9, cor="#64748B")
+
+seja f_nav = gui.frame_horizontal(f_hdr_h)
+f_nav.pack(lado="direita", espaco_x=12)
+seja btn_ant  = gui.botao(f_nav, "◀ Anterior", ao_clicar=função() { navegar(-1) }, estilo="secundario")
+btn_ant.pack(lado="esquerda", espaco_x=2)
+seja btn_prox = gui.botao(f_nav, "Próximo ▶",  ao_clicar=função() { navegar(1) },  estilo="primario")
+btn_prox.pack(lado="esquerda", espaco_x=2)
+
+gui.separador(f_conteudo)
+
+// Abas principais
+seja abas = gui.abas(f_conteudo)
+
+// ─── ABA TEORIA ──────────────────────────────────────────────────────
+seja tab_teoria = abas.adicionar("📖  Teoria")
+seja area_teoria = gui.area_texto(tab_teoria, largura=95, altura=30)
+area_teoria.configure(estado="desabilitado",
+    bg="#0D1117", fg="#E6EDF3",
+    relief="flat", espaco_x=20, espaco_y=16, wrap="word")
+
+// ─── ABA CÓDIGO ──────────────────────────────────────────────────────
+seja tab_codigo = abas.adicionar("💻  Código")
+seja f_cod = gui.frame_horizontal(tab_codigo)
+
+seja f_ed = gui.frame(f_cod, cor="#0F172A")
+f_ed.posicionar(lado="left", preencher="both", expandir=verdadeiro)
+seja f_ed_top = gui.frame_horizontal(f_ed)
+gui.label(f_ed_top, " 📝 Editor .dk", negrito=verdadeiro, cor="#3B82F6", tamanho=10)
+seja editor = gui.area_texto(f_ed, largura=52, altura=25)
+editor.configure(bg="#0D1117", fg="#E6EDF3",
+    insertbackground="#E6EDF3",
+    relief="flat", espaco_x=12, espaco_y=12, wrap="none")
+
+seja f_sa = gui.frame(f_cod, cor="#0F172A")
+f_sa.posicionar(lado="left", preencher="both", expandir=verdadeiro)
+seja f_sa_top = gui.frame_horizontal(f_sa)
+gui.label(f_sa_top, " ▶ Saída", negrito=verdadeiro, cor="#22C55E", tamanho=10)
+seja saida = gui.area_texto(f_sa, largura=42, altura=25)
+saida.configure(estado="desabilitado",
+    bg="#0D1117", fg="#4EC9B0",
+    relief="flat", espaco_x=12, espaco_y=12)
+
+seja f_run = gui.frame_horizontal(tab_codigo)
+gui.label(f_run, " 💡 Ctrl+Enter para executar  |  Escreva código .dk e veja o resultado ao lado", tamanho=9, cor="#64748B")
+seja btn_exec = gui.botao(f_run, "  ▶  Executar  ", ao_clicar=função() { executar_codigo() }, estilo="sucesso")
+btn_exec.pack(lado="direita", espaco_x=8, espaco_y=5)
+
+// ─── ABA EXERCÍCIO ────────────────────────────────────────────────────
+seja tab_ex = abas.adicionar("✏️  Exercício")
+seja lbl_ex_titulo = gui.label(tab_ex, "Selecione uma lição para ver o exercício", negrito=verdadeiro, tamanho=11)
+seja lbl_ex_desc   = gui.label(tab_ex, "", tamanho=10, cor="#94A3B8")
+gui.separador(tab_ex)
+gui.label(tab_ex, "Sua solução:", negrito=verdadeiro, tamanho=10)
+seja editor_ex = gui.area_texto(tab_ex, largura=95, altura=15)
+editor_ex.configure(bg="#0D1117", fg="#E6EDF3",
+    insertbackground="white",
+    relief="flat", espaco_x=12, espaco_y=12)
+seja f_ex_b = gui.frame_horizontal(tab_ex)
+seja lbl_res = gui.label(f_ex_b, "", tamanho=11)
+seja btn_dica = gui.botao(f_ex_b, "💡 Ver dica", ao_clicar=função() { mostrar_dica() }, estilo="aviso")
+btn_dica.pack(lado="direita", espaco_x=4, espaco_y=4)
+seja btn_ver = gui.botao(f_ex_b, "✓ Verificar", ao_clicar=função() { verificar_ex() }, estilo="sucesso")
+btn_ver.pack(lado="direita", espaco_x=4, espaco_y=4)
+
+// ─── ABA REFERÊNCIA ───────────────────────────────────────────────────
+seja tab_ref = abas.adicionar("📋  Referência Rápida")
+seja area_ref = gui.area_texto(tab_ref, largura=95, altura=34)
+area_ref.configure(estado="desabilitado",
+    bg="#0D1117", fg="#E6EDF3",
+    relief="flat", espaco_x=16, espaco_y=12)
+area_ref.configure(estado="habilitado")
+area_ref.insert("1.0",
+"ADVAK 5.0 — REFERÊNCIA RÁPIDA\n" +
+"══════════════════════════════════════════════════════════════\n\n" +
+"VARIÁVEIS                        CONDICIONAIS\n" +
+"  seja x = 10   (mutável)          se (cond) { }\n" +
+"  fixo PI = 3.14 (constante)       senão se (c) { }\n" +
+"  imutavel v = {} (congelado)      senão { }\n" +
+"                                   cond ? v_sim : v_nao\n\n" +
+"LAÇOS                            FUNÇÕES\n" +
+"  para (x em lista) { }            função nome(p, q=def) { }\n" +
+"  enquanto (cond) { }              (x) => x * 2\n" +
+"  quebrar / continuar              função gerador g() { produzir v }\n" +
+"                                   valor |> função\n\n" +
+"CLASSES                          PATTERN MATCHING\n" +
+"  classe A herda B {               combinar v {\n" +
+"    construtor(p) {                   caso x se x>0 => expr\n" +
+"      isso.p = p                      caso {nome} => nome\n" +
+"    }                                 caso [h,...t] => h\n" +
+"    metodo() { }                      caso Tipo(x) => x\n" +
+"  }                                   caso _ => padrão\n" +
+"  novo Classe(args)                 }\n\n" +
+"TIPOS ALGÉBRICOS                 PROLOG / LÓGICA\n" +
+"  tipo Arvore {                     fato pai(\"a\", \"b\")\n" +
+"    Folha,                          regra avo(X,Z) :-\n" +
+"    No(esq, val, dir)                 pai(X,Y), pai(Y,Z)\n" +
+"  }                                 consultar pai(\"a\", X)\n" +
+"                                   imprimir(_solucoes)\n\n" +
+"STRUCTS (C++)     ENUMS            MACROS        REFS\n" +
+"  estrutura P {   enumeracao D {   macro MAX(a,b) ref p=var\n" +
+"    x: Numero=0     Norte=0,       =>a>b?a:b     p.valor=v\n" +
+"  }               }                              deref p\n\n" +
+"LISTAS                           TEXTOS\n" +
+"  lista.adicionar(x)               texto.tamanho\n" +
+"  lista.remover()                  texto.maiusculo()\n" +
+"  lista[0]                         texto.minusculo()\n" +
+"  lista.tamanho                    texto.aparar()\n" +
+"  lista.filtrar(fn)                texto.dividir(sep)\n" +
+"  lista.map(fn)                    texto.contem(sub)\n" +
+"  lista.contem(x)                  texto.substituir(a,b)\n\n" +
+"GUI\n" +
+"  gui.janela(titulo, l, a)         gui.tabela(pai, cols)\n" +
+"  gui.label(pai, texto)            gui.abas(pai)\n" +
+"  gui.botao(pai, txt, ao_clicar=fn)gui.toast(msg)\n" +
+"  gui.campo(pai)                   gui.slider(pai, 0, 100)\n" +
+"  gui.area_texto(pai)              gui.card(pai, titulo)\n" +
+"  gui.frame(pai) .posicionar(...)  gui.kanban(pai, cols)\n" +
+"  gui.iniciar()                    gui.animar(w, prop, v)\n\n" +
+"IA NATIVA\n" +
+"  ai_perguntar(\"pergunta\")        (precisa de chave API)\n" +
+"  ai_resumir(texto)\n" +
+"  ai_classificar(texto, categorias)\n" +
+"  ai_transformar(texto, instrucao)\n"
+)
+area_ref.configure(estado="desabilitado")
+
+// Status bar
+seja status = gui.barra_status(jan, "Selecione uma lição para começar — Advak 5.0 Guia Interativo")
+
+// ═══════════════════════════════════════════════════════════════════════
+//  FUNÇÕES DE CONTROLE
+// ═══════════════════════════════════════════════════════════════════════
+
+função carregar_licao(idx) {
+    _licao_atual[0] = idx
+    seja licao = LICOES[idx]
+
+    lbl_icone.configure(text=licao.icone)
+    lbl_titulo.configure(text=`${licao.icone}  ${licao.titulo}`)
+    lbl_desc.configure(text=`${licao.descricao}  |  Nível: ${licao.nivel}  |  Lição ${idx+1}/10`)
+
+    area_teoria.configure(estado="habilitado")
+    area_teoria.delete("1.0", "end")
+    area_teoria.insert("1.0", licao.teoria)
+    area_teoria.configure(estado="desabilitado")
+
+    editor.delete("1.0", "end")
+    editor.insert("1.0", licao.codigo)
+
+    saida.configure(estado="habilitado")
+    saida.delete("1.0", "end")
+    saida.configure(estado="desabilitado")
+
+    lbl_ex_titulo.configure(text=`✏️  Exercício ${idx+1}: ${licao.titulo}`)
+    lbl_ex_desc.configure(text=licao.exercicio)
+    editor_ex.delete("1.0", "end")
+    editor_ex.insert("1.0", `// Exercício: ${licao.exercicio}\n// Escreva sua solução abaixo:\n\n`)
+    lbl_res.configure(text="", foreground="#64748B")
+
+    para (i em [0,1,2,3,4,5,6,7,8,9]) {
+        seja btn = botoes_sb[i]
+        se (i == idx) {
+            btn.configure(bg="#2563EB")
+        } senão {
+            btn.configure(bg="#1E293B")
+        }
+    }
+
+    status.mensagem(`  Lição ${idx+1}/10: ${licao.titulo} — Nível: ${licao.nivel}`)
+}
+
+função navegar(dir) {
+    seja prox = _licao_atual[0] + dir
+    se (prox >= 0 && prox < 10) { carregar_licao(prox) }
+}
+
+função executar_codigo() {
+    seja codigo = editor.get("1.0", "end-1c")
+    saida.configure(estado="habilitado")
+    saida.delete("1.0", "end")
+
+    // Usa o builtin advak_executar para rodar código .dk e capturar saída
+    seja output = advak_executar(codigo)
+    saida.insert("end", output)
+
+    saida.configure(estado="desabilitado")
+    status.mensagem("  ▶ Código executado!")
+}
+
+função verificar_ex() {
+    seja cod = editor_ex.get("1.0", "end-1c").aparar()
+    se (cod.tamanho < 50 || cod.começa("//")) {
+        lbl_res.configure(text="💡 Escreva mais código para verificar!", foreground="#EAB308")
+        retornar
+    }
+    lbl_res.configure(text="✅ Boa solução! Execute para confirmar.", foreground="#22C55E")
+    gui.toast("✨ Exercício entregue! Execute para ver o resultado.", "sucesso")
+
+    seja ja = falso
+    para (c em _completadas[0]) {
+        se (c == _licao_atual[0]) { ja = verdadeiro }
+    }
+    se (!ja) {
+        _completadas[0].adicionar(_licao_atual[0])
+        seja n = _completadas[0].tamanho
+        barra_geral.step(1)
+        lbl_prog.configure(text=`  ${n} / 10 lições`)
+    }
+}
+
+função mostrar_dica() {
+    gui.alerta(LICOES[_licao_atual[0]].exercicio)
+}
+
+editor.bind("<Control-Return>", função(e) { executar_codigo() })
+
+carregar_licao(0)
+gui.iniciar()

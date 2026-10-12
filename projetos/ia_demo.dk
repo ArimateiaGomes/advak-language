@@ -1,0 +1,200 @@
+// ═══════════════════════════════════════════════════════════
+//  ADVAK 4.0 — IA Multi-modelo
+//  Contexto persistente, troca de modelo em runtime
+//  Execute: advak projetos run ia_demo.dk
+// ═══════════════════════════════════════════════════════════
+
+seja jan = gui.janela("Advak 4.0 — IA Multi-modelo", 1000, 700);
+jan.centralizar();
+
+// ── Menu ─────────────────────────────────────────────────
+seja menu = gui.menu_bar(jan);
+menu.adicionar("IA", [
+    ["Limpar contexto",  (x) => { IA.limpar(); atualizar_info(); gui.toast("Contexto limpo!", tipo="info"); }],
+    ["Ver memória",      (x) => { mostrar_memoria(); }]
+]);
+menu.adicionar("Tema", [
+    ["Escuro", (x) => { gui.tema("escuro"); }],
+    ["Claro",  (x) => { gui.tema("claro"); }]
+]);
+
+// ── Layout principal ──────────────────────────────────────
+seja fr_main = gui.frame_horizontal(jan);
+
+// ── PAINEL ESQUERDO — Configuração ───────────────────────
+seja fr_esq = gui.frame(fr_main);
+fr_esq.posicionar(lado="left", preencher="y", espaco_x=8, espaco_y=8);
+
+gui.label(fr_esq, "Configuração da IA", negrito=verdadeiro);
+gui.separador(fr_esq);
+
+// Provedor
+gui.label(fr_esq, "Provedor:");
+seja combo_prov = gui.caixa_selecao(fr_esq, ["groq", "openrouter", "deepseek", "gemini"]);
+gui.botao(fr_esq, "Definir Provedor", (btn) => {
+    seja p = combo_prov.valor();
+    seja r = IA.provedor(p);
+    gui.toast(r, tipo="sucesso");
+    atualizar_modelos();
+    atualizar_info();
+}, estilo="primario");
+
+gui.separador(fr_esq);
+
+// Modelo
+gui.label(fr_esq, "Modelo:");
+seja lista_modelos = gui.lista(fr_esq, ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768"], altura=5);
+gui.botao(fr_esq, "Definir Modelo", (btn) => {
+    seja idx = lista_modelos.selecionado();
+    se (idx < 0) { gui.aviso("Selecione um modelo!"); retornar; }
+    seja modelos = IA.modelos();
+    seja m = modelos[idx];
+    seja r = IA.modelo(m);
+    gui.toast("Modelo: " + r, tipo="sucesso");
+    atualizar_info();
+}, estilo="primario");
+
+gui.separador(fr_esq);
+
+// System prompt
+gui.label(fr_esq, "System Prompt:");
+seja area_system = gui.area_texto(fr_esq, largura=28, altura=4,
+    valor_inicial="Você é um assistente especialista em programação Advak. Responda em português.");
+gui.botao(fr_esq, "Definir Sistema", (btn) => {
+    seja s = area_system.valor();
+    IA.sistema(s);
+    gui.toast("System prompt definido!", tipo="sucesso");
+    atualizar_info();
+}, estilo="secundario");
+
+gui.separador(fr_esq);
+
+// Info da IA
+gui.label(fr_esq, "Status:", negrito=verdadeiro);
+seja lbl_provedor = gui.label(fr_esq, "Provedor: groq");
+seja lbl_modelo   = gui.label(fr_esq, "Modelo: llama-3.3-70b");
+seja lbl_msgs     = gui.label(fr_esq, "Mensagens: 0");
+
+gui.separador(fr_esq);
+gui.botao(fr_esq, "Limpar Contexto", (btn) => {
+    IA.limpar();
+    atualizar_info();
+    gui.toast("Contexto limpo!", tipo="info");
+}, estilo="perigo");
+
+// ── PAINEL DIREITO — Chat ─────────────────────────────────
+seja fr_dir = gui.frame(fr_main);
+fr_dir.posicionar(lado="left", preencher="both", expandir=verdadeiro, espaco_x=8, espaco_y=8);
+
+gui.label(fr_dir, "Chat com IA", negrito=verdadeiro);
+gui.separador(fr_dir);
+
+// Histórico do chat
+seja area_chat = gui.area_texto(fr_dir, largura=65, altura=22,
+    valor_inicial="Bem-vindo ao Advak 4.0 - IA Multi-modelo!
+Escolha o provedor e modelo no painel esquerdo.
+Digite sua mensagem abaixo e pressione Enviar.
+
+");
+
+// Input
+seja fr_input = gui.frame_horizontal(fr_dir);
+seja campo_msg = gui.campo(fr_input, "Digite sua mensagem...", largura=50);
+gui.botao(fr_input, "Enviar", (btn) => {
+    enviar_mensagem();
+}, estilo="sucesso");
+gui.botao(fr_input, "Limpar Chat", (btn) => {
+    area_chat.definir("");
+}, estilo="secundario");
+
+// Prompts rápidos
+gui.separador(fr_dir);
+gui.label(fr_dir, "Prompts rápidos:", negrito=verdadeiro);
+seja fr_rapidos = gui.frame_horizontal(fr_dir);
+
+seja prompts = [
+    "Explique o que é OOP em 3 linhas",
+    "Gere um exemplo de classe em Advak",
+    "Qual a diferença entre lista e dicionário?",
+    "Como criar uma GUI em Advak?"
+];
+
+para (p em prompts) {
+    seja texto_p = p;
+    gui.botao(fr_rapidos, texto_p, (btn) => {
+        campo_msg.definir(texto_p);
+        enviar_mensagem();
+    }, estilo="secundario");
+}
+
+seja lbl_status = gui.label(fr_dir, "Pronto.");
+
+// ════════════════════════════════════════════════════════
+//  FUNÇÕES
+// ════════════════════════════════════════════════════════
+
+função atualizar_info() {
+    seja info = IA.info();
+    lbl_provedor.texto("Provedor: " + info.provedor);
+    lbl_modelo.texto("Modelo: " + info.modelo);
+    lbl_msgs.texto("Mensagens: " + texto(info.mensagens));
+}
+
+função atualizar_modelos() {
+    seja mods = IA.modelos();
+    lista_modelos.limpar();
+    para (m em mods) {
+        lista_modelos.adicionar(m);
+    }
+}
+
+função enviar_mensagem() {
+    seja NL = "
+";
+    seja NL = "
+";
+    seja msg = campo_msg.valor();
+    se (!msg) { gui.aviso("Digite uma mensagem!"); retornar; }
+
+    // Mostra mensagem do usuário
+    seja chat_atual = area_chat.valor();
+    area_chat.definir(chat_atual + "Você: " + msg + NL + NL);
+    campo_msg.limpar();
+
+    lbl_status.texto("IA pensando...");
+    gui.atualizar();
+
+    tentar {
+        // Usa IA.chat() para manter contexto
+        seja resposta = ai_perguntar(msg);
+        seja chat_novo = area_chat.valor();
+        seja info = IA.info();
+        area_chat.definir(chat_novo + "[" + info.modelo + "]: " + resposta + NL + NL + "---" + NL + NL);
+        atualizar_info();
+        lbl_status.texto("Respondido! Mensagens no contexto: " + texto(info.mensagens));
+    } capturar (e) {
+        area_chat.definir(area_chat.valor() + "[Erro]: " + texto(e) + NL + NL);
+        lbl_status.texto("Erro: " + texto(e));
+    }
+}
+
+função mostrar_memoria() {
+    seja mem = IA.memoria();
+    se (mem.tamanho == 0) {
+        gui.alerta("Contexto vazio — nenhuma mensagem ainda.");
+        retornar;
+    }
+    seja jan_mem = gui.janela("Memória da IA", 600, 400);
+    jan_mem.centralizar();
+    gui.label(jan_mem, "Histórico do contexto (" + texto(mem.tamanho) + " mensagens):", negrito=verdadeiro);
+    seja tab_mem = gui.tabela(jan_mem, ["Papel", "Conteúdo"], altura=15);
+    para (m em mem) {
+        tab_mem.adicionar([m.role, m.content]);
+    }
+    gui.botao(jan_mem, "Fechar", (btn) => { jan_mem.fechar(); }, estilo="secundario");
+    jan_mem.iniciar();
+}
+
+// Init
+atualizar_info();
+gui.iniciar();

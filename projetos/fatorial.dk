@@ -1,0 +1,106 @@
+// ═══════════════════════════════════════════════════════════
+//  Fatorial — Calculadora GUI em Advak 4.0
+//  Execute: advak projetos run fatorial.dk
+// ═══════════════════════════════════════════════════════════
+
+// ── Função recursiva de fatorial ─────────────────────────
+função fatorial(n) {
+    se (n < 0) { retornar -1; }
+    se (n == 0 || n == 1) { retornar 1; }
+    retornar n * fatorial(n - 1);
+}
+
+// ── Função iterativa de fatorial ─────────────────────────
+função fatorial_iter(n) {
+    seja resultado = 1;
+    para (i em Lista.intervalo(2, n + 1)) {
+        resultado = resultado * i;
+    }
+    retornar resultado;
+}
+
+// ── GUI ───────────────────────────────────────────────────
+const jan = gui.janela("Calculadora de Fatorial", 420, 480);
+jan.centralizar();
+
+gui.label(jan, "Calculadora de Fatorial", negrito=verdadeiro);
+gui.separador(jan);
+
+// Entrada
+gui.label(jan, "Digite um número (0 a 20):");
+const campo_n = gui.campo(jan, "10", largura=15);
+
+// Botões
+const fr_btns = gui.frame_horizontal(jan);
+gui.botao(fr_btns, "Calcular", (btn) => {
+    calcular();
+}, estilo="sucesso");
+
+gui.botao(fr_btns, "Limpar", (btn) => {
+    campo_n.definir("");
+    lbl_resultado.texto("Resultado: —");
+    lbl_iter.texto("Iterativo: —");
+    area_passos.definir("");
+}, estilo="secundario");
+
+// Resultados
+gui.separador(jan);
+const lbl_resultado = gui.label(jan, "Resultado: —", negrito=verdadeiro);
+const lbl_iter      = gui.label(jan, "Iterativo:  —");
+
+// Passos
+gui.separador(jan);
+gui.label(jan, "Passo a passo:", negrito=verdadeiro);
+const area_passos = gui.area_texto(jan, largura=45, altura=10, valor_inicial="");
+
+// Slider
+gui.separador(jan);
+gui.label(jan, "Ou use o slider:");
+gui.slider(jan, minimo=0, maximo=20, valor=10,
+    ao_mudar=(v) => {
+        campo_n.definir(texto(v));
+        calcular();
+    }
+);
+
+// ── Função calcular ───────────────────────────────────────
+função calcular() {
+    const valor_n = campo_n.valor();
+    se (!valor_n) { retornar; }
+
+    const n = numero(valor_n);
+
+    se (n < 0 || n > 20) {
+        gui.aviso("Digite um número entre 0 e 20!");
+        retornar;
+    }
+
+    // Calcula
+    const resultado  = fatorial(n);
+    const resultado2 = fatorial_iter(n);
+
+    // Atualiza labels
+    lbl_resultado.texto("Recursivo:  " + texto(n) + "! = " + texto(resultado));
+    lbl_iter.texto("Iterativo:  " + texto(n) + "! = " + texto(resultado2));
+
+    // Monta passo a passo
+    seja passos = texto(n) + "! = ";
+    se (n == 0 || n == 1) {
+        passos = passos + "1";
+    } senão {
+        seja acc = 1;
+        para (i em Lista.intervalo(1, n + 1)) {
+            acc = acc * i;
+            se (i < n) {
+                passos = passos + texto(i) + " × ";
+            } senão {
+                passos = passos + texto(i) + " = " + texto(acc);
+            }
+        }
+    }
+    area_passos.definir(passos);
+
+    gui.toast(texto(n) + "! = " + texto(resultado), tipo="sucesso");
+}
+
+gui.iniciar();

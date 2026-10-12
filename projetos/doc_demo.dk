@@ -1,0 +1,86 @@
+// ═══════════════════════════════════════════════════════════════════════
+//  ADVAK 5.0 — Demo de Documentação
+//  Execute: advak --doc projetos\doc_demo.dk
+//  Abre: projetos\doc_demo_doc.html
+// ═══════════════════════════════════════════════════════════════════════
+
+/// Constante matemática Pi com 5 casas decimais
+fixo PI = 3.14159
+
+/// Calcula a área de um círculo dado o raio
+/// @param raio - raio do círculo em centímetros
+/// @retorna - área em cm²
+função area_circulo(raio) {
+    retornar PI * raio ** 2
+}
+
+/// Calcula o IMC (Índice de Massa Corporal)
+/// @param peso   - peso em quilogramas
+/// @param altura - altura em metros
+/// @retorna - valor do IMC
+função calcular_imc(peso, altura) {
+    retornar peso / (altura * altura)
+}
+
+/// Classifica o IMC em categorias da OMS
+/// @param imc - valor do IMC calculado
+/// @retorna - texto com a classificação
+função classificar_imc(imc) {
+    se (imc < 18.5) { retornar "Abaixo do peso" }
+    se (imc < 25.0) { retornar "Peso normal" }
+    se (imc < 30.0) { retornar "Sobrepeso" }
+    retornar "Obesidade"
+}
+
+/// Calcula a média de uma lista de números
+/// @param numeros - lista de valores numéricos
+/// @retorna - média aritmética ou 0 se lista vazia
+função media(numeros) {
+    se (numeros.tamanho == 0) { retornar 0 }
+    retornar numeros.soma() / numeros.tamanho
+}
+
+/// Verifica se um número é primo
+/// @param n - número inteiro a verificar
+/// @retorna - verdadeiro se for primo
+função e_primo(n) {
+    se (n < 2) { retornar falso }
+    seja i = 2
+    enquanto (i * i <= n) {
+        se (n % i == 0) { retornar falso }
+        i++
+    }
+    retornar verdadeiro
+}
+
+/// Classe que representa um aluno do CETI
+classe Aluno {
+    inicio(nome, matricula, turma) {
+        isso.nome      = nome
+        isso.matricula = matricula
+        isso.turma     = turma
+        isso.notas     = []
+    }
+
+    /// Adiciona uma nota à lista do aluno
+    adicionar_nota(nota) {
+        isso.notas.adicionar(nota)
+    }
+
+    /// Calcula a média das notas do aluno
+    calcular_media() {
+        retornar media(isso.notas)
+    }
+
+    /// Verifica se o aluno está aprovado (média >= 7)
+    esta_aprovado() {
+        retornar isso.calcular_media() >= 7
+    }
+}
+
+// Programa principal (sem documentação)
+seja a = Aluno("Ana Silva", "2024001", "3A")
+a.adicionar_nota(8.5)
+a.adicionar_nota(9.0)
+a.adicionar_nota(7.5)
+imprimir(a.nome + ": " + texto(a.calcular_media()))

@@ -1,0 +1,25 @@
+# Gerados automaticamente
+dist/
+build/
+__pycache__/
+*.pyc
+logs/
+
+# Bancos de dados e arquivos temporários do SQLite
+*.db
+*.db-shm
+*.db-wal
+
+# Configurações com senha (o .env.exemplo continua indo)
+.env
+env_config.env
+
+# Backups e lixo
+*.pre_patch
+import_times.txt
+python
+{
+# Backups do PostgreSQL
+*.sql.gz
+*.backup
+*.dump

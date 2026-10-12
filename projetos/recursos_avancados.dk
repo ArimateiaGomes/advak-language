@@ -1,0 +1,121 @@
+// ═══════════════════════════════════════════════════════════════
+//   ADVAK 5.1 — RECURSOS ULTRA AVANÇADOS
+//   Demonstração de todos os novos recursos
+// ═══════════════════════════════════════════════════════════════
+
+imprimir("╔══════════════════════════════════════════╗")
+imprimir("║  ADVAK 5.1 — RECURSOS ULTRA AVANÇADOS  ║")
+imprimir("╚══════════════════════════════════════════╝")
+imprimir("")
+
+// ── 1. HASH ──────────────────────────────────────────────────
+imprimir("🔐 HASH:")
+seja senha = "MinhaSenh@123"
+seja hash_sha256 = Hash.sha256(senha)
+imprimir("  SHA256: " + hash_sha256.fatia(0, 16) + "...")
+imprimir("  MD5:    " + Hash.md5(senha).fatia(0, 16) + "...")
+imprimir("  SHA512: " + Hash.sha512(senha).fatia(0, 16) + "...")
+imprimir("")
+
+// ── 2. BASE64 ────────────────────────────────────────────────
+imprimir("📦 BASE64:")
+seja original = "Advak 5.1 — Linguagem em Português!"
+seja codificado = Base64.codificar(original)
+seja decodificado = Base64.decodificar(codificado)
+imprimir("  Original:    " + original)
+imprimir("  Codificado:  " + codificado.fatia(0, 30) + "...")
+imprimir("  Decodificado: " + decodificado)
+imprimir("")
+
+// ── 3. TEXTO AVANÇADO ────────────────────────────────────────
+imprimir("📝 TEXTO AVANÇADO:")
+imprimir("  Slugify:      " + TextoAvancado.slugify("Título do Artigo!"))
+imprimir("  Palíndromo:   " + texto(TextoAvancado.palindromo("arara")))
+imprimir("  Similaridade: " + texto(TextoAvancado.similaridade("gato", "gato")))
+imprimir("  Truncar:      " + TextoAvancado.truncar("Linguagem de Programação Advak", 20))
+imprimir("  Números:      " + texto(TextoAvancado.extrair_numeros("Tenho 42 anos e R$ 1500.50")))
+imprimir("  Anagrama:     " + texto(TextoAvancado.anagrama("amor", "roma")))
+imprimir("")
+
+// ── 4. MATEMÁTICA AVANÇADA ───────────────────────────────────
+imprimir("🧮 MATEMÁTICA AVANÇADA:")
+imprimir("  Fatorial 10:  " + texto(MatAvancada.fatorial(10)))
+imprimir("  É primo 97:   " + texto(MatAvancada.primo(97)))
+imprimir("  MDC(48, 18):  " + texto(MatAvancada.mdc(48, 18)))
+imprimir("  MMC(4, 6):    " + texto(MatAvancada.mmc(4, 6)))
+imprimir("  Fibonacci 10: " + texto(MatAvancada.fibonacci(10)))
+imprimir("  Primos ≤ 20:  " + texto(MatAvancada.primos_ate(20)))
+seja dados = [4, 7, 2, 9, 1, 5, 8, 3, 6]
+imprimir("  Média:        " + texto(MatAvancada.media(dados)))
+imprimir("  Mediana:      " + texto(MatAvancada.mediana(dados)))
+imprimir("  Desvio padrão:" + texto(arred(MatAvancada.desvio_padrao(dados), 2)))
+imprimir("")
+
+// ── 5. TABELA ────────────────────────────────────────────────
+imprimir("📊 TABELA:")
+seja t = Tabela.nova(
+    ["nome", "cidade", "salario"],
+    [
+        ["Ana",     "São Paulo",    8500],
+        ["Bruno",   "Rio",          6200],
+        ["Carla",   "São Paulo",    9100],
+        ["Diego",   "Belo Horizonte", 7800],
+        ["Elena",   "São Paulo",    11000]
+    ]
+)
+imprimir("  Total de funcionários: " + texto(t.tamanho))
+imprimir("  Salário total:  R$ " + texto(t.soma("salario")))
+imprimir("  Salário médio:  R$ " + texto(arred(t.media("salario"), 2)))
+imprimir("  Maior salário:  R$ " + texto(t.max("salario")))
+imprimir("  Menor salário:  R$ " + texto(t.min("salario")))
+t.imprimir()
+imprimir("")
+
+// ── 6. CRONOMETRO ────────────────────────────────────────────
+imprimir("⏱️  CRONÔMETRO:")
+seja c = Cronometro.novo()
+c.iniciar()
+// somar_ate() usa fórmula de Gauss — instantâneo!
+seja soma = somar_ate(100000)
+seja ms = c.ms
+imprimir("  somar_ate(100000) = " + texto(soma))
+imprimir("  Tempo: " + texto(arred(ms, 4)) + "ms (fórmula de Gauss)")
+imprimir("  Formatado: " + c.formatar())
+// Para comparação: soma via Python nativo
+seja c2 = Cronometro.novo()
+c2.iniciar()
+seja soma2 = somar_range(0, 100000)
+imprimir("  somar_range(0,100000) = " + texto(soma2) + " em " + texto(arred(c2.ms,2)) + "ms")
+imprimir("")
+
+// ── 7. COMPRESSÃO ────────────────────────────────────────────
+imprimir("🗜️  COMPRESSÃO:")
+Arquivo.escrever("_demo_texto.txt", "Arquivo de demonstração do Advak 5.1!\nLinha 2\nLinha 3")
+seja zip_path = Compressao.criar_zip("_demo.zip", "_demo_texto.txt")
+seja lista_zip = Compressao.listar_zip("_demo.zip")
+imprimir("  ZIP criado: " + zip_path)
+imprimir("  Arquivos: " + texto(lista_zip))
+Arquivo.apagar("_demo_texto.txt")
+Arquivo.apagar("_demo.zip")
+imprimir("")
+
+// ── 8. REDE ──────────────────────────────────────────────────
+imprimir("🌐 REDE:")
+imprimir("  Hostname: " + Rede.hostname())
+imprimir("  IP Local: " + Rede.ip_local())
+imprimir("")
+
+// ── 9. SISTEMA ───────────────────────────────────────────────
+imprimir("💻 SISTEMA:")
+seja info = Sistema.info()
+imprimir("  Sistema: " + info.so)
+imprimir("  Máquina: " + info.maquina)
+seja disco = Sistema.disco(".")
+imprimir("  Disco total: " + texto(disco.total_gb) + " GB")
+imprimir("  Disco livre: " + texto(disco.livre_gb) + " GB")
+imprimir("  PID: " + texto(Sistema.pid()))
+imprimir("")
+
+imprimir("╔══════════════════════════════════════════╗")
+imprimir("║  ✅ Todos os recursos funcionando!       ║")
+imprimir("╚══════════════════════════════════════════╝")
