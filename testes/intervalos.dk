@@ -1,0 +1,114 @@
+// Intervalos: 1..10 (fim excluído), 1..=10 (fim incluído), passo / step
+
+testar("fim excluido (..)", () => {
+    seja r = 1..5;
+    afirmar_igual(r, [1, 2, 3, 4]);
+    afirmar_igual((0..0), []);
+    afirmar_igual((3..4), [3]);
+});
+
+testar("fim incluido (..=)", () => {
+    afirmar_igual((1..=5), [1, 2, 3, 4, 5]);
+    afirmar_igual((7..=7), [7]);
+    afirmar_igual((8..=7), []);
+});
+
+testar("para (i em 1..4) percorre 1,2,3", () => {
+    seja soma = 0;
+    seja visitados = [];
+    para (i em 1..4) {
+        soma = soma + i;
+        visitados.adicionar(i);
+    }
+    afirmar_igual(soma, 6);
+    afirmar_igual(visitados, [1, 2, 3]);
+});
+
+testar("para (i em 1..=4) percorre 1,2,3,4", () => {
+    seja soma = 0;
+    para (i em 1..=4) { soma = soma + i; }
+    afirmar_igual(soma, 10);
+});
+
+testar("passo positivo e step (sinonimo em ingles)", () => {
+    afirmar_igual((0..=10 passo 5), [0, 5, 10]);
+    afirmar_igual((0..10 passo 5), [0, 5]);
+    afirmar_igual((1..=10 step 3), [1, 4, 7, 10]);
+});
+
+testar("passo negativo conta para tras", () => {
+    afirmar_igual((5..=1 passo -1), [5, 4, 3, 2, 1]);
+    afirmar_igual((5..1 passo -2), [5, 3]);
+    afirmar_igual((10..=0 passo -5), [10, 5, 0]);
+});
+
+testar("sem inversao automatica: 10..1 e vazio", () => {
+    afirmar_igual((10..1), []);
+    afirmar_igual((10..=1), []);
+    afirmar_igual((1..10 passo -1), []);
+});
+
+testar("limites sao expressoes completas", () => {
+    seja n = 4;
+    afirmar_igual((1..n + 1), [1, 2, 3, 4]);          // 1..(n+1) com o fim excluído
+    afirmar_igual((1..=n + 1), [1, 2, 3, 4, 5]);
+    afirmar_igual((n - 2..n), [2, 3]);
+    afirmar_igual((-2..=2), [-2, -1, 0, 1, 2]);
+    afirmar_igual((1..=n * 2 passo n), [1, 5]);
+    afirmar_igual((1..=n / 2), [1, 2]);
+});
+
+testar("quebrar e continuar dentro do laco", () => {
+    seja visitados = [];
+    para (i em 1..=10) {
+        se (i % 2 == 0) { continuar; }
+        se (i > 7) { quebrar; }
+        visitados.adicionar(i);
+    }
+    afirmar_igual(visitados, [1, 3, 5, 7]);
+});
+
+testar("laco sobre intervalo enorme e preguicoso (nao cria lista)", () => {
+    seja ultimo = 0;
+    para (i em 1..=100000000) {
+        se (i > 3) { quebrar; }
+        ultimo = i;
+    }
+    afirmar_igual(ultimo, 3);
+});
+
+testar("intervalo em outros lugares: variavel, funcao, tamanho", () => {
+    seja r = 1..=6;
+    afirmar_igual(r.tamanho, 6);
+    funcao quadrados(ate) {
+        seja saida = [];
+        para (x em 1..=ate) { saida.adicionar(x * x); }
+        retornar saida;
+    }
+    afirmar_igual(quadrados(4), [1, 4, 9, 16]);
+    afirmar_igual(r.contem(3), verdadeiro);
+});
+
+testar("laco classico e para-em continuam funcionando", () => {
+    seja a = 0;
+    para (seja i = 0; i < 3; i++) { a = a + 1; }
+    para (x em [10, 20]) { a = a + x; }
+    afirmar_igual(a, 33);
+});
+
+testar("erros em portugues", () => {
+    seja msg = "";
+    tentar { seja x = 1.5..3; } pegar (e) { msg = "" + e; }
+    afirmar_igual(msg.contem("número inteiro"), verdadeiro);
+    seja msg2 = "";
+    tentar { seja y = 1..5 passo 0; } pegar (e) { msg2 = "" + e; }
+    afirmar_igual(msg2.contem("zero"), verdadeiro);
+    seja msg3 = "";
+    tentar { seja z = "a"..3; } pegar (e) { msg3 = "" + e; }
+    afirmar_igual(msg3.contem("número inteiro"), verdadeiro);
+    seja msg4 = "";
+    tentar { seja w = 1..100000000; } pegar (e) { msg4 = "" + e; }
+    afirmar_igual(msg4.contem("grande demais"), verdadeiro);
+});
+
+resumo_testes();

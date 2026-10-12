@@ -1136,11 +1136,26 @@ class Parser:
             left = {'type': 'binop', 'op': '&', 'left': left, 'right': right}
         return left
 
-    def parse_comparison(self):
+    def parse_range(self):
+        """Intervalos:  1..10 (fim excluído)  |  1..=10 (fim incluído)  |  ... passo 2 / step 2"""
         left = self.parse_null_coalesce()
+        if self.check('RANGE', 'RANGE_INC'):
+            inclusivo = self.advance()['type'] == 'RANGE_INC'
+            right = self.parse_null_coalesce()
+            passo = None
+            t = self.peek()
+            if t and t['type'] in ('IDENT', 'KEYWORD') and t['value'] in ('passo', 'step'):
+                self.advance()
+                passo = self.parse_null_coalesce()
+            return {'type': 'range', 'start': left, 'end': right, 'inclusive': inclusivo,
+                    'step': passo, 'line': t.get('line') if t else None}
+        return left
+
+    def parse_comparison(self):
+        left = self.parse_range()
         while self.check('LT', 'GT', 'LTE', 'GTE'):
             op = self.advance()['value']
-            right = self.parse_null_coalesce()
+            right = self.parse_range()
             left = {'type': 'binop', 'op': op, 'left': left, 'right': right}
         t = self.peek()
         if t and t['value'] in ('instanceof', 'e_instancia', 'eh_instancia'):

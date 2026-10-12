@@ -69,6 +69,8 @@ TOKEN_SPECS = [
     ('ARROW',          r'=>'),
     ('PIPE',           r'\|>'),
     ('SPREAD',         r'\.\.\.'),
+    ('RANGE_INC',      r'\.\.='),     # 1..=10  (intervalo com o fim incluído)
+    ('RANGE',          r'\.\.'),      # 1..10   (intervalo com o fim excluído)
     ('NULL_COALESCE',  r'\?\?'),
     ('OPTIONAL_CHAIN', r'\?\.'),
     ('POWER',          r'\*\*'),

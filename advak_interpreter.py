@@ -4534,7 +4534,7 @@ class AdvakInterpreter:
                 await self.eval(node['step'], ls)
 
         elif t == 'for_in':
-            iterable = await self.eval(node['iterable'], scope)
+            iterable = await self._eval_iteravel(node['iterable'], scope)
             if isinstance(iterable, dict): iterable = list(iterable.keys())
             # Suporte a generators Advak
             if isinstance(iterable, AdvakGenerator):
@@ -4903,6 +4903,14 @@ class AdvakInterpreter:
             l = await self.eval(node['left'], scope)
             return l if l is not None else await self.eval(node['right'], scope)
 
+        if t == 'range':
+            # Fora de um laço o intervalo vira uma lista (com teto de tamanho)
+            r = await self._eval_intervalo(node, scope)
+            if len(r) > self._MAX_INTERVALO:
+                raise AdvakError(f"Intervalo grande demais para virar lista ({len(r)} itens; limite "
+                                 f"{self._MAX_INTERVALO}). Use-o direto em um laço: para (i em {r.start}..{r.stop}) {{ }}.")
+            return list(r)
+
         if t == 'ternary':
             c = await self.eval(node['cond'], scope)
             return await self.eval(node['then'] if self._truthy(c) else node['else'], scope)
@@ -5261,7 +5269,7 @@ class AdvakInterpreter:
             return
 
         if t == 'for_in':
-            iterable = await self.eval(body['iterable'], scope)
+            iterable = await self._eval_iteravel(body['iterable'], scope)
             if isinstance(iterable, dict): iterable = list(iterable.keys())
             if isinstance(iterable, AdvakGenerator):
                 async for item in iterable:
@@ -6178,6 +6186,40 @@ class AdvakInterpreter:
             else:
                 res.append(part)
         return ''.join(res)
+
+    # ── Intervalos: 1..10, 1..=10, 1..=10 passo 2 ──────────────────────────────
+
+    _MAX_INTERVALO = 10_000_000
+
+    @staticmethod
+    def _inteiro_intervalo(valor, o_que):
+        if isinstance(valor, bool) or not isinstance(valor, (int, float)):
+            raise AdvakError(f"Intervalo: o {o_que} deve ser um número inteiro (recebi {valor!r}).")
+        if isinstance(valor, float):
+            if valor != int(valor):
+                raise AdvakError(f"Intervalo: o {o_que} deve ser um número inteiro (recebi {valor}). "
+                                 "Use piso(), teto() ou arred() para converter.")
+            valor = int(valor)
+        return valor
+
+    async def _eval_intervalo(self, node, scope):
+        """Devolve um `range` do Python (preguiçoso). `..` exclui o fim; `..=` inclui."""
+        ini = self._inteiro_intervalo(await self.eval(node['start'], scope), 'início')
+        fim = self._inteiro_intervalo(await self.eval(node['end'], scope), 'fim')
+        passo = 1
+        if node.get('step') is not None:
+            passo = self._inteiro_intervalo(await self.eval(node['step'], scope), 'passo')
+            if passo == 0:
+                raise AdvakError("Intervalo: o passo não pode ser zero.")
+        if node['inclusive']:
+            fim += 1 if passo > 0 else -1
+        return range(ini, fim, passo)
+
+    async def _eval_iteravel(self, expr, scope):
+        """Valor sobre o qual o laço `para` itera; intervalos ficam preguiçosos (sem criar lista)."""
+        if isinstance(expr, dict) and expr.get('type') == 'range':
+            return await self._eval_intervalo(expr, scope)
+        return await self.eval(expr, scope)
 
     # ── Conexão com bancos (advak_conectores) ─────────────────────────────────
 

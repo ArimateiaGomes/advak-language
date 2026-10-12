@@ -57,7 +57,8 @@ class Formatador:
     
     def _normalizar_operadores(self, linha):
         # Garante espaço em torno de = (não em == ou !=)
-        linha = re.sub(r'([^=!<>])=([^=])', r'\1 = \2', linha)
+        # (o '.' fica de fora para não separar o intervalo ..= em ".. =")
+        linha = re.sub(r'([^=!<>.])=([^=])', r'\1 = \2', linha)
         # Garante espaço após vírgula
         linha = re.sub(r',([^\s])', r', \1', linha)
         # Remove espaço duplo

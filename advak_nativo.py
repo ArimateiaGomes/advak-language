@@ -502,6 +502,15 @@ class TranspiladorPython:
             else_ = self._transpilar_expr(node['else'])
             return f'({then} if {cond} else {else_})'
 
+        elif t == 'range':
+            ini = self._transpilar_expr(node['start'])
+            fim = self._transpilar_expr(node['end'])
+            if node.get('step') is None:
+                return f'range(int({ini}), int({fim}){" + 1" if node["inclusive"] else ""})'
+            passo = self._transpilar_expr(node['step'])
+            ajuste = f' + (1 if int({passo}) > 0 else -1)' if node['inclusive'] else ''
+            return f'range(int({ini}), int({fim}){ajuste}, int({passo}))'
+
         elif t == 'template_string':
             parts = []
             for part in node.get('parts', []):
