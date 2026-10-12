@@ -1,0 +1,7 @@
+servidor.rota("/status", "GET", (req) => {
+  retornar servidor.json({ok: verdadeiro});
+});
+servidor.obter("/b", (req) => {
+  retornar servidor.json({ok: verdadeiro});
+});
+servidor.iniciar(8765, falso);

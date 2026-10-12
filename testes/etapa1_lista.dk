@@ -1,0 +1,4 @@
+seja l = [1,2,3]
+imprimir(l.primeiro)
+imprimir(l.ultimo)
+imprimir(l.primeiro())

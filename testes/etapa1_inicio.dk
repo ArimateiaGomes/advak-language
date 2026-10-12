@@ -1,0 +1,5 @@
+classe P {
+  inicio(nome) { isso.nome = nome }
+}
+seja p = novo P("Ana")
+imprimir(p.nome)

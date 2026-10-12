@@ -1,0 +1,2 @@
+enum Cor { VERMELHO, VERDE }
+imprimir(Cor.VERDE)

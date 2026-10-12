@@ -1,0 +1,2 @@
+função* g() { produzir 1; produzir 2 }
+para (x em g()) { imprimir(x) }

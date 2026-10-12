@@ -358,6 +358,7 @@ class Parser:
             if self.peek() and self.peek()['value'] in ('de', 'from'):
                 self.advance()
             source = self.consume('STRING')['value']
+            self.match('SEMICOLON')
             return {'type': 'import_decl', 'mode': 'named', 'names': names, 'source': source}
 
         # importar NomeModulo de "arquivo"  OR  importar "arquivo"
@@ -366,8 +367,10 @@ class Parser:
             if self.peek() and self.peek()['value'] in ('de', 'from'):
                 self.advance()
                 source = self.consume('STRING')['value']
+                self.match('SEMICOLON')
                 return {'type': 'import_decl', 'mode': 'namespace', 'alias': alias, 'source': source}
             # fallback: treat as source string? unlikely
+            self.match('SEMICOLON')
             return {'type': 'import_decl', 'mode': 'namespace', 'alias': alias, 'source': alias}
 
         # importar "arquivo.dk"
@@ -376,6 +379,7 @@ class Parser:
         if self.peek() and self.peek()['value'] in ('como', 'as'):
             self.advance()
             alias = self.advance()['value']
+        self.match('SEMICOLON')
         return {'type': 'import_decl', 'mode': 'default' if not alias else 'alias',
                 'source': source, 'alias': alias}
 
@@ -673,6 +677,10 @@ class Parser:
                 binding = bindings_list[0] if len(bindings_list) == 1 else None
                 return {'ptype': 'type', 'type_name': type_name,
                         'binding': binding, 'bindings': bindings_list}
+            # Condição: `caso n >= 9`, `caso x % 2 == 0` — expressão booleana
+            if next_t and next_t['type'] in ('GTE', 'LTE', 'GT', 'LT', 'EQ', 'NEQ',
+                                             'STRICT_EQ', 'STRICT_NEQ', 'AND', 'OR', 'OP', 'POWER'):
+                return {'ptype': 'literal', 'value': self.parse_expression()}
             # Bind pattern: variável simples
             name = self.advance()['value']
             return {'ptype': 'bind', 'name': name}
@@ -731,6 +739,7 @@ class Parser:
             if delegate:
                 self.advance()
             value = self.parse_expression()
+            self.match('SEMICOLON')
             return {'type': 'yield', 'value': value, 'delegate': delegate}
         self.match('SEMICOLON')
         return {'type': 'yield', 'value': None, 'delegate': False}

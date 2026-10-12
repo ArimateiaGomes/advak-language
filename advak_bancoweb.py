@@ -505,6 +505,10 @@ class BancoWeb:
 
     def sql(self, query, params=None):
         """Executa SQL direto (com tradução automática PG→SQLite se necessário)."""
+        if isinstance(params, (list, tuple)) and len(params) == 1 and isinstance(params[0], (list, tuple)):
+            params = list(params[0])     # banco.sql(q, [a, b]) chega como [[a, b]]
+        elif params is not None and not isinstance(params, (list, tuple)):
+            params = [params]            # banco.sql(q, valor)
         return self._exec(query, params)
 
     def transacao(self, fn):

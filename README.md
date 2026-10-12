@@ -65,6 +65,12 @@ A linguagem de programação Advak foi influenciada por **Python**, **C**, **Pro
 
 - **Python 3** — baixe em [python.org](https://python.org/downloads) e marque **"Add Python to PATH"** na instalação.
 - **PostgreSQL** (opcional) — só é necessário para os recursos de banco de dados. Sem ele, o Advak usa SQLite automaticamente.
+  - Windows: [instalador do PostgreSQL (EDB)](https://www.enterprisedb.com/downloads/postgres-postgresql-downloads)
+  - Página oficial com todos os sistemas: [postgresql.org/download](https://www.postgresql.org/download/)
+  - Linux: [postgresql.org/download/linux](https://www.postgresql.org/download/linux/)
+  - Programa visual para ver o banco (opcional): [pgAdmin](https://www.pgadmin.org/download/)
+
+  > Durante a instalação do PostgreSQL, anote a **senha** que você criar para o usuário `postgres` e mantenha a porta **5432**. Essa senha vai no arquivo `.env`.
 
 ### Passo a passo (Windows)
 

@@ -56,6 +56,31 @@ MODIFICADORES = {
 }
 
 
+def normalizar_sql_params(query, params):
+    """
+    Aceita banco.sql(q, valor) e banco.sql(q, [valores]), com marcadores %s ou $1.
+    Retorna (query_com_%s, tupla_de_parametros | None). Nunca passa lista ao driver
+    (psycopg2 transformaria em ARRAY).
+    """
+    if params is None:
+        return query, None
+    if isinstance(params, (list, tuple)):
+        # banco.sql(q, [a, b]) chega como [[a, b]] vindo do interpretador
+        if len(params) == 1 and isinstance(params[0], (list, tuple)):
+            params = params[0]
+        params = list(params)
+    else:
+        params = [params]
+    if re.search(r'\$\d+', query):
+        ordem = [int(n) for n in re.findall(r'\$(\d+)', query)]
+        try:
+            params = [params[n - 1] for n in ordem]
+        except IndexError:
+            raise ValueError("banco.sql: faltam valores para os marcadores $n da consulta")
+        query = re.sub(r'\$\d+', '%s', query)
+    return query, tuple(params)
+
+
 class AdvakDB:
     """
     Interface principal do banco de dados para o interpretador Advak.
@@ -490,8 +515,11 @@ class AdvakDB:
         """
         banco.sql("SELECT * FROM usuarios WHERE ativo = true")
         banco.sql("UPDATE usuarios SET nome=%s WHERE id=%s", ["Ana", 1])
+        banco.sql("SELECT * FROM usuarios WHERE id=$1", 5)      # valor único
+        banco.sql("SELECT * FROM usuarios WHERE id=$1", [5])    # lista de valores
         """
         try:
+            query, params = normalizar_sql_params(query, params)
             q = query.strip().upper()
             if q.startswith('SELECT') or q.startswith('WITH'):
                 return self._exec(query, params, fetch=True)

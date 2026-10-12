@@ -304,6 +304,8 @@ class AdvakEnumType:
     def __repr__(self): return f"<enum {self.name}>"
     def __getattr__(self, name):
         if name.startswith('_'): raise AttributeError(name)
+        if name == 'get':
+            return lambda n, d=None: getattr(self, n) if n in self.variants else d
         if name in self.variants:
             v = self.variants[name]
             if v['payload']:
@@ -2872,6 +2874,9 @@ class AdvakInterpreter:
             _main_loop  = [None]  # will be set when iniciar() is called
 
             def _rota_fn(caminho, handler, metodo="GET"):
+                # Aceita (caminho, handler[, metodo]) e (caminho, metodo, handler)
+                if isinstance(handler, str) and not isinstance(metodo, str):
+                    handler, metodo = metodo, handler
                 _srv.rota(str(caminho), _wrap_handler(handler), str(metodo))
                 return _srv
 
@@ -3007,8 +3012,15 @@ class AdvakInterpreter:
                     'put':         lambda c, h: _rota_fn(c, h, "PUT"),
                     'delete':      lambda c, h: _rota_fn(c, h, "DELETE"),
 
+                    # ── Respostas: servidor.json(...), servidor.html(...) ─────
+                    'json':         _json_fn,
+                    'html':         _html_fn,
+                    'texto':        _texto_fn,
+                    'redirecionar': _redir_fn,
+                    'renderizar':   _render_fn,
+
                     # ── Arquivos estáticos ────────────────────────
-                    'estatico':    lambda url, pasta: _srv.estatico(str(url), str(pasta)),
+                    'estatico':   lambda url, pasta: _srv.estatico(str(url), str(pasta)),
                     'arquivos':    lambda url, pasta: _srv.estatico(str(url), str(pasta)),
 
                     # ── Controle ──────────────────────────────────
@@ -4515,7 +4527,16 @@ class AdvakInterpreter:
                     break
                 # Pattern matching avançado
                 bindings = {}
-                if self._match_pattern(case['pattern'], subj, bindings):
+                pat = case['pattern']
+                if pat.get('ptype') == 'literal' and pat['value'].get('type') not in (
+                        'number', 'float', 'string', 'bool', 'null', 'ident'):
+                    # Expressão/condição: com combinar(verdadeiro) casa se for verdadeira;
+                    # caso contrário compara por igualdade com o valor.
+                    res = await self.eval(pat['value'], scope)
+                    matched = self._truthy(res) if subj is True else (res == subj)
+                else:
+                    matched = self._match_pattern(pat, subj, bindings)
+                if matched:
                     # Verifica guard
                     if case.get('guard'):
                         guard_scope = Scope(scope)
@@ -4925,11 +4946,15 @@ class AdvakInterpreter:
             if not isinstance(klass, AdvakClass):
                 raise AdvakError(f"'{node['class']}' não é uma classe")
             inst = AdvakInstance(klass)
-            for cname in ('construtor', 'constructor'):
-                if cname in klass.methods:
+            _k = klass
+            while _k:
+                _found = next((c for c in ('construtor', 'constructor', 'início', 'inicio', '__init__')
+                               if c in _k.methods), None)
+                if _found:
                     args = [await self.eval(a, scope) for a in node['args']]
-                    await self._call_fn(klass.methods[cname], args, scope, this=inst, owner_class=klass)
+                    await self._call_fn(_k.methods[_found], args, scope, this=inst, owner_class=_k)
                     break
+                _k = getattr(_k, 'superclass', None)
             return inst
 
         try:
@@ -4960,6 +4985,12 @@ class AdvakInterpreter:
                 pos_args.append(await self.eval(a, scope))
 
         args = pos_args  # compatibilidade com código existente
+
+        # lista.primeiro() / lista.ultimo(): propriedades chamadas com ()
+        if (isinstance(node['func'], dict) and node['func'].get('type') == 'member'
+                and node['func'].get('prop') in ('primeiro', 'ultimo') and not callable(fn)
+                and not pos_args):
+            return fn
 
         # Query/Update/Delete builders — encadeia métodos
         if isinstance(fn, (QueryBuilder, UpdateBuilder, DeleteBuilder)):
@@ -5763,8 +5794,9 @@ class AdvakInterpreter:
                 # Propriedades
                 'tamanho':    len(obj), 'comprimento': len(obj),
                 'length':     len(obj), 'size': len(obj),
-                'primeiro':   lambda: obj[0] if obj else None,
-                'ultimo':     lambda: obj[-1] if obj else None,
+                # primeiro/ultimo: valor direto; `lista.primeiro()` é tolerado em _eval_call
+                'primeiro':   obj[0] if obj else None,
+                'ultimo':     obj[-1] if obj else None,
                 'vazia':      len(obj) == 0,
                 # Mutação
                 'adicionar':  obj.append,

@@ -1,0 +1,5 @@
+seja n = 9
+combinar(verdadeiro) {
+  caso n >= 9: imprimir("alto")
+  padrão: imprimir("baixo")
+}
