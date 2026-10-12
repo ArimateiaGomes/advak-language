@@ -317,6 +317,7 @@ def show_help():
       --saida   Pasta de saída (padrão: dist/)
       --verbose Mostra log completo
     advak bancos                   Lista os bancos de dados suportados e os drivers instalados
+    advak ia                       Lista os provedores de IA e se a chave está configurada
     advak new <nome>               Cria novo projeto completo
     advak check <arquivo.dk>       Verifica sintaxe
     advak --verificar <arquivo.dk> Verifica tipos e padrões
@@ -343,6 +344,9 @@ def main():
     with_db = '--db' in args
     if cmd in ('--ajuda','-h','help','ajuda'): show_help()
     elif cmd in ('--versao','-v','version','--versao','-V','versao'): print(f"Advak {VERSION}")
+    elif cmd in ('ia', 'ai'):
+        import advak_ia
+        print(advak_ia.tabela_provedores())
     elif cmd in ('bancos', 'databases', 'dbs'):
         import advak_conectores
         print(advak_conectores.tabela_bancos())

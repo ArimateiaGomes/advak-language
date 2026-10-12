@@ -47,6 +47,7 @@ A linguagem de programação Advak foi influenciada por **Python**, **C**, **Pro
    - [Tratamento de erros](#tratamento-de-erros)
    - [Módulos](#módulos)
 5. [Biblioteca padrão](#biblioteca-padrão)
+   - [Inteligência artificial (opcional)](#inteligência-artificial-opcional)
 6. [Banco de dados](#banco-de-dados)
 7. [Servidor web](#servidor-web)
 8. [Interface gráfica](#interface-gráfica)
@@ -554,6 +555,27 @@ seja dados = HTTP.json("https://api.exemplo.com/dados")
 HTTP.post("https://api.exemplo.com", {a: 1})
 HTTP.baixar("https://site.com/arquivo.pdf", "local.pdf")
 ```
+
+---
+
+## Inteligência artificial (opcional)
+
+> **A IA é totalmente opcional.** A Advak funciona 100% sem ela: sem internet, sem chave e sem custo.
+> O módulo de IA (`advak_ia.py`) só é carregado quando o seu programa chama `ia.conectar(...)`. Antes
+> disso não há nenhum import, chamada de rede ou gasto. Todo o resto da linguagem, os exemplos e o
+> curso funcionam sem ela.
+
+Se quiser usar, é a mesma API para Anthropic (Claude), OpenAI, Gemini, Mistral, Groq, DeepSeek,
+OpenRouter e Ollama (local, sem chave):
+
+```advak
+seja assistente = ia.conectar(["anthropic", "ollama"])   // reserva automática se o primeiro falhar
+imprimir(assistente.perguntar("Explique o que é uma variável em uma frase"))
+```
+
+As chaves ficam só no `.env` (`ADVAK_<PROVEDOR>_API_KEY`), nunca no código. O que você envia a uma API
+externa sai do computador; para dados sensíveis use o Ollama. Veja [docs/IA.md](docs/IA.md) e o comando
+`advak ia`.
 
 ---
 

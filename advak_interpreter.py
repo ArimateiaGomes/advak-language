@@ -1063,6 +1063,24 @@ class AdvakInterpreter:
             },
         })
 
+        # ── IA com API única (advak_ia): seja ia = ia.conectar("anthropic") ───
+        # O global `IA` (maiúsculo, acima) continua existindo para os programas antigos.
+        # A IA é opcional: o módulo advak_ia só é importado quando o programa chama ia.conectar(...)
+        # (ou ia.registrar / ia.provedores). Até lá não há import, rede nem custo.
+        def _ia_lazy(nome):
+            def _f(*a, **k):
+                import advak_ia as _nia
+                try:
+                    return getattr(_nia, nome)(*a, **k)
+                except _nia.ErroIA as e:
+                    raise AdvakError(str(e))
+            return _f
+        g.declare('ia', {
+            'conectar':   _ia_lazy('conectar'),
+            'registrar':  _ia_lazy('registrar'),
+            'provedores': _ia_lazy('listar_provedores'),
+        })
+
         # ── Sistema de arquivos ─────────────────────────────────────────────
         # ── Módulo de Arquivos expandido ─────────────────────────────────────
         def _ler_arquivo(p, modo='utf-8'):

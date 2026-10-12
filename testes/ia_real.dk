@@ -1,0 +1,32 @@
+// Testes REAIS de IA. Cada provedor só é testado se a chave estiver no .env
+// (ADVAK_<PROVEDOR>_API_KEY). ATENÇÃO: cada teste faz UMA chamada pequena e pode gastar centavos.
+// O Ollama (local, grátis) só é testado se você definir ADVAK_TESTE_OLLAMA=1 e tiver o modelo baixado.
+// Nada aqui imprime as chaves.
+
+env.carregar(".env");
+
+para (nome em ["anthropic", "openai", "gemini", "mistral", "groq", "deepseek", "openrouter"]) {
+    seja variavel = "ADVAK_" + nome.upper() + "_API_KEY";
+    se (env.texto(variavel, "") == "") {
+        imprimir("  PULADO " + nome + " (defina " + variavel + " no .env)");
+    } senao {
+        testar(nome + " - responde uma pergunta curta", () => {
+            seja assistente = ia.conectar(nome);
+            seja r = assistente.perguntar("Responda apenas com a palavra: ok", {max_tokens: 20});
+            afirmar_igual(tipo(r), "texto");
+            afirmar_igual(r.tamanho > 0, verdadeiro);
+        });
+    }
+}
+
+se (env.texto("ADVAK_TESTE_OLLAMA", "") != "1") {
+    imprimir("  PULADO ollama (defina ADVAK_TESTE_OLLAMA=1 com o Ollama rodando)");
+} senao {
+    testar("ollama - responde localmente", () => {
+        seja assistente = ia.conectar("ollama");
+        seja r = assistente.perguntar("Responda apenas com a palavra: ok", {max_tokens: 20});
+        afirmar_igual(r.tamanho > 0, verdadeiro);
+    });
+}
+
+resumo_testes();

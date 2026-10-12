@@ -1,0 +1,15 @@
+// Usado por testes/test_ia_local.py: fala com um servidor Ollama FALSO em localhost (sem internet, sem chave).
+seja assistente = ia.conectar("ollama");
+
+seja r = assistente.perguntar("Diga oi", {sistema: "Seja breve"});
+imprimir("RESPOSTA:", r);
+
+assistente.conversar("primeira");
+imprimir("CONVERSA:", assistente.conversar("segunda"));
+imprimir("HISTORICO:", assistente.historico().tamanho);
+
+tentar {
+    assistente.perguntar("x", {provedor: "openai"});
+} pegar (e) {
+    imprimir("ERRO-PROVEDOR:", e);
+}
