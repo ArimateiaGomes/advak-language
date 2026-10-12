@@ -112,7 +112,7 @@ antes de enviar quando o modo local não for possível.
 | XLSX (várias planilhas, escolher planilha, planilha inexistente, arquivo corrompido) | **Real**, com `openpyxl` | passam |
 | Erros: arquivo inexistente, pasta, URL, formato desconhecido, arquivo grande demais, driver ausente (mensagem com o `pip install` exato) | **Real** | passam |
 | Redução/conversão de imagens para a IA com visão | **Real**, com `Pillow` | passa |
-| Leitura de PDF, DOCX e PPTX | **Simulada** (drivers falsos). Os testes com os drivers reais (`pypdf`, `python-docx`, `python-pptx`) existem mas aparecem como `PULADO` porque esses pacotes não estão instalados na máquina de desenvolvimento | **pendente de teste real** |
+| Leitura de PDF, DOCX e PPTX | **Real**: arquivos criados na hora (PDF com `reportlab`, DOCX com `python-docx`, PPTX com `python-pptx`) e lidos com `pypdf`, `python-docx` e `python-pptx` instalados. Também **simulada** (drivers falsos) para páginas, PDF protegido/digitalizado, tabelas e anotações | passam |
 | OCR (`pytesseract` + programa Tesseract): idioma, caminho, erros | **Simulado**. O Tesseract não está instalado na máquina de desenvolvimento | **pendente de teste real** |
 | Montagem do anexo: marcador aleatório, texto injetado fica dentro do bloco como dado, marcadores falsos neutralizados, regra antes do documento, corte por tamanho | **Simulado** (sem IA, só a função) | passam |
 | Aviso de privacidade (uma vez por provedor, nunca no Ollama), `avisar: falso` | **Simulado** | passam |
@@ -121,5 +121,5 @@ antes de enviar quando o modo local não for possível.
 | Documento/IA não são carregados antes de serem usados | **Real** (roda o interpretador) | passa |
 | Envio de imagens/anexos a uma API de IA **real** (visão) | **Não testado**: não há chaves | pendente |
 
-Para completar os testes reais na sua máquina: `pip install pypdf python-docx python-pptx pytesseract Pillow`,
-instale o Tesseract e rode `python -I testes/test_documentos.py` — os testes que estavam `PULADO` passam a rodar.
+Para completar os testes reais do OCR na sua máquina: instale `pytesseract` e o programa Tesseract e rode
+`python -I testes/test_documentos.py` — sem eles, os testes de OCR real não existem (só os simulados). Sem `pypdf`, `python-docx` ou`n`python-pptx` os testes de PDF, DOCX e PPTX reais aparecem como `PULADO`.
