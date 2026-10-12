@@ -364,8 +364,15 @@ class ClienteIA:
         except ImportError:
             raise ErroIA("Anexos precisam do módulo de documentos (advak_documentos.py), que ainda não "
                          "está instalado nesta versão.", 'config')
-        pode_ver = any(p.cfg.get('visao') for p in self._escolher(op))
-        return preparar_anexos(str(texto), anexos, visao=pode_ver)
+        escolhidos = self._escolher(op)
+        pode_ver = any(p.cfg.get('visao') for p in escolhidos)
+        destinos = [(p.nome, p.cfg['formato'] == 'ollama') for p in escolhidos]
+        try:
+            return preparar_anexos(str(texto), anexos, visao=pode_ver, destinos=destinos, opcoes=op)
+        except Exception as e:
+            if type(e).__name__ == 'ErroDocumento':
+                raise ErroIA(str(e), 'anexo')
+            raise
 
     def perguntar(self, texto, opcoes=None):
         """Pergunta única, sem memória. opcoes: sistema, provedor, modelo, max_tokens, temperatura, anexos."""

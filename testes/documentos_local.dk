@@ -1,0 +1,15 @@
+// Usado por testes/test_documentos.py: lê um arquivo de verdade e o anexa a uma pergunta para um
+// servidor Ollama FALSO em localhost (sem internet, sem chave, sem custo).
+env.carregar(".env");
+seja arq = env.texto("ADVAK_TESTE_ARQUIVO", "");
+
+imprimir("LIDO:", documento.ler(arq));
+
+seja assistente = ia.conectar("ollama");
+imprimir("RESPOSTA:", assistente.perguntar("Resuma", {anexos: [arq]}));
+
+tentar {
+    documento.ler("nao_existe.pdf");
+} pegar (e) {
+    imprimir("ERRO:", e);
+}

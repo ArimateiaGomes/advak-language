@@ -318,6 +318,7 @@ def show_help():
       --verbose Mostra log completo
     advak bancos                   Lista os bancos de dados suportados e os drivers instalados
     advak ia                       Lista os provedores de IA e se a chave está configurada
+    advak documentos               Lista os formatos de documento (PDF, DOCX, XLSX...) e os drivers
     advak new <nome>               Cria novo projeto completo
     advak check <arquivo.dk>       Verifica sintaxe
     advak --verificar <arquivo.dk> Verifica tipos e padrões
@@ -344,6 +345,9 @@ def main():
     with_db = '--db' in args
     if cmd in ('--ajuda','-h','help','ajuda'): show_help()
     elif cmd in ('--versao','-v','version','--versao','-V','versao'): print(f"Advak {VERSION}")
+    elif cmd in ('documentos', 'documents'):
+        import advak_documentos
+        print(advak_documentos.tabela_formatos())
     elif cmd in ('ia', 'ai'):
         import advak_ia
         print(advak_ia.tabela_provedores())

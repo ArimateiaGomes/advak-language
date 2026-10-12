@@ -1081,6 +1081,21 @@ class AdvakInterpreter:
             'provedores': _ia_lazy('listar_provedores'),
         })
 
+        # ── Documentos (advak_documentos): documento.ler("a.pdf") ───────────────
+        # Também sob demanda: o módulo (e os drivers pypdf, docx...) só são importados ao usar.
+        def _doc_lazy(nome):
+            def _f(*a, **k):
+                import advak_documentos as _nd
+                try:
+                    return getattr(_nd, nome)(*a, **k)
+                except _nd.ErroDocumento as e:
+                    raise AdvakError(str(e))
+            return _f
+        g.declare('documento', {
+            'ler':      _doc_lazy('ler'),
+            'formatos': _doc_lazy('formatos'),
+        })
+
         # ── Sistema de arquivos ─────────────────────────────────────────────
         # ── Módulo de Arquivos expandido ─────────────────────────────────────
         def _ler_arquivo(p, modo='utf-8'):

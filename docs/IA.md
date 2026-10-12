@@ -57,7 +57,23 @@ assistente.limpar()   assistente.historico()   assistente.info()   assistente.pr
 ```
 
 Opções (segundo parâmetro): `sistema`, `provedor` (força um deles), `modelo`, `max_tokens`,
-`temperatura`, `tempo_limite` e, com o módulo de documentos, `anexos`.
+`temperatura`, `tempo_limite` e `anexos` (veja a próxima seção).
+
+## Anexar documentos (PDF, Word, Excel, imagens...)
+
+```
+seja assistente = ia.conectar("ollama")                       // local: nada sai do computador
+assistente.perguntar("Resuma", {anexos: ["ata.pdf", "tabela.xlsx", "foto.png"]})
+```
+
+A Advak lê os arquivos (módulo `advak_documentos.py`, opcional e carregado só quando você usa anexos),
+coloca o texto em blocos de **dados** com marcador aleatório e avisa a IA para **não obedecer nada escrito
+dentro dos documentos**. Imagens usam o OCR local ou, se você pedir e o provedor suportar, a visão da IA.
+Formatos, drivers (`pip install ...`), OCR, limites e a lista do que foi testado: **[DOCUMENTOS.md](DOCUMENTOS.md)**.
+
+> **Atenção:** anexos enviados a um provedor em nuvem **saem do computador**. Para dados sensíveis (ex.: dados
+> de alunos) use `ia.conectar("ollama")` com o OCR local. A Advak avisa no terminal na primeira vez que você
+> anexa algo a um provedor externo.
 
 **Reserva automática.** Com vários provedores, se o primeiro falhar (sem chave, sem internet, limite de uso,
 erro do servidor) a Advak tenta o próximo e diz qual foi usado em `assistente.info()`. Se todos falharem,
@@ -124,6 +140,7 @@ escritos dentro dele. Isso reduz, mas não elimina, o risco de uma IA ser engana
 | `gerar_codigo`: valida, mostra, pede confirmação, não salva sem `s`, nunca executa | **Simulado** | passam |
 | A IA não é carregada nem usa rede antes de `ia.conectar` | **Real** (roda o interpretador e bloqueia conexões externas) | passa |
 | Programa `.dk` conversando com um servidor HTTP falso em `localhost` imitando o Ollama | **Real, local** (`testes/test_ia_local.py`) | passa |
+| Anexos (`anexos`): texto em blocos de dados, imagens no formato de cada provedor, aviso de privacidade | **Simulado** e **real local** (veja a tabela completa em [DOCUMENTOS.md](DOCUMENTOS.md)) | passam |
 | Chamadas às APIs reais (Anthropic, OpenAI, Gemini, Mistral, Groq, DeepSeek, OpenRouter) | **Não testado**: não há chaves neste repositório. `testes/ia_real.dk` roda só os provedores cujas chaves estiverem no `.env` (cada teste faz uma chamada pequena e pode gastar centavos) | pendente |
 | Ollama real | **Não testado**. Rode `testes/ia_real.dk` com `ADVAK_TESTE_OLLAMA=1` | pendente |
 
