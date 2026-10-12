@@ -1,0 +1,57 @@
+// Teste REAL do conector DuckDB (roda de verdade, sem servidor externo)
+seja db = banco.conectar("duckdb:///:memory:");
+
+testar("DuckDB - criar tabela e inserir", () => {
+    db.tabela("produtos", {id: "autonum", nome: "texto obrigatorio", preco: "decimal", ativo: "booleano padrao verdadeiro"});
+    afirmar_igual(db.listar_tabelas(), ["produtos"]);
+    seja novo = db.inserir("produtos", {nome: "Caneta", preco: 2.5});
+    afirmar_igual(novo.nome, "Caneta");
+    afirmar_igual(novo.id, 1);
+    db.inserir_varios("produtos", [{nome: "Lapis", preco: 1}, {nome: "Caderno", preco: 15}]);
+    afirmar_igual(db.contar("produtos"), 3);
+});
+
+testar("DuckDB - buscar com onde, ordenar e limite", () => {
+    seja caros = db.buscar("produtos").onde("preco > %s", 2).ordenar("nome").executar();
+    afirmar_igual(caros.tamanho, 2);
+    afirmar_igual(caros[0].nome, "Caderno");
+    afirmar_igual(db.buscar("produtos").ordenar("id").limite(1).executar()[0].nome, "Caneta");
+    afirmar_igual(db.buscar("produtos").onde("preco > $1", 100).executar().tamanho, 0);
+    afirmar_igual(db.buscar("produtos").onde("nome = %s", "Lapis").primeiro().preco, 1);
+});
+
+testar("DuckDB - atualizar e deletar", () => {
+    afirmar_igual(db.atualizar("produtos", {preco: 20}).onde("nome = %s", "Caderno").executar(), 1);
+    afirmar_igual(db.buscar_id("produtos", 3).preco, 20);
+    afirmar_igual(db.deletar("produtos").onde("id = %s", 1).executar(), 1);
+    afirmar_igual(db.contar("produtos"), 2);
+});
+
+testar("DuckDB - sql puro com %s, $1, lista e valor unico", () => {
+    afirmar_igual(db.sql("SELECT nome FROM produtos WHERE id = %s", [2])[0].nome, "Lapis");
+    afirmar_igual(db.sql("SELECT nome FROM produtos WHERE id = $1", 2)[0].nome, "Lapis");
+    afirmar_igual(db.sql("UPDATE produtos SET preco = %s WHERE id = %s", [5, 2]), 1);
+});
+
+testar("DuckDB - transacao reverter e confirmar", () => {
+    db.iniciar();
+    db.inserir("produtos", {nome: "Temp", preco: 1});
+    db.reverter();
+    afirmar_igual(db.contar("produtos"), 2);
+    db.iniciar();
+    db.inserir("produtos", {nome: "Fixo", preco: 1});
+    db.confirmar();
+    afirmar_igual(db.contar("produtos"), 3);
+});
+
+testar("DuckDB - erros em portugues", () => {
+    seja erro = "";
+    tentar { db.sql("SELECT * FROM tabela_que_nao_existe"); } capturar (e) { erro = "${e}"; }
+    afirmar_igual(erro.contem("Erro no"), verdadeiro);
+    seja erro2 = "";
+    tentar { db.buscar("a;drop").executar(); } capturar (e) { erro2 = "${e}"; }
+    afirmar_igual(erro2.contem("inválido"), verdadeiro);
+});
+
+db.fechar();
+resumo_testes();

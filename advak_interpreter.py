@@ -866,7 +866,10 @@ class AdvakInterpreter:
         # ── Objeto banco (PostgreSQL nativo) ────────────────────────────────
         banco_obj = {
             # Conexão
-            'conectar':         lambda *a: self.db.conectar(*a),
+            # banco.conectar("mysql://...") / banco.conectar("mysql", host=...) → conector novo;
+            # banco.conectar() / banco.conectar("nome_do_banco") → PostgreSQL legado
+            'conectar':         self._banco_conectar,
+            'bancos':           lambda: __import__('advak_conectores').listar_bancos(),
             'desconectar':      lambda: self.db.desconectar(),
             'usar':             lambda nome: self.db.usar(nome),
             # Bancos
@@ -6142,6 +6145,17 @@ class AdvakInterpreter:
             else:
                 res.append(part)
         return ''.join(res)
+
+    # ── Conexão com bancos (advak_conectores) ─────────────────────────────────
+
+    def _banco_conectar(self, *a, **kw):
+        import advak_conectores as _c
+        if _c.eh_conexao_nova(a, kw):
+            try:
+                return _c.conectar(*a, **kw)
+            except _c.ErroBanco as e:
+                raise AdvakError(str(e))
+        return self.db.conectar(*a)
 
     # ── Pattern Matching ──────────────────────────────────────────────────────
 

@@ -316,6 +316,7 @@ def show_help():
       --icone   Caminho do ícone (.ico)
       --saida   Pasta de saída (padrão: dist/)
       --verbose Mostra log completo
+    advak bancos                   Lista os bancos de dados suportados e os drivers instalados
     advak new <nome>               Cria novo projeto completo
     advak check <arquivo.dk>       Verifica sintaxe
     advak --verificar <arquivo.dk> Verifica tipos e padrões
@@ -342,6 +343,9 @@ def main():
     with_db = '--db' in args
     if cmd in ('--ajuda','-h','help','ajuda'): show_help()
     elif cmd in ('--versao','-v','version','--versao','-V','versao'): print(f"Advak {VERSION}")
+    elif cmd in ('bancos', 'databases', 'dbs'):
+        import advak_conectores
+        print(advak_conectores.tabela_bancos())
     elif cmd == 'run':
         if len(args)<2: print("Uso: advak run <arquivo.dk> [--db]")
         else: cmd_run(args[1], with_db, debug=_debug, passo=_passo)
