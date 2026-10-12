@@ -1,12 +1,15 @@
-// Testes contra bancos REAIS (PostgreSQL, MySQL, MariaDB, SQL Server, MongoDB, Redis).
-// Só rodam o que estiver configurado no .env, por exemplo:
+// Testes contra bancos REAIS. Só rodam o que estiver configurado no .env, por exemplo:
 //   ADVAK_TESTE_MYSQL_URL=mysql://root:senha@localhost:3306/teste_advak
-// Use um banco de TESTE: as tabelas "advak_teste_produtos" e as chaves "advak_teste:*" são
-// criadas e apagadas. Os demais bancos são ignorados ("PULADO").
+// Use um banco de TESTE: as tabelas "advak_teste_*", as coleções "advak_teste_*" e as chaves
+// "advak_teste:*" são criadas e apagadas. O que não estiver configurado aparece como PULADO.
+// Variáveis: ADVAK_TESTE_<BANCO>_URL com BANCO = POSTGRES, MYSQL, MARIADB, MSSQL, COCKROACHDB,
+// TIMESCALEDB, ORACLE, FIREBIRD, DB2, SNOWFLAKE, CLICKHOUSE, BIGQUERY, CASSANDRA, MONGODB, COUCHDB,
+// FIRESTORE, DYNAMODB, ELASTICSEARCH, REDIS, NEO4J, INFLUXDB.
 
 env.carregar(".env");
 
-para (tipo em ["postgres", "mysql", "mariadb", "mssql"]) {
+// ── Bancos SQL com a mesma API (CRUD completo) ───────────────────────────────
+para (tipo em ["postgres", "mysql", "mariadb", "mssql", "cockroachdb", "timescaledb", "oracle", "firebird", "db2", "snowflake"]) {
     seja url = env.texto("ADVAK_TESTE_" + tipo.upper() + "_URL", "");
     se (url == "") {
         imprimir("  PULADO " + tipo + " (defina ADVAK_TESTE_" + tipo.upper() + "_URL)");
@@ -36,26 +39,52 @@ para (tipo em ["postgres", "mysql", "mariadb", "mssql"]) {
     }
 }
 
-seja url_mongo = env.texto("ADVAK_TESTE_MONGODB_URL", "");
-se (url_mongo == "") {
-    imprimir("  PULADO mongodb (defina ADVAK_TESTE_MONGODB_URL)");
-} senao {
-    seja mongo = banco.conectar(url_mongo);
-    testar("mongodb - CRUD de documentos", () => {
-        mongo.apagar_tabela("advak_teste_clientes");
-        seja novo = mongo.inserir("advak_teste_clientes", {nome: "Ana", idade: 20});
-        afirmar_igual(novo.nome, "Ana");
-        mongo.inserir_varios("advak_teste_clientes", [{nome: "Bia", idade: 30}, {nome: "Caio", idade: 40}]);
-        afirmar_igual(mongo.contar("advak_teste_clientes"), 3);
-        afirmar_igual(mongo.buscar("advak_teste_clientes").onde("idade >= %s", 30).ordenar("idade", "DESC").executar()[0].nome, "Caio");
-        afirmar_igual(mongo.buscar_id("advak_teste_clientes", novo.id).nome, "Ana");
-        afirmar_igual(mongo.atualizar("advak_teste_clientes", {idade: 21}).onde("nome = %s", "Ana").executar(), 1);
-        afirmar_igual(mongo.deletar("advak_teste_clientes").onde("nome = %s", "Bia").executar(), 1);
-        mongo.apagar_tabela("advak_teste_clientes");
-    });
-    mongo.fechar();
+// ── Bancos SQL sem contagem em UPDATE/DELETE ou sem transações ───────────────
+para (tipo em ["clickhouse", "bigquery", "cassandra"]) {
+    seja url = env.texto("ADVAK_TESTE_" + tipo.upper() + "_URL", "");
+    se (url == "") {
+        imprimir("  PULADO " + tipo + " (defina ADVAK_TESTE_" + tipo.upper() + "_URL)");
+    } senao {
+        seja db = banco.conectar(url);
+        testar(tipo + " - criar, inserir e consultar", () => {
+            db.apagar_tabela("advak_teste_eventos");
+            db.tabela("advak_teste_eventos", {id: "autonum", nome: "texto", qtd: "inteiro"});
+            db.inserir("advak_teste_eventos", {nome: "A", qtd: 1});
+            db.inserir("advak_teste_eventos", {nome: "B", qtd: 5});
+            afirmar_igual(db.contar("advak_teste_eventos"), 2);
+            afirmar_igual(db.buscar("advak_teste_eventos").onde("qtd > %s", 2).executar()[0].nome, "B");
+            db.atualizar("advak_teste_eventos", {qtd: 9}).onde("nome = %s", "A").executar();
+            db.apagar_tabela("advak_teste_eventos");
+        });
+        db.fechar();
+    }
 }
 
+// ── Bancos de documentos (mesma API: inserir, buscar, atualizar, deletar) ────
+para (tipo em ["mongodb", "couchdb", "firestore", "dynamodb", "elasticsearch"]) {
+    seja url = env.texto("ADVAK_TESTE_" + tipo.upper() + "_URL", "");
+    se (url == "") {
+        imprimir("  PULADO " + tipo + " (defina ADVAK_TESTE_" + tipo.upper() + "_URL)");
+    } senao {
+        seja docs = banco.conectar(url);
+        testar(tipo + " - CRUD de documentos", () => {
+            docs.apagar_tabela("advak_teste_clientes");
+            docs.tabela("advak_teste_clientes");
+            seja novo = docs.inserir("advak_teste_clientes", {nome: "Ana", idade: 20});
+            afirmar_igual(novo.nome, "Ana");
+            docs.inserir_varios("advak_teste_clientes", [{nome: "Bia", idade: 30}, {nome: "Caio", idade: 40}]);
+            afirmar_igual(docs.contar("advak_teste_clientes"), 3);
+            afirmar_igual(docs.buscar("advak_teste_clientes").onde("idade >= %s", 30).ordenar("idade", "DESC").executar()[0].nome, "Caio");
+            afirmar_igual(docs.buscar_id("advak_teste_clientes", novo.id).nome, "Ana");
+            afirmar_igual(docs.atualizar("advak_teste_clientes", {idade: 21}).onde("nome = %s", "Ana").executar(), 1);
+            afirmar_igual(docs.deletar("advak_teste_clientes").onde("nome = %s", "Bia").executar(), 1);
+            docs.apagar_tabela("advak_teste_clientes");
+        });
+        docs.fechar();
+    }
+}
+
+// ── Redis ────────────────────────────────────────────────────────────────────
 seja url_redis = env.texto("ADVAK_TESTE_REDIS_URL", "");
 se (url_redis == "") {
     imprimir("  PULADO redis (defina ADVAK_TESTE_REDIS_URL)");
@@ -72,6 +101,41 @@ se (url_redis == "") {
         afirmar_igual(cache.existe("advak_teste:a"), falso);
     });
     cache.fechar();
+}
+
+// ── Neo4j (grafo) ────────────────────────────────────────────────────────────
+seja url_neo = env.texto("ADVAK_TESTE_NEO4J_URL", "");
+se (url_neo == "") {
+    imprimir("  PULADO neo4j (defina ADVAK_TESTE_NEO4J_URL)");
+} senao {
+    seja grafo = banco.conectar(url_neo);
+    testar("neo4j - nós e relações", () => {
+        grafo.apagar_tabela("AdvakTeste");
+        seja ana = grafo.inserir("AdvakTeste", {nome: "Ana", idade: 20});
+        seja bia = grafo.inserir("AdvakTeste", {nome: "Bia", idade: 30});
+        afirmar_igual(grafo.contar("AdvakTeste"), 2);
+        grafo.relacionar(ana.id, "AMIGA_DE", bia.id, {desde: 2020});
+        seja amigas = grafo.consulta("MATCH (a:AdvakTeste)-[:AMIGA_DE]->(b:AdvakTeste) RETURN b.nome AS nome");
+        afirmar_igual(amigas[0].nome, "Bia");
+        afirmar_igual(grafo.buscar("AdvakTeste").onde("idade > %s", 25).executar()[0].nome, "Bia");
+        grafo.apagar_tabela("AdvakTeste");
+    });
+    grafo.fechar();
+}
+
+// ── InfluxDB (séries temporais) ──────────────────────────────────────────────
+seja url_influx = env.texto("ADVAK_TESTE_INFLUXDB_URL", "");
+se (url_influx == "") {
+    imprimir("  PULADO influxdb (defina ADVAK_TESTE_INFLUXDB_URL)");
+} senao {
+    seja serie = banco.conectar(url_influx);
+    testar("influxdb - gravar e consultar pontos", () => {
+        serie.inserir("advak_teste", {valor: 21.5}, {sala: "A"});
+        seja pontos = serie.buscar("advak_teste").desde("-5m").executar();
+        afirmar_igual(pontos.tamanho >= 1, verdadeiro);
+        serie.apagar_dados("advak_teste");
+    });
+    serie.fechar();
 }
 
 resumo_testes();

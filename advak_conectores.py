@@ -78,6 +78,27 @@ _registrar('firebird', 'Firebird',   'Relacional', 'firebird.driver', 'firebird-
            ['firebird'], 3050, 'ConectorFirebird', 'mock')
 _registrar('db2',      'IBM Db2',    'Relacional', 'ibm_db_dbi', 'ibm_db',
            ['db2', 'ibmdb2'], 50000, 'ConectorDb2', 'mock', ('ibmdb2', 'ibm_db2'))
+# ── Grupo 2, lote B ──
+_registrar('clickhouse', 'ClickHouse', 'Analítico', 'clickhouse_connect', 'clickhouse-connect',
+           ['clickhouse', 'clickhouses'], 8123, 'ConectorClickHouse', 'mock')
+_registrar('snowflake', 'Snowflake', 'Analítico', 'snowflake.connector', 'snowflake-connector-python',
+           ['snowflake'], None, 'ConectorSnowflake', 'mock')
+_registrar('bigquery', 'Google BigQuery', 'Analítico', 'google.cloud.bigquery', 'google-cloud-bigquery',
+           ['bigquery', 'bq'], None, 'ConectorBigQuery', 'mock', ('bq', 'google_bigquery'))
+_registrar('couchdb',  'CouchDB',    'Documentos (NoSQL)', 'couchdb', 'couchdb',
+           ['couchdb', 'couchdbs'], 5984, 'ConectorCouchDB', 'mock')
+_registrar('firestore', 'Google Firestore', 'Documentos (NoSQL)', 'google.cloud.firestore',
+           'google-cloud-firestore', ['firestore'], None, 'ConectorFirestore', 'mock')
+_registrar('dynamodb', 'Amazon DynamoDB', 'Documentos (NoSQL)', 'boto3', 'boto3',
+           ['dynamodb', 'dynamo'], None, 'ConectorDynamoDB', 'mock', ('dynamo',))
+_registrar('elasticsearch', 'Elasticsearch', 'Busca', 'elasticsearch', 'elasticsearch',
+           ['elasticsearch', 'elastic', 'es'], 9200, 'ConectorElasticsearch', 'mock', ('elastic',))
+_registrar('neo4j',    'Neo4j',      'Grafos', 'neo4j', 'neo4j',
+           ['neo4j', 'bolt', 'neo4j+s', 'bolt+s', 'neo4j+ssc', 'bolt+ssc'], 7687, 'ConectorNeo4j', 'mock')
+_registrar('influxdb', 'InfluxDB',   'Séries temporais', 'influxdb_client', 'influxdb-client',
+           ['influxdb', 'influx'], 8086, 'ConectorInfluxDB', 'mock', ('influx',))
+_registrar('cassandra', 'Cassandra', 'Colunar distribuído', 'cassandra', 'cassandra-driver',
+           ['cassandra'], 9042, 'ConectorCassandra', 'mock')
 
 
 def _tipo_por_nome(nome):
@@ -105,14 +126,14 @@ def listar_bancos():
 
 def tabela_bancos():
     """Texto para o comando `advak bancos`."""
-    linhas = ["", "  Bancos de dados suportados pela Advak", "  " + "─" * 86,
-              f"  {'Banco':<12}{'Tipo':<22}{'Driver (pip install ...)':<28}{'Instalado':<11}{'Testes'}",
-              "  " + "─" * 86]
+    linhas = ["", "  Bancos de dados suportados pela Advak", "  " + "─" * 100,
+              f"  {'Banco':<18}{'Tipo':<22}{'Driver (pip install ...)':<29}{'Instalado':<11}{'Testes'}",
+              "  " + "─" * 100]
     for b in listar_bancos():
         inst = "sim" if b['instalado'] else "não"
         teste = {'real': 'real', 'instavel': 'em teste / instável no Windows'}.get(b['testado'], 'simulado')
-        linhas.append(f"  {b['nome']:<12}{b['grupo']:<22}{b['pip']:<28}{inst:<11}{teste}")
-    linhas += ["  " + "─" * 86,
+        linhas.append(f"  {b['nome']:<18}{b['grupo']:<22}{b['pip']:<29}{inst:<11}{teste}")
+    linhas += ["  " + "─" * 100,
                "  Conexão: banco.conectar(\"mysql://usuario:senha@host:3306/nome\")",
                "  Senhas no .env: ADVAK_MYSQL_URL=mysql://usuario:senha@host:3306/nome",
                "  Guia completo: docs/BANCOS_DE_DADOS.md", ""]
@@ -281,6 +302,15 @@ class ConectorBase:
         raise ErroBanco(f"'{operacao}' não se aplica ao {self.nome_banco}. "
                         "Veja os comandos disponíveis em docs/BANCOS_DE_DADOS.md")
 
+    def listar_tabelas(self, *a, **k):   self._nao_suportado('listar_tabelas')
+    def apagar_tabela(self, *a, **k):    self._nao_suportado('apagar_tabela')
+    def descrever_tabela(self, *a, **k): self._nao_suportado('descrever_tabela')
+    def contar(self, *a, **k):           self._nao_suportado('contar')
+    def inserir_varios(self, *a, **k):   self._nao_suportado('inserir_varios')
+    def buscar_por_id(self, *a, **k):    self._nao_suportado('buscar_por_id')
+    def iniciar(self, *a, **k):          self._nao_suportado('iniciar (transações)')
+    def confirmar(self, *a, **k):        self._nao_suportado('confirmar (transações)')
+    def reverter(self, *a, **k):         self._nao_suportado('reverter (transações)')
     def sql(self, *a, **k):          self._nao_suportado('sql')
     def tabela(self, *a, **k):       self._nao_suportado('tabela')
     def criar_tabela(self, *a, **k): self._nao_suportado('criar_tabela')
@@ -319,7 +349,8 @@ class ConectorSQL(ConectorBase):
     suporta_notnull = True              # alguns bancos não têm NOT NULL / UNIQUE / DEFAULT
     suporta_unico = True
     suporta_padrao = True
-    sem_if_not_exists = False           # Oracle, Firebird e Db2 não têm CREATE TABLE IF NOT EXISTS
+    suporta_fk = True
+    sem_if_not_exists = False          # Oracle, Firebird e Db2 não têm CREATE TABLE IF NOT EXISTS
     sem_if_exists = False               # ... nem DROP TABLE IF EXISTS
     minusculas = False                  # o banco devolve nomes em MAIÚSCULAS (Oracle, Firebird, Db2, Snowflake)
 
@@ -438,9 +469,11 @@ class ConectorSQL(ConectorBase):
             return col, antes, None
         base = self.tipos.get(t, self.tipos['texto'])
         if t == 'ref' and len(partes) > 1:
-            fk = f'FOREIGN KEY ({self._id(campo)}) REFERENCES {self._id(partes[1])}(id)'
+            if self.suporta_fk:
+                fk = f'FOREIGN KEY ({self._id(campo)}) REFERENCES {self._id(partes[1])}(id)'
             mods = [p.lower() for p in partes[2:]]
-        if base == self.tipos['texto'] and ('unico' in mods or 'unique' in mods or 'indice' in mods):
+        if base == self.tipos['texto'] and (
+                (('unico' in mods or 'unique' in mods) and self.suporta_unico) or 'indice' in mods):
             base = self.texto_indexavel
         sql = [self._id(campo), base]
         # ordem aceita por todos os bancos: tipo, DEFAULT, NOT NULL, UNIQUE
@@ -1489,3 +1522,1256 @@ class ConectorRedis(ConectorBase):
         """Apaga TODAS as chaves do banco Redis atual."""
         self._r.flushdb()
         return True
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  Grupo 2, lote B — analíticos e colunar (SQL)
+# ══════════════════════════════════════════════════════════════════════════════
+
+class ConectorClickHouse(ConectorSQL):
+    """ClickHouse (clickhouse-connect, porta HTTP 8123). Sem transações; UPDATE/DELETE são
+    'mutações' assíncronas (ALTER TABLE ... UPDATE/DELETE) e não informam linhas afetadas."""
+    tipo = 'clickhouse'
+    suporta_notnull = False        # colunas já são NOT NULL por padrão
+    suporta_unico = False
+    suporta_fk = False
+    autonum = 'UUID DEFAULT generateUUIDv4()'
+    verdadeiro, falso = 'true', 'false'
+    tipos = dict(ConectorSQL.tipos, inteiro='Int32', numero='Float64', decimal='Decimal(15,2)',
+                 flutuante='Float64', grande='Int64', texto='String', varchar='String',
+                 char='FixedString(1)', hora='String', datahora='DateTime DEFAULT now()',
+                 timestamp='DateTime', booleano='Bool', bool='Bool', json='String', bytes='String',
+                 ref='Int32')
+
+    def _conectar_driver(self):
+        cc = _carregar_driver('clickhouse')
+        p = self.params
+        op = p.get('opcoes') or {}
+        seguro = str(op.get('secure', op.get('seguro', ''))).lower() in ('1', 'true', 'sim')
+        return cc.get_client(host=p['host'], port=p['porta'], username=p['usuario'] or 'default',
+                             password=p['senha'] or '', database=p.get('banco') or 'default',
+                             secure=seguro)
+
+    def fechar(self):
+        try:
+            if self._conn is not None:
+                self._conn.close()
+        finally:
+            self._conn = None
+        return True
+
+    def _executar(self, consulta, params=None, buscar=False):
+        cli = self._garantir()
+        consulta, params = self._preparar(consulta, params)
+        parametros = list(params) if params else None
+        try:
+            if buscar:
+                r = cli.query(consulta, parameters=parametros)
+                cols = [self._nome_col(c) for c in r.column_names]
+                return [dict(zip(cols, (_converter_valor(v) for v in row))) for row in r.result_rows]
+            cli.command(consulta, parameters=parametros)
+            return 0
+        except Exception as e:
+            raise ErroBanco(f"Erro no {self.nome_banco}: {e}") from e
+
+    def inserir(self, tabela, dados):
+        if not dados:
+            raise ErroBanco("inserir: nenhum dado informado")
+        dados = dict(dados)
+        try:
+            self._garantir().insert(str(tabela), [list(dados.values())],
+                                    column_names=[self._id(c).strip('"') for c in dados])
+        except Exception as e:
+            raise ErroBanco(f"Erro no {self.nome_banco}: {e}") from e
+        return dict(dados)
+
+    def _criar_se_nao_existe(self, tabela, corpo):
+        chave = self._id(self._cols_nomes[0]) if getattr(self, '_cols_nomes', None) else 'tuple()'
+        return (f'CREATE TABLE IF NOT EXISTS {self._id(tabela)} (\n    {corpo}\n) '
+                f'ENGINE = MergeTree ORDER BY {chave}')
+
+    def _montar_update(self, tabela, colunas, where):
+        sets = ', '.join(f'{self._id(k)} = %s' for k in colunas)
+        cond = ' AND '.join(f'({w})' for w in where) if where else '1'
+        return f'ALTER TABLE {self._id(tabela)} UPDATE {sets} WHERE {cond}'
+
+    def _montar_delete(self, tabela, where):
+        cond = ' AND '.join(f'({w})' for w in where) if where else '1'
+        return f'ALTER TABLE {self._id(tabela)} DELETE WHERE {cond}'
+
+    def _sql_listar_tabelas(self):
+        return "SELECT name AS nome FROM system.tables WHERE database = currentDatabase() ORDER BY name"
+
+    def _sql_colunas(self):
+        return ("SELECT name AS coluna, type AS tipo, if(startsWith(type, 'Nullable'), 'YES', 'NO') "
+                "AS aceita_nulo FROM system.columns WHERE database = currentDatabase() AND table = %s "
+                "ORDER BY position")
+
+    def iniciar(self):
+        raise ErroBanco("O ClickHouse não tem transações.")
+
+    confirmar = reverter = iniciar_transacao = iniciar
+
+
+class ConectorSnowflake(ConectorMaiusculas):
+    """Snowflake: URL snowflake://usuario:senha@CONTA/BANCO/ESQUEMA?warehouse=WH&role=PAPEL"""
+    tipo = 'snowflake'
+    sem_if_not_exists = False
+    sem_if_exists = False
+    suporta_fk = False
+    autonum = 'INTEGER AUTOINCREMENT PRIMARY KEY'
+    tipos = dict(ConectorSQL.tipos, numero='NUMBER(20,6)', decimal='NUMBER(15,2)', flutuante='FLOAT',
+                 texto='VARCHAR', datahora='TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()',
+                 timestamp='TIMESTAMP_NTZ', json='VARCHAR', bytes='BINARY')
+
+    def _conectar_driver(self):
+        sf = _carregar_driver('snowflake')
+        p = self.params
+        op = p.get('opcoes') or {}
+        banco, _, esquema = str(p.get('banco') or '').partition('/')
+        kw = dict(account=op.get('conta') or p['host'], user=p['usuario'], password=p['senha'] or '')
+        if banco:
+            kw['database'] = banco
+        if esquema or op.get('esquema_nome'):
+            kw['schema'] = esquema or op['esquema_nome']
+        for chave in ('warehouse', 'role'):
+            if op.get(chave):
+                kw[chave] = op[chave]
+        return sf.connect(**kw)
+
+    def _sql_listar_tabelas(self):
+        return ("SELECT table_name AS nome FROM information_schema.tables "
+                "WHERE table_schema = CURRENT_SCHEMA() AND table_type = 'BASE TABLE' ORDER BY table_name")
+
+    def _sql_colunas(self):
+        return ("SELECT column_name AS coluna, data_type AS tipo, is_nullable AS aceita_nulo "
+                "FROM information_schema.columns WHERE table_schema = CURRENT_SCHEMA() "
+                "AND table_name = UPPER(%s) ORDER BY ordinal_position")
+
+    def _comando(self, texto):
+        cur = self._garantir().cursor()
+        try:
+            cur.execute(texto)
+        finally:
+            cur.close()
+
+    def iniciar(self):
+        self._comando('BEGIN')
+        return super().iniciar()
+
+    def confirmar(self):
+        try:
+            self._comando('COMMIT')
+        finally:
+            self._em_transacao = False
+        return "✅ Transação confirmada"
+
+    def reverter(self):
+        try:
+            self._comando('ROLLBACK')
+        finally:
+            self._em_transacao = False
+        return "↩️  Transação revertida"
+
+
+class ConectorBigQuery(ConectorSQL):
+    """Google BigQuery: bigquery://PROJETO/DATASET?credenciais=chave.json
+    (sem credenciais, usa GOOGLE_APPLICATION_CREDENTIALS). DML exige faturamento ativo."""
+    tipo = 'bigquery'
+    aspas = ('`', '`')
+    suporta_unico = False
+    suporta_fk = False
+    autonum = 'STRING DEFAULT GENERATE_UUID()'
+    tipos = dict(ConectorSQL.tipos, inteiro='INT64', numero='NUMERIC', decimal='NUMERIC',
+                 flutuante='FLOAT64', grande='INT64', texto='STRING', varchar='STRING', char='STRING',
+                 datahora='TIMESTAMP DEFAULT CURRENT_TIMESTAMP()', booleano='BOOL', bool='BOOL',
+                 json='JSON', bytes='BYTES', ref='INT64')
+
+    def _conectar_driver(self):
+        bq = _carregar_driver('bigquery')
+        p = self.params
+        self._bq = bq
+        self._projeto = p.get('host')
+        self._dataset = p.get('banco')
+        cred = (p.get('opcoes') or {}).get('credenciais')
+        if cred:
+            return bq.Client.from_service_account_json(cred, project=self._projeto)
+        return bq.Client(project=self._projeto)
+
+    def fechar(self):
+        try:
+            if self._conn is not None:
+                self._conn.close()
+        finally:
+            self._conn = None
+        return True
+
+    def _param(self, v):
+        import datetime
+        bq = self._bq
+        if isinstance(v, bool):
+            return bq.ScalarQueryParameter(None, 'BOOL', v)
+        if isinstance(v, int):
+            return bq.ScalarQueryParameter(None, 'INT64', v)
+        if isinstance(v, float):
+            return bq.ScalarQueryParameter(None, 'FLOAT64', v)
+        if isinstance(v, Decimal):
+            return bq.ScalarQueryParameter(None, 'NUMERIC', v)
+        if isinstance(v, datetime.datetime):
+            return bq.ScalarQueryParameter(None, 'TIMESTAMP' if v.tzinfo else 'DATETIME', v)
+        if isinstance(v, datetime.date):
+            return bq.ScalarQueryParameter(None, 'DATE', v)
+        if isinstance(v, bytes):
+            return bq.ScalarQueryParameter(None, 'BYTES', v)
+        return bq.ScalarQueryParameter(None, 'STRING', None if v is None else str(v))
+
+    def _trocar_marcadores(self, consulta):
+        return consulta.replace('%s', '?')
+
+    def _executar(self, consulta, params=None, buscar=False):
+        cli = self._garantir()
+        consulta, params = self._preparar(consulta, params)
+        kw = {'query_parameters': [self._param(v) for v in (params or ())]}
+        if self._dataset:
+            kw['default_dataset'] = f'{self._projeto}.{self._dataset}'
+        try:
+            job = cli.query(consulta, job_config=self._bq.QueryJobConfig(**kw))
+            res = job.result()
+            if buscar:
+                return [{self._nome_col(k): _converter_valor(v) for k, v in dict(row.items()).items()}
+                        for row in res]
+            return int(getattr(job, 'num_dml_affected_rows', 0) or 0)
+        except Exception as e:
+            raise ErroBanco(f"Erro no {self.nome_banco}: {e}") from e
+
+    def listar_tabelas(self):
+        try:
+            return sorted(t.table_id for t in self._garantir().list_tables(self._dataset))
+        except Exception as e:
+            raise ErroBanco(f"Erro no {self.nome_banco}: {e}") from e
+
+    def descrever_tabela(self, nome):
+        t = self._garantir().get_table(f'{self._projeto}.{self._dataset}.{nome}')
+        return [dict(coluna=c.name, tipo=c.field_type,
+                     aceita_nulo='NO' if c.mode == 'REQUIRED' else 'YES') for c in t.schema]
+
+    def iniciar(self):
+        raise ErroBanco("O BigQuery não oferece transações por este conector.")
+
+    confirmar = reverter = iniciar_transacao = iniciar
+
+
+class ConectorCassandra(ConectorSQL):
+    """Cassandra (CQL): cassandra://usuario:senha@host:9042/keyspace. Sem transações nem OFFSET;
+    filtros fora da chave usam ALLOW FILTERING (lento em tabelas grandes)."""
+    tipo = 'cassandra'
+    suporta_notnull = False
+    suporta_unico = False
+    suporta_padrao = False
+    suporta_fk = False
+    autonum = 'uuid'
+    verdadeiro, falso = 'true', 'false'
+    tipos = dict(ConectorSQL.tipos, inteiro='int', numero='decimal', decimal='decimal', flutuante='double',
+                 grande='bigint', texto='text', varchar='text', char='text', data='date', hora='time',
+                 datahora='timestamp', timestamp='timestamp', booleano='boolean', bool='boolean',
+                 json='text', bytes='blob', ref='int')
+
+    def __init__(self, params):
+        super().__init__(params)
+        self._tabelas_uuid = set()
+
+    def _conectar_driver(self):
+        _carregar_driver('cassandra')
+        from cassandra.cluster import Cluster
+        from cassandra.auth import PlainTextAuthProvider
+        from cassandra.query import dict_factory
+        p = self.params
+        auth = PlainTextAuthProvider(p['usuario'], p['senha'] or '') if p.get('usuario') else None
+        self._cluster = Cluster([p['host']], port=p['porta'], auth_provider=auth)
+        sessao = self._cluster.connect(p['banco']) if p.get('banco') else self._cluster.connect()
+        sessao.row_factory = dict_factory
+        return sessao
+
+    def fechar(self):
+        try:
+            self._cluster.shutdown()
+        finally:
+            self._conn = None
+        return True
+
+    def _executar(self, consulta, params=None, buscar=False):
+        sessao = self._garantir()
+        consulta, params = self._preparar(consulta, params)
+        try:
+            linhas = sessao.execute(consulta, params) if params else sessao.execute(consulta)
+            if buscar:
+                return [{self._nome_col(k): _converter_valor(v) for k, v in dict(r).items()}
+                        for r in linhas]
+            return 0
+        except Exception as e:
+            raise ErroBanco(f"Erro no {self.nome_banco}: {e}") from e
+
+    def _keyspace(self):
+        ks = str(self.params.get('banco') or '')
+        if not re.fullmatch(r'\w+', ks):
+            raise ErroBanco("Informe o keyspace na URL: cassandra://host:9042/meu_keyspace")
+        return ks
+
+    def _coluna_auto(self, tabela, campo):
+        self._tabelas_uuid.add(str(tabela))
+        return f'{self._id(campo)} uuid', []
+
+    def _criar_se_nao_existe(self, tabela, corpo):
+        cols = getattr(self, '_cols_nomes', [])
+        chave = 'id' if 'id' in cols else (cols[0] if cols else 'id')
+        return (f'CREATE TABLE IF NOT EXISTS {self._id(tabela)} (\n    {corpo},\n'
+                f'    PRIMARY KEY ({self._id(chave)})\n)')
+
+    def inserir(self, tabela, dados):
+        dados = dict(dados or {})
+        if 'id' not in dados and str(tabela) in self._tabelas_uuid:
+            import uuid
+            dados['id'] = uuid.uuid4()
+        novo = super().inserir(tabela, dados)
+        return {k: (str(v) if k == 'id' else v) for k, v in novo.items()}
+
+    def _montar_select(self, cols, tabela, where, ordem, limite, offset):
+        if offset:
+            raise ErroBanco("O Cassandra não tem OFFSET (paginação por número de página).")
+        q = f'SELECT {cols} FROM {self._id(tabela)}'
+        if where:
+            q += ' WHERE ' + ' AND '.join(f'({w})' for w in where)
+        if ordem:
+            q += f' ORDER BY {ordem}'
+        if limite is not None:
+            q += f' LIMIT {int(limite)}'
+        if where:
+            q += ' ALLOW FILTERING'
+        return q
+
+    def contar(self, tabela, onde=None, params=None):
+        q = f'SELECT COUNT(*) AS total FROM {self._id(tabela)}'
+        if onde:
+            q += f' WHERE {onde} ALLOW FILTERING'
+        r = self._executar(q, params, buscar=True)
+        return int(r[0]['total']) if r else 0
+
+    def _sql_listar_tabelas(self):
+        return ("SELECT table_name AS nome FROM system_schema.tables "
+                f"WHERE keyspace_name = '{self._keyspace()}'")
+
+    def _sql_colunas(self):
+        return ("SELECT column_name AS coluna, type AS tipo, kind AS aceita_nulo "
+                f"FROM system_schema.columns WHERE keyspace_name = '{self._keyspace()}' "
+                "AND table_name = %s")
+
+    def iniciar(self):
+        raise ErroBanco("O Cassandra não tem transações.")
+
+    confirmar = reverter = iniciar_transacao = iniciar
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  Grupo 2, lote B — documentos (CouchDB, Firestore, DynamoDB, Elasticsearch)
+# ══════════════════════════════════════════════════════════════════════════════
+
+def _valor_campo(doc, campo):
+    atual = doc
+    for parte in str(campo).split('.'):
+        if isinstance(atual, dict) and parte in atual:
+            atual = atual[parte]
+        else:
+            return None
+    return atual
+
+
+def casa_filtro(doc, filtro):
+    """Aplica um filtro estilo MongoDB ({campo: valor} ou {campo: {"$gt": 1}}) a um documento."""
+    for campo, cond in filtro.items():
+        valor = doc.get('id') if campo in ('id', '_id') else _valor_campo(doc, campo)
+        if campo in ('id', '_id'):
+            valor = None if valor is None else str(valor)
+            cond = {k: (str(v) if not isinstance(v, (list, dict)) else v) for k, v in cond.items()} \
+                if isinstance(cond, dict) else str(cond)
+        ops = cond if isinstance(cond, dict) and any(str(k).startswith('$') for k in cond) else {'$eq': cond}
+        for op, alvo in ops.items():
+            try:
+                if op == '$eq' and not valor == alvo: return False
+                if op == '$ne' and not valor != alvo: return False
+                if op == '$gt' and not valor > alvo: return False
+                if op == '$gte' and not valor >= alvo: return False
+                if op == '$lt' and not valor < alvo: return False
+                if op == '$lte' and not valor <= alvo: return False
+            except TypeError:
+                return False
+    return True
+
+
+class ConectorDocumentos(ConectorBase):
+    """Base para bancos de documentos sem SQL. Cada banco implementa só as primitivas _p_*;
+    filtros, ordenação e paginação são aplicados aqui (em Python, sobre o que o banco devolver)."""
+
+    # primitivas — implementadas por cada banco
+    def _p_inserir(self, colecao, doc): raise NotImplementedError          # → id
+    def _p_listar(self, colecao, filtro): raise NotImplementedError        # → [{'id':..., ...}]
+    def _p_atualizar(self, colecao, id_, dados): raise NotImplementedError
+    def _p_remover(self, colecao, id_): raise NotImplementedError
+    def _p_colecoes(self): raise NotImplementedError
+    def _p_criar(self, colecao): raise NotImplementedError
+    def _p_apagar(self, colecao): raise NotImplementedError
+
+    def _p_obter(self, colecao, id_):
+        achados = [d for d in self._p_listar(colecao, {'id': id_}) if casa_filtro(d, {'id': id_})]
+        return achados[0] if achados else None
+
+    def _tratar(self, funcao, *a, **k):
+        try:
+            return funcao(*a, **k)
+        except ErroBanco:
+            raise
+        except Exception as e:
+            raise ErroBanco(f"Erro no {self.nome_banco}: {e}") from e
+
+    @staticmethod
+    def _limpar(doc):
+        d = dict(doc)
+        d.pop('_rev', None)
+        if '_id' in d and 'id' not in d:
+            d['id'] = d['_id']
+        d.pop('_id', None)
+        if 'id' in d:
+            d['id'] = str(d['id'])
+        return d
+
+    def _achar(self, colecao, filtro, ordem=None, limite=None, pular=0, campos=None):
+        docs = [self._limpar(d) for d in self._tratar(self._p_listar, colecao, filtro)]
+        docs = [d for d in docs if casa_filtro(d, filtro)]
+        if ordem:
+            campo, desc = ordem
+
+            def chave(d):
+                v = _valor_campo(d, campo)
+                return (v is None, v if isinstance(v, (int, float)) else str(v) if v is not None else '')
+            try:
+                docs.sort(key=chave, reverse=desc)
+            except TypeError:
+                docs.sort(key=lambda d: str(_valor_campo(d, campo)), reverse=desc)
+        if pular:
+            docs = docs[pular:]
+        if limite is not None:
+            docs = docs[:limite]
+        if campos:
+            docs = [{k: v for k, v in d.items() if k in campos or k == 'id'} for d in docs]
+        return docs
+
+    def _filtro(self, filtro):
+        return dict(filtro)
+
+    # API pública
+    def tabela(self, nome, campos=None, sobrescrever=False):
+        """Cria a coleção/índice/tabela se não existir (os campos são ignorados)."""
+        if sobrescrever:
+            self.apagar_tabela(nome)
+        if nome not in self.listar_tabelas():
+            self._tratar(self._p_criar, nome)
+        return f"✅ Coleção '{nome}' pronta"
+
+    criar_tabela = tabela
+
+    def apagar_tabela(self, nome, cascata=False):
+        if nome in self.listar_tabelas():
+            self._tratar(self._p_apagar, nome)
+        return f"✅ Coleção '{nome}' removida"
+
+    def listar_tabelas(self):
+        return sorted(self._tratar(self._p_colecoes))
+
+    listar_colecoes = listar_tabelas
+
+    def inserir(self, colecao, dados):
+        if not dados:
+            raise ErroBanco("inserir: nenhum dado informado")
+        doc = dict(dados)
+        novo_id = self._tratar(self._p_inserir, colecao, doc)
+        doc.pop('id', None)
+        return {**doc, 'id': str(novo_id)}
+
+    def inserir_varios(self, colecao, lista):
+        if not lista:
+            raise ErroBanco("inserir_varios: lista vazia")
+        for item in lista:
+            self.inserir(colecao, item)
+        return f"✅ {len(lista)} registros inseridos"
+
+    def buscar(self, colecao):
+        return ConsultaDoc(self, colecao)
+
+    def buscar_por_id(self, colecao, id_val):
+        d = self._tratar(self._p_obter, colecao, str(id_val))
+        return self._limpar(d) if d else {}
+
+    buscar_id = buscar_por_id
+
+    def atualizar(self, colecao, dados):
+        return AtualizacaoDoc(self, colecao, dados)
+
+    def deletar(self, colecao):
+        return RemocaoDoc(self, colecao)
+
+    def contar(self, colecao, onde=None, params=None):
+        filtro = cond_para_filtro(onde, params or []) if onde else {}
+        return len(self._achar(colecao, filtro))
+
+    def sql(self, *a, **k):
+        raise ErroBanco(f"O {self.nome_banco} não usa SQL. Use inserir, buscar, atualizar e deletar.")
+
+
+def _params_planos(params):
+    if len(params) == 1 and isinstance(params[0], (list, tuple)):
+        return tuple(params[0])
+    return params
+
+
+class ConsultaDoc:
+    def __init__(self, db, colecao):
+        self._db, self._col = db, colecao
+        self._filtro, self._campos = {}, None
+        self._ordem, self._limite, self._pular = None, None, 0
+
+    def campos(self, *cols):
+        self._campos = set(cols)
+        return self
+
+    def onde(self, condicao, *params):
+        self._filtro.update(cond_para_filtro(condicao, _params_planos(params)))
+        return self
+
+    def ordenar(self, campo, direcao='ASC'):
+        self._ordem = (str(campo), str(direcao).upper() == 'DESC')
+        return self
+
+    def limite(self, n):
+        self._limite = int(n)
+        return self
+
+    def pagina(self, numero, tamanho=10):
+        self._limite = int(tamanho)
+        self._pular = (int(numero) - 1) * int(tamanho)
+        return self
+
+    def executar(self):
+        return self._db._achar(self._col, self._filtro, self._ordem, self._limite, self._pular, self._campos)
+
+    def __iter__(self):
+        return iter(self.executar())
+
+    def __len__(self):
+        return len(self.executar())
+
+    def primeiro(self):
+        self._limite = 1
+        r = self.executar()
+        return r[0] if r else None
+
+    def existe(self):
+        return self.primeiro() is not None
+
+    def contar(self):
+        return len(self._db._achar(self._col, self._filtro))
+
+
+class AtualizacaoDoc:
+    def __init__(self, db, colecao, dados):
+        self._db, self._col, self._dados, self._filtro = db, colecao, dict(dados), {}
+
+    def onde(self, condicao, *params):
+        self._filtro.update(cond_para_filtro(condicao, _params_planos(params)))
+        return self
+
+    def executar(self):
+        alvo = self._db._achar(self._col, self._filtro)
+        dados = {k: v for k, v in self._dados.items() if k != 'id'}
+        for d in alvo:
+            self._db._tratar(self._db._p_atualizar, self._col, d['id'], dados)
+        return len(alvo)
+
+
+class RemocaoDoc:
+    def __init__(self, db, colecao):
+        self._db, self._col, self._filtro = db, colecao, {}
+
+    def onde(self, condicao, *params):
+        self._filtro.update(cond_para_filtro(condicao, _params_planos(params)))
+        return self
+
+    def executar(self):
+        alvo = self._db._achar(self._col, self._filtro)
+        for d in alvo:
+            self._db._tratar(self._db._p_remover, self._col, d['id'])
+        return len(alvo)
+
+
+class ConectorCouchDB(ConectorDocumentos):
+    """CouchDB: couchdb://usuario:senha@host:5984  (cada 'tabela' é um banco do CouchDB;
+    nomes em minúsculas). Use ?https=1 para HTTPS."""
+    tipo = 'couchdb'
+
+    def _abrir(self):
+        from urllib.parse import quote
+        couchdb = _carregar_driver('couchdb')
+        p = self.params
+        op = p.get('opcoes') or {}
+        esquema = 'https' if str(op.get('https', '')).lower() in ('1', 'true', 'sim') or \
+            p.get('esquema') == 'couchdbs' else 'http'
+        cred = f"{quote(p['usuario'])}:{quote(p['senha'] or '')}@" if p.get('usuario') else ''
+        self._srv = couchdb.Server(f"{esquema}://{cred}{p['host']}:{p['porta']}/")
+        self._conn = self._srv
+        try:
+            self._srv.version()
+        except Exception as e:
+            raise ErroBanco(f"Não foi possível conectar ao CouchDB: {e}") from e
+
+    def fechar(self):
+        self._conn = None
+        return True
+
+    def _db(self, col):
+        return self._srv[col]
+
+    def _p_inserir(self, col, doc):
+        if 'id' in doc:
+            doc['_id'] = str(doc.pop('id'))
+        return self._db(col).save(doc)[0]
+
+    def _p_listar(self, col, filtro):
+        seletor = {('_id' if k == 'id' else k): v for k, v in filtro.items()} or {'_id': {'$gt': None}}
+        return list(self._db(col).find({'selector': seletor, 'limit': 1000000}))
+
+    def _p_obter(self, col, id_):
+        try:
+            return dict(self._db(col)[id_])
+        except Exception:
+            return None
+
+    def _p_atualizar(self, col, id_, dados):
+        banco = self._db(col)
+        doc = banco[id_]
+        doc.update(dados)
+        banco.save(doc)
+
+    def _p_remover(self, col, id_):
+        banco = self._db(col)
+        banco.delete(banco[id_])
+
+    def _p_colecoes(self):
+        return [n for n in self._srv if not n.startswith('_')]
+
+    def _p_criar(self, col):
+        if not re.fullmatch(r'[a-z][a-z0-9_$()+/-]*', col):
+            raise ErroBanco("Nome inválido no CouchDB: use minúsculas, números e _ (começando por letra).")
+        self._srv.create(col)
+
+    def _p_apagar(self, col):
+        self._srv.delete(col)
+
+
+class ConectorFirestore(ConectorDocumentos):
+    """Google Firestore: firestore://PROJETO?credenciais=chave.json
+    (sem credenciais, usa GOOGLE_APPLICATION_CREDENTIALS). Filtra no cliente: leia o custo na documentação."""
+    tipo = 'firestore'
+
+    def _abrir(self):
+        fs = _carregar_driver('firestore')
+        p = self.params
+        cred = (p.get('opcoes') or {}).get('credenciais')
+        projeto = p.get('host')
+        self._cli = fs.Client.from_service_account_json(cred, project=projeto) if cred \
+            else fs.Client(project=projeto)
+        self._conn = self._cli
+
+    def fechar(self):
+        try:
+            self._cli.close()
+        except Exception:
+            pass
+        self._conn = None
+        return True
+
+    def _p_inserir(self, col, doc):
+        if 'id' in doc:
+            ref = self._cli.collection(col).document(str(doc.pop('id')))
+            ref.set(doc)
+            return ref.id
+        return self._cli.collection(col).add(doc)[1].id
+
+    def _p_listar(self, col, filtro):
+        return [{**d.to_dict(), 'id': d.id} for d in self._cli.collection(col).stream()]
+
+    def _p_obter(self, col, id_):
+        d = self._cli.collection(col).document(id_).get()
+        return {**d.to_dict(), 'id': id_} if d.exists else None
+
+    def _p_atualizar(self, col, id_, dados):
+        self._cli.collection(col).document(id_).update(dados)
+
+    def _p_remover(self, col, id_):
+        self._cli.collection(col).document(id_).delete()
+
+    def _p_colecoes(self):
+        return [c.id for c in self._cli.collections()]
+
+    def _p_criar(self, col):
+        pass                                   # o Firestore cria a coleção no primeiro documento
+
+    def _p_apagar(self, col):
+        for d in self._cli.collection(col).stream():
+            d.reference.delete()
+
+
+def _para_dynamo(v):
+    if isinstance(v, float):
+        return Decimal(str(v))
+    if isinstance(v, dict):
+        return {k: _para_dynamo(x) for k, x in v.items()}
+    if isinstance(v, (list, tuple)):
+        return [_para_dynamo(x) for x in v]
+    return v
+
+
+def _de_dynamo(v):
+    if isinstance(v, Decimal):
+        return int(v) if v == v.to_integral_value() else float(v)
+    if isinstance(v, dict):
+        return {k: _de_dynamo(x) for k, x in v.items()}
+    if isinstance(v, list):
+        return [_de_dynamo(x) for x in v]
+    return v
+
+
+class ConectorDynamoDB(ConectorDocumentos):
+    """Amazon DynamoDB: dynamodb://CHAVE:SEGREDO@us-east-1 (ou sem credenciais, usando a configuração
+    padrão da AWS). DynamoDB local: ?endpoint=http://localhost:8000. Tabelas com chave 'id' (texto).
+    Consultas fazem Scan (leem a tabela inteira = custo)."""
+    tipo = 'dynamodb'
+
+    def _abrir(self):
+        boto3 = _carregar_driver('dynamodb')
+        p = self.params
+        op = p.get('opcoes') or {}
+        kw = {}
+        regiao = op.get('regiao') or p.get('host') or os.environ.get('AWS_DEFAULT_REGION')
+        if regiao:
+            kw['region_name'] = regiao
+        if p.get('usuario'):
+            kw['aws_access_key_id'] = p['usuario']
+            kw['aws_secret_access_key'] = p['senha'] or ''
+        if op.get('endpoint'):
+            kw['endpoint_url'] = op['endpoint']
+        self._res = boto3.resource('dynamodb', **kw)
+        self._conn = self._res
+
+    def fechar(self):
+        self._conn = None
+        return True
+
+    def _tab(self, col):
+        return self._res.Table(col)
+
+    def _p_inserir(self, col, doc):
+        import uuid
+        id_ = str(doc.pop('id')) if 'id' in doc else str(uuid.uuid4())
+        self._tab(col).put_item(Item={**_para_dynamo(doc), 'id': id_})
+        return id_
+
+    def _p_listar(self, col, filtro):
+        t = self._tab(col)
+        r = t.scan()
+        itens = list(r.get('Items', []))
+        while r.get('LastEvaluatedKey'):
+            r = t.scan(ExclusiveStartKey=r['LastEvaluatedKey'])
+            itens += r.get('Items', [])
+        return [_de_dynamo(i) for i in itens]
+
+    def _p_obter(self, col, id_):
+        item = self._tab(col).get_item(Key={'id': id_}).get('Item')
+        return _de_dynamo(item) if item else None
+
+    def _p_atualizar(self, col, id_, dados):
+        if not dados:
+            return
+        nomes = {f'#c{i}': k for i, k in enumerate(dados)}
+        valores = {f':v{i}': _para_dynamo(v) for i, v in enumerate(dados.values())}
+        expr = 'SET ' + ', '.join(f'#c{i} = :v{i}' for i in range(len(dados)))
+        self._tab(col).update_item(Key={'id': id_}, UpdateExpression=expr,
+                                   ExpressionAttributeNames=nomes, ExpressionAttributeValues=valores)
+
+    def _p_remover(self, col, id_):
+        self._tab(col).delete_item(Key={'id': id_})
+
+    def _p_colecoes(self):
+        return [t.name for t in self._res.tables.all()]
+
+    def _p_criar(self, col):
+        t = self._res.create_table(
+            TableName=col, KeySchema=[{'AttributeName': 'id', 'KeyType': 'HASH'}],
+            AttributeDefinitions=[{'AttributeName': 'id', 'AttributeType': 'S'}],
+            BillingMode='PAY_PER_REQUEST')
+        t.wait_until_exists()
+
+    def _p_apagar(self, col):
+        t = self._tab(col)
+        t.delete()
+        t.wait_until_not_exists()
+
+
+class ConectorElasticsearch(ConectorDocumentos):
+    """Elasticsearch: elasticsearch://usuario:senha@host:9200 (?https=1, ?verificar_certificado=0).
+    Cada 'tabela' é um índice. Leitura traz até 10.000 documentos por consulta."""
+    tipo = 'elasticsearch'
+
+    def _abrir(self):
+        es = _carregar_driver('elasticsearch')
+        p = self.params
+        op = p.get('opcoes') or {}
+        https = str(op.get('https', '')).lower() in ('1', 'true', 'sim')
+        kw = {}
+        if p.get('usuario'):
+            kw['basic_auth'] = (p['usuario'], p['senha'] or '')
+        if str(op.get('verificar_certificado', '1')).lower() in ('0', 'false', 'nao', 'não'):
+            kw['verify_certs'] = False
+        self._es = es.Elasticsearch(f"{'https' if https else 'http'}://{p['host']}:{p['porta']}", **kw)
+        self._conn = self._es
+
+    def fechar(self):
+        try:
+            self._es.close()
+        except Exception:
+            pass
+        self._conn = None
+        return True
+
+    @staticmethod
+    def _consulta(filtro):
+        """Traduz só o que é seguro empurrar para o servidor; o resto o Advak filtra depois."""
+        must = []
+        for campo, cond in filtro.items():
+            if campo in ('id', '_id'):
+                if not isinstance(cond, dict):
+                    must.append({'ids': {'values': [str(cond)]}})
+                continue
+            if isinstance(cond, dict):
+                faixa = {op[1:]: v for op, v in cond.items() if op in ('$gt', '$gte', '$lt', '$lte')}
+                if faixa:
+                    must.append({'range': {campo: faixa}})
+                if '$eq' in cond:
+                    must.append({'match_phrase': {campo: cond['$eq']}} if isinstance(cond['$eq'], str)
+                                else {'term': {campo: cond['$eq']}})
+            elif isinstance(cond, str):
+                must.append({'match_phrase': {campo: cond}})
+            else:
+                must.append({'term': {campo: cond}})
+        return {'bool': {'must': must}} if must else {'match_all': {}}
+
+    def _p_inserir(self, col, doc):
+        id_ = str(doc.pop('id')) if 'id' in doc else None
+        return self._es.index(index=col, id=id_, document=doc, refresh='wait_for')['_id']
+
+    def _p_listar(self, col, filtro):
+        r = self._es.search(index=col, query=self._consulta(filtro), size=10000)
+        return [{**h['_source'], 'id': h['_id']} for h in r['hits']['hits']]
+
+    def _p_atualizar(self, col, id_, dados):
+        self._es.update(index=col, id=id_, doc=dados, refresh='wait_for')
+
+    def _p_remover(self, col, id_):
+        self._es.delete(index=col, id=id_, refresh='wait_for')
+
+    def _p_colecoes(self):
+        return [n for n in self._es.indices.get_alias(index='*') if not n.startswith('.')]
+
+    def _p_criar(self, col):
+        self._es.indices.create(index=col)
+
+    def _p_apagar(self, col):
+        self._es.indices.delete(index=col, ignore_unavailable=True)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  Grupo 2, lote B — grafos e séries temporais
+# ══════════════════════════════════════════════════════════════════════════════
+
+_RE_NOME_SIMPLES = re.compile(r'^[^\W\d]\w*$', re.UNICODE)
+
+
+def _nome_simples(nome, o_que='nome'):
+    if not _RE_NOME_SIMPLES.match(str(nome)):
+        raise ErroBanco(f"{o_que.capitalize()} inválido: '{nome}'. Use letras, números e _ (sem espaços).")
+    return str(nome)
+
+
+_OPS_CYPHER = {'$ne': '<>', '$gt': '>', '$gte': '>=', '$lt': '<', '$lte': '<='}
+
+
+class ConectorNeo4j(ConectorBase):
+    """Neo4j 5+: neo4j://usuario:senha@host:7687/banco. 'Tabela' = rótulo (label) dos nós."""
+    tipo = 'neo4j'
+
+    def _abrir(self):
+        neo = _carregar_driver('neo4j')
+        p = self.params
+        esquema = p.get('esquema') if p.get('esquema') in ('neo4j', 'bolt', 'neo4j+s', 'bolt+s',
+                                                            'neo4j+ssc', 'bolt+ssc') else 'neo4j'
+        auth = (p['usuario'], p['senha'] or '') if p.get('usuario') else None
+        self._drv = neo.GraphDatabase.driver(f"{esquema}://{p['host']}:{p['porta']}", auth=auth)
+        self._conn = self._drv
+
+    def fechar(self):
+        try:
+            self._drv.close()
+        finally:
+            self._conn = None
+        return True
+
+    def consulta(self, cypher, params=None):
+        """db.consulta("MATCH (p:Pessoa) WHERE p.idade > $i RETURN p.nome AS nome", {i: 18})"""
+        self._garantir()
+        try:
+            with self._drv.session(database=self.params.get('banco') or None) as s:
+                return [dict(r.data()) for r in s.run(cypher, dict(params or {}))]
+        except Exception as e:
+            raise ErroBanco(f"Erro no Neo4j: {e}") from e
+
+    comando = consulta
+
+    def _garantir(self):
+        if self._conn is None:
+            raise ErroBanco("Conexão fechada. Use banco.conectar(...) novamente.")
+
+    def sql(self, *a, **k):
+        raise ErroBanco("O Neo4j usa Cypher: use db.consulta(\"MATCH ...\", {parametros}).")
+
+    def tabela(self, rotulo, campos=None, sobrescrever=False):
+        """Cria restrições de unicidade para os campos marcados com 'unico'."""
+        rotulo = _nome_simples(rotulo, 'rótulo')
+        for campo, definicao in dict(campos or {}).items():
+            if 'unico' in str(definicao).lower().split():
+                c = _nome_simples(campo, 'campo')
+                self.consulta(f'CREATE CONSTRAINT IF NOT EXISTS FOR (n:{rotulo}) REQUIRE n.{c} IS UNIQUE')
+        return f"✅ Rótulo '{rotulo}' pronto"
+
+    criar_tabela = tabela
+
+    def listar_tabelas(self):
+        return sorted(r['label'] for r in self.consulta('CALL db.labels() YIELD label RETURN label'))
+
+    def apagar_tabela(self, rotulo, cascata=False):
+        self.consulta(f'MATCH (n:{_nome_simples(rotulo, "rótulo")}) DETACH DELETE n')
+        return f"✅ Nós '{rotulo}' removidos"
+
+    def inserir(self, rotulo, dados):
+        rotulo = _nome_simples(rotulo, 'rótulo')
+        props = dict(dados or {})
+        props.pop('id', None)
+        r = self.consulta(f'CREATE (n:{rotulo}) SET n = $props RETURN elementId(n) AS id', {'props': props})
+        return {**props, 'id': r[0]['id']}
+
+    def inserir_varios(self, rotulo, lista):
+        for item in lista:
+            self.inserir(rotulo, item)
+        return f"✅ {len(lista)} registros inseridos"
+
+    def relacionar(self, id_origem, tipo, id_destino, dados=None):
+        """db.relacionar(ana.id, "AMIGO_DE", bia.id, {desde: 2020})"""
+        tipo = _nome_simples(tipo, 'tipo de relação')
+        r = self.consulta(
+            'MATCH (a), (b) WHERE elementId(a) = $a AND elementId(b) = $b '
+            f'CREATE (a)-[r:{tipo}]->(b) SET r = $props RETURN elementId(r) AS id',
+            {'a': str(id_origem), 'b': str(id_destino), 'props': dict(dados or {})})
+        if not r:
+            raise ErroBanco("relacionar: um dos nós não foi encontrado")
+        return r[0]['id']
+
+    def buscar(self, rotulo):
+        return ConsultaGrafo(self, rotulo)
+
+    def buscar_por_id(self, rotulo, id_val):
+        return ConsultaGrafo(self, rotulo).onde({'id': str(id_val)}).primeiro() or {}
+
+    buscar_id = buscar_por_id
+
+    def atualizar(self, rotulo, dados):
+        return AtualizacaoGrafo(self, rotulo, dados)
+
+    def deletar(self, rotulo):
+        return RemocaoGrafo(self, rotulo)
+
+    def contar(self, rotulo, onde=None, params=None):
+        c = ConsultaGrafo(self, rotulo)
+        if onde:
+            c.onde(onde, *(params or []))
+        return c.contar()
+
+
+class ConsultaGrafo:
+    def __init__(self, db, rotulo):
+        self._db, self._rotulo = db, _nome_simples(rotulo, 'rótulo')
+        self._filtro, self._ordem, self._limite, self._pular = {}, None, None, 0
+
+    def onde(self, condicao, *params):
+        self._filtro.update(cond_para_filtro(condicao, _params_planos(params)))
+        return self
+
+    def ordenar(self, campo, direcao='ASC'):
+        d = 'DESC' if str(direcao).upper() == 'DESC' else 'ASC'
+        self._ordem = f'n.{_nome_simples(campo, "campo")} {d}'
+        return self
+
+    def limite(self, n):
+        self._limite = int(n)
+        return self
+
+    def pagina(self, numero, tamanho=10):
+        self._limite, self._pular = int(tamanho), (int(numero) - 1) * int(tamanho)
+        return self
+
+    def _where(self):
+        partes, params = [], {}
+        for i, (campo, cond) in enumerate(self._filtro.items()):
+            ops = cond if isinstance(cond, dict) else {'$eq': cond}
+            for j, (op, valor) in enumerate(ops.items()):
+                nome = f'p{i}_{j}'
+                alvo = 'elementId(n)' if campo in ('id', '_id') else f'n.{_nome_simples(campo, "campo")}'
+                partes.append(f'{alvo} {"=" if op == "$eq" else _OPS_CYPHER[op]} ${nome}')
+                params[nome] = str(valor) if campo in ('id', '_id') else valor
+        return (' WHERE ' + ' AND '.join(partes) if partes else ''), params
+
+    def executar(self):
+        onde, params = self._where()
+        q = f'MATCH (n:{self._rotulo}){onde} RETURN n AS no, elementId(n) AS id'
+        if self._ordem:
+            q += f' ORDER BY {self._ordem}'
+        if self._pular:
+            q += f' SKIP {self._pular}'
+        if self._limite is not None:
+            q += f' LIMIT {self._limite}'
+        return [{**dict(r['no']), 'id': r['id']} for r in self._db.consulta(q, params)]
+
+    def __iter__(self):
+        return iter(self.executar())
+
+    def __len__(self):
+        return len(self.executar())
+
+    def primeiro(self):
+        self._limite = 1
+        r = self.executar()
+        return r[0] if r else None
+
+    def existe(self):
+        return self.primeiro() is not None
+
+    def contar(self):
+        onde, params = self._where()
+        r = self._db.consulta(f'MATCH (n:{self._rotulo}){onde} RETURN count(n) AS total', params)
+        return int(r[0]['total']) if r else 0
+
+
+class AtualizacaoGrafo(ConsultaGrafo):
+    def __init__(self, db, rotulo, dados):
+        super().__init__(db, rotulo)
+        self._dados = {k: v for k, v in dict(dados).items() if k != 'id'}
+
+    def executar(self):
+        onde, params = self._where()
+        params['dados'] = self._dados
+        r = self._db.consulta(f'MATCH (n:{self._rotulo}){onde} SET n += $dados RETURN count(n) AS total', params)
+        return int(r[0]['total']) if r else 0
+
+
+class RemocaoGrafo(ConsultaGrafo):
+    def executar(self):
+        onde, params = self._where()
+        r = self._db.consulta(f'MATCH (n:{self._rotulo}){onde} WITH collect(n) AS ns '
+                              'FOREACH (x IN ns | DETACH DELETE x) RETURN size(ns) AS total', params)
+        return int(r[0]['total']) if r else 0
+
+
+def _lit_flux(v):
+    if isinstance(v, bool):
+        return 'true' if v else 'false'
+    if isinstance(v, (int, float)):
+        return repr(v)
+    if v is None:
+        raise ErroBanco("InfluxDB: valor nulo não pode ser usado em filtros")
+    return json.dumps(str(v), ensure_ascii=False).replace('$', '\\$')
+
+
+_RE_DURACAO = re.compile(r'^-?\d+(ms|s|m|h|d|w|mo|y)$')
+_RE_DATA_RFC = re.compile(r'^\d{4}-\d{2}-\d{2}T[\d:.]+Z$')
+
+
+class ConectorInfluxDB(ConectorBase):
+    """InfluxDB 2.x: influxdb://:TOKEN@host:8086/BUCKET?org=MINHA_ORG (?https=1).
+    'Tabela' = medição. Pontos de tempo não são atualizáveis: grave um novo ponto."""
+    tipo = 'influxdb'
+
+    def _abrir(self):
+        influx = _carregar_driver('influxdb')
+        p = self.params
+        op = p.get('opcoes') or {}
+        https = str(op.get('https', '')).lower() in ('1', 'true', 'sim')
+        token = p.get('senha') or op.get('token') or os.environ.get('INFLUXDB_TOKEN', '')
+        self._org = op.get('org') or p.get('usuario') or ''
+        self._bucket = p.get('banco') or op.get('bucket') or ''
+        self._cli = influx.InfluxDBClient(url=f"{'https' if https else 'http'}://{p['host']}:{p['porta']}",
+                                          token=token, org=self._org)
+        self._conn = self._cli
+
+    def fechar(self):
+        try:
+            self._cli.close()
+        finally:
+            self._conn = None
+        return True
+
+    def _bucket_ok(self):
+        if not self._bucket:
+            raise ErroBanco("Informe o bucket na URL: influxdb://:TOKEN@host:8086/meu_bucket?org=minha_org")
+        return self._bucket
+
+    def inserir(self, medicao, dados, tags=None, tempo=None):
+        """db.inserir("temperatura", {valor: 21.5}, tags={sala: "A"})"""
+        from influxdb_client import Point
+        from influxdb_client.client.write_api import SYNCHRONOUS
+        campos = dict(dados or {})
+        if not campos:
+            raise ErroBanco("inserir: nenhum campo informado")
+        ponto = Point(_nome_simples(medicao, 'medição'))
+        for k, v in dict(tags or {}).items():
+            ponto = ponto.tag(str(k), str(v))
+        for k, v in campos.items():
+            ponto = ponto.field(str(k), v)
+        if tempo is not None:
+            ponto = ponto.time(tempo)
+        try:
+            self._cli.write_api(write_options=SYNCHRONOUS).write(bucket=self._bucket_ok(),
+                                                                  org=self._org, record=ponto)
+        except Exception as e:
+            raise ErroBanco(f"Erro no InfluxDB: {e}") from e
+        return {**campos, **dict(tags or {})}
+
+    escrever = inserir
+
+    def inserir_varios(self, medicao, lista):
+        for item in lista:
+            self.inserir(medicao, item)
+        return f"✅ {len(lista)} registros inseridos"
+
+    def consulta(self, flux):
+        """db.consulta('from(bucket: "b") |> range(start: -1h)') → lista de dicts"""
+        try:
+            tabelas = self._cli.query_api().query(flux, org=self._org)
+        except Exception as e:
+            raise ErroBanco(f"Erro no InfluxDB: {e}") from e
+        linhas = []
+        for tabela in tabelas:
+            for r in tabela.records:
+                v = {k: x for k, x in dict(r.values).items() if k not in ('result', 'table')}
+                linhas.append(v)
+        return linhas
+
+    def buscar(self, medicao):
+        return ConsultaInflux(self, medicao)
+
+    def listar_tabelas(self):
+        flux = ('import "influxdata/influxdb/schema"\n'
+                f'schema.measurements(bucket: {_lit_flux(self._bucket_ok())})')
+        return sorted(str(r['_value']) for r in self.consulta(flux))
+
+    def apagar_dados(self, medicao, inicio='1970-01-01T00:00:00Z', fim='2100-01-01T00:00:00Z'):
+        """Apaga os pontos de uma medição entre duas datas (formato 2024-01-31T00:00:00Z)."""
+        for d in (inicio, fim):
+            if not _RE_DATA_RFC.match(str(d)):
+                raise ErroBanco("Datas no formato 2024-01-31T00:00:00Z")
+        pred = f'_measurement="{_nome_simples(medicao, "medição")}"'
+        try:
+            self._cli.delete_api().delete(inicio, fim, pred, bucket=self._bucket_ok(), org=self._org)
+        except Exception as e:
+            raise ErroBanco(f"Erro no InfluxDB: {e}") from e
+        return f"✅ Dados de '{medicao}' removidos"
+
+    def atualizar(self, *a, **k):
+        raise ErroBanco("O InfluxDB não atualiza pontos: grave outro ponto com o mesmo tempo e as mesmas tags.")
+
+    def deletar(self, *a, **k):
+        raise ErroBanco("No InfluxDB use db.apagar_dados(medicao, inicio, fim).")
+
+    def sql(self, *a, **k):
+        raise ErroBanco("O InfluxDB usa Flux: use db.consulta('from(bucket: \"b\") |> ...').")
+
+
+class ConsultaInflux:
+    def __init__(self, db, medicao):
+        self._db, self._med = db, _nome_simples(medicao, 'medição')
+        self._desde, self._filtro, self._ordem, self._limite = '-30d', {}, ('_time', True), None
+
+    def desde(self, inicio):
+        if not (_RE_DURACAO.match(str(inicio)) or _RE_DATA_RFC.match(str(inicio))):
+            raise ErroBanco("desde: use uma duração como -1h, -7d ou uma data 2024-01-31T00:00:00Z")
+        self._desde = str(inicio)
+        return self
+
+    def onde(self, condicao, *params):
+        self._filtro.update(cond_para_filtro(condicao, _params_planos(params)))
+        return self
+
+    def ordenar(self, campo='tempo', direcao='ASC'):
+        c = '_time' if campo in ('tempo', '_time') else _nome_simples(campo, 'campo')
+        self._ordem = (c, str(direcao).upper() == 'DESC')
+        return self
+
+    def limite(self, n):
+        self._limite = int(n)
+        return self
+
+    def _flux(self):
+        f = [f'from(bucket: {_lit_flux(self._db._bucket_ok())})',
+             f'range(start: {self._desde if _RE_DURACAO.match(self._desde) else self._desde})',
+             f'filter(fn: (r) => r._measurement == {_lit_flux(self._med)})',
+             'pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")']
+        ops = {'$ne': '!=', '$gt': '>', '$gte': '>=', '$lt': '<', '$lte': '<='}
+        for campo, cond in self._filtro.items():
+            c = _nome_simples(campo, 'campo')
+            for op, valor in (cond if isinstance(cond, dict) else {'$eq': cond}).items():
+                f.append(f'filter(fn: (r) => r.{c} {"==" if op == "$eq" else ops[op]} {_lit_flux(valor)})')
+        campo, desc = self._ordem
+        f.append(f'sort(columns: [{_lit_flux(campo)}], desc: {"true" if desc else "false"})')
+        if self._limite is not None:
+            f.append(f'limit(n: {self._limite})')
+        return '\n  |> '.join(f)
+
+    def executar(self):
+        linhas = self._db.consulta(self._flux())
+        for l in linhas:
+            if '_time' in l:
+                l['tempo'] = l.pop('_time')
+            for k in ('_start', '_stop', '_measurement'):
+                l.pop(k, None)
+        return linhas
+
+    def __iter__(self):
+        return iter(self.executar())
+
+    def __len__(self):
+        return len(self.executar())
+
+    def primeiro(self):
+        self._limite = 1
+        r = self.executar()
+        return r[0] if r else None
+
+    def existe(self):
+        return self.primeiro() is not None
+
+    def contar(self):
+        return len(self.executar())
