@@ -67,6 +67,17 @@ _registrar('mongodb',  'MongoDB',    'Documentos (NoSQL)', 'pymongo', 'pymongo',
            ['mongodb', 'mongodb+srv', 'mongo'], 27017, 'ConectorMongoDB', 'mock', ('mongo',))
 _registrar('redis',    'Redis',      'Chave-valor e cache', 'redis', 'redis',
            ['redis', 'rediss'], 6379, 'ConectorRedis', 'mock')
+# ── Grupo 2, lote A ──
+_registrar('cockroachdb', 'CockroachDB', 'Relacional', 'psycopg2', 'psycopg2-binary',
+           ['cockroachdb', 'cockroach'], 26257, 'ConectorCockroach', 'mock', ('cockroach',))
+_registrar('timescaledb', 'TimescaleDB', 'Séries temporais', 'psycopg2', 'psycopg2-binary',
+           ['timescaledb', 'timescale'], 5432, 'ConectorTimescale', 'mock', ('timescale',))
+_registrar('oracle',   'Oracle',     'Relacional', 'oracledb', 'oracledb',
+           ['oracle', 'oracledb'], 1521, 'ConectorOracle', 'mock')
+_registrar('firebird', 'Firebird',   'Relacional', 'firebird.driver', 'firebird-driver',
+           ['firebird'], 3050, 'ConectorFirebird', 'mock')
+_registrar('db2',      'IBM Db2',    'Relacional', 'ibm_db_dbi', 'ibm_db',
+           ['db2', 'ibmdb2'], 50000, 'ConectorDb2', 'mock', ('ibmdb2', 'ibm_db2'))
 
 
 def _tipo_por_nome(nome):
@@ -182,14 +193,20 @@ def resolver_conexao(destino, **kw):
             url = os.environ.get('ADVAK_POSTGRESQL_URL')
         if url:
             return _params_de_url(url)
-    padrao_usuario = {'postgres': 'postgres', 'mysql': 'root', 'mariadb': 'root', 'mssql': 'sa'}.get(tipo)
+    padrao_usuario = {'postgres': 'postgres', 'timescaledb': 'postgres', 'cockroachdb': 'root',
+                      'mysql': 'root', 'mariadb': 'root', 'mssql': 'sa', 'oracle': 'system',
+                      'firebird': 'SYSDBA', 'db2': 'db2inst1', 'clickhouse': 'default',
+                      'neo4j': 'neo4j'}.get(tipo)
+    conhecidos = {'host', 'hospedeiro', 'porta', 'port', 'usuario', 'user', 'senha', 'password',
+                  'banco', 'nome', 'database'}
+    extras = {k: v for k, v in kw.items() if k not in conhecidos}
     return tipo, dict(
         host=str(kw.get('host') or kw.get('hospedeiro') or 'localhost'),
         porta=int(kw.get('porta') or kw.get('port') or BANCOS[tipo]['porta'] or 0) or None,
         usuario=kw.get('usuario') or kw.get('user') or padrao_usuario,
         senha=kw.get('senha') or kw.get('password') or '',
         banco=kw.get('banco') or kw.get('nome') or kw.get('database'),
-        esquema=tipo, opcoes={})
+        esquema=tipo, opcoes=extras)
 
 
 def eh_conexao_nova(args, kwargs):
@@ -299,6 +316,12 @@ class ConectorSQL(ConectorBase):
     autonum = 'INTEGER PRIMARY KEY'
     verdadeiro, falso = 'TRUE', 'FALSE'
     texto_indexavel = 'VARCHAR(255)'    # texto com UNIQUE/índice (MySQL/SQL Server exigem tamanho)
+    suporta_notnull = True              # alguns bancos não têm NOT NULL / UNIQUE / DEFAULT
+    suporta_unico = True
+    suporta_padrao = True
+    sem_if_not_exists = False           # Oracle, Firebird e Db2 não têm CREATE TABLE IF NOT EXISTS
+    sem_if_exists = False               # ... nem DROP TABLE IF EXISTS
+    minusculas = False                  # o banco devolve nomes em MAIÚSCULAS (Oracle, Firebird, Db2, Snowflake)
 
     def __init__(self, params):
         super().__init__(params)
@@ -340,9 +363,16 @@ class ConectorSQL(ConectorBase):
             except IndexError:
                 raise ErroBanco("Faltam valores para os marcadores $n da consulta")
             consulta = re.sub(r'\$\d+', '%s', consulta)
+        consulta = self._trocar_marcadores(consulta)
+        return consulta, (tuple(_converter_param(p) for p in params) if params else None)
+
+    def _trocar_marcadores(self, consulta):
         if self.marcador != '%s':
             consulta = consulta.replace('%s', self.marcador)
-        return consulta, (tuple(_converter_param(p) for p in params) if params else None)
+        return consulta
+
+    def _nome_col(self, nome):
+        return str(nome).lower() if self.minusculas else nome
 
     def _cursor(self, conn):
         return conn.cursor()
@@ -361,7 +391,7 @@ class ConectorSQL(ConectorBase):
             else:
                 cur.execute(consulta, params)
             if buscar:
-                cols = [d[0] for d in cur.description] if cur.description else []
+                cols = [self._nome_col(d[0]) for d in cur.description] if cur.description else []
                 return [dict(zip(cols, (_converter_valor(v) for v in row))) for row in cur.fetchall()]
             n = cur.rowcount
             self._ultimo_id = getattr(cur, 'lastrowid', None)
@@ -413,11 +443,8 @@ class ConectorSQL(ConectorBase):
         if base == self.tipos['texto'] and ('unico' in mods or 'unique' in mods or 'indice' in mods):
             base = self.texto_indexavel
         sql = [self._id(campo), base]
-        if 'obrigatorio' in mods or 'notnull' in mods:
-            sql.append('NOT NULL')
-        if 'unico' in mods or 'unique' in mods:
-            sql.append('UNIQUE')
-        if 'padrao' in mods:
+        # ordem aceita por todos os bancos: tipo, DEFAULT, NOT NULL, UNIQUE
+        if 'padrao' in mods and self.suporta_padrao:
             i = mods.index('padrao')
             if i + 1 < len(mods):
                 v = mods[i + 1]
@@ -430,6 +457,10 @@ class ConectorSQL(ConectorBase):
                     pass
                 else:
                     sql.append(f'DEFAULT {v}')
+        if ('obrigatorio' in mods or 'notnull' in mods) and self.suporta_notnull:
+            sql.append('NOT NULL')
+        if ('unico' in mods or 'unique' in mods) and self.suporta_unico:
+            sql.append('UNIQUE')
         return ' '.join(sql), antes, fk
 
     def _criar_se_nao_existe(self, tabela, corpo):
@@ -444,8 +475,11 @@ class ConectorSQL(ConectorBase):
             antes += pre
             if fk:
                 fks.append(fk)
+        self._cols_nomes = [str(c) for c in dict(campos)]
         if sobrescrever:
             self.apagar_tabela(nome)
+        if self.sem_if_not_exists and self.existe_tabela(nome):
+            return f"ℹ️  Tabela '{nome}' já existe"
         for cmd in antes:
             self._executar(cmd)
         self._executar(self._criar_se_nao_existe(nome, ',\n    '.join(cols + fks)))
@@ -454,7 +488,12 @@ class ConectorSQL(ConectorBase):
     criar_tabela = tabela
 
     def apagar_tabela(self, nome, cascata=False):
-        self._executar(f'DROP TABLE IF EXISTS {self._id(nome)}')
+        if self.sem_if_exists:
+            if not self.existe_tabela(nome):
+                return f"ℹ️  Tabela '{nome}' não existe"
+            self._executar(f'DROP TABLE {self._id(nome)}')
+        else:
+            self._executar(f'DROP TABLE IF EXISTS {self._id(nome)}')
         return f"✅ Tabela '{nome}' removida"
 
     def _sql_listar_tabelas(self):
@@ -462,10 +501,11 @@ class ConectorSQL(ConectorBase):
                 "WHERE table_schema = 'public' AND table_type = 'BASE TABLE' ORDER BY table_name")
 
     def listar_tabelas(self):
-        return [r['nome'] for r in self._executar(self._sql_listar_tabelas(), buscar=True)]
+        nomes = [str(r['nome']).strip() for r in self._executar(self._sql_listar_tabelas(), buscar=True)]
+        return [n.lower() for n in nomes] if self.minusculas else nomes
 
     def existe_tabela(self, nome):
-        return nome in self.listar_tabelas()
+        return (str(nome).lower() if self.minusculas else str(nome)) in self.listar_tabelas()
 
     def _sql_colunas(self):
         return ("SELECT column_name AS coluna, data_type AS tipo, is_nullable AS aceita_nulo "
@@ -526,6 +566,19 @@ class ConectorSQL(ConectorBase):
             q += f' WHERE {onde}'
         r = self._executar(q, params, buscar=True)
         return int(r[0]['total']) if r else 0
+
+    def _montar_update(self, tabela, colunas, where):
+        sets = ', '.join(f'{self._id(k)} = %s' for k in colunas)
+        q = f'UPDATE {self._id(tabela)} SET {sets}'
+        if where:
+            q += ' WHERE ' + ' AND '.join(f'({w})' for w in where)
+        return q
+
+    def _montar_delete(self, tabela, where):
+        q = f'DELETE FROM {self._id(tabela)}'
+        if where:
+            q += ' WHERE ' + ' AND '.join(f'({w})' for w in where)
+        return q
 
     # ── paginação (cada dialeto pode sobrescrever) ───────────────────────────
     def _montar_select(self, cols, tabela, where, ordem, limite, offset):
@@ -642,12 +695,8 @@ class AtualizacaoSQL:
     def executar(self):
         if not self._dados:
             raise ErroBanco("atualizar: nenhum dado informado")
-        sets = ', '.join(f'{self._db._id(k)} = %s' for k in self._dados)
-        q = f'UPDATE {self._db._id(self._tabela)} SET {sets}'
-        valores = list(self._dados.values())
-        if self._where:
-            q += ' WHERE ' + ' AND '.join(f'({w})' for w in self._where)
-            valores += self._params
+        q = self._db._montar_update(self._tabela, list(self._dados), self._where)
+        valores = list(self._dados.values()) + (self._params if self._where else [])
         return self._db._executar(q, valores)
 
 
@@ -662,9 +711,7 @@ class RemocaoSQL:
         return self
 
     def executar(self):
-        q = f'DELETE FROM {self._db._id(self._tabela)}'
-        if self._where:
-            q += ' WHERE ' + ' AND '.join(f'({w})' for w in self._where)
+        q = self._db._montar_delete(self._tabela, self._where)
         return self._db._executar(q, self._params or None)
 
 
@@ -805,10 +852,13 @@ class ConectorPostgres(ConectorSQL):
     tipos = dict(ConectorSQL.tipos, datahora='TIMESTAMP DEFAULT NOW()', json='JSONB', bytes='BYTEA')
 
     def _conectar_driver(self):
-        pg = _carregar_driver('postgres')
+        pg = _carregar_driver(self.tipo)
         p = self.params
+        extra = {}
+        if (p.get('opcoes') or {}).get('sslmode'):
+            extra['sslmode'] = p['opcoes']['sslmode']
         return pg.connect(host=p['host'], port=p['porta'], user=p['usuario'],
-                          password=p['senha'] or '', dbname=p['banco'] or 'postgres')
+                          password=p['senha'] or '', dbname=p['banco'] or 'postgres', **extra)
 
     def inserir(self, tabela, dados):
         if not dados:
@@ -924,6 +974,181 @@ class ConectorMSSQL(ConectorSQL):
         q = f'SELECT {topo}{cols} {base}'
         if ordem:
             q += f' ORDER BY {ordem}'
+        return q
+
+
+# ── CockroachDB / TimescaleDB (falam o protocolo do PostgreSQL) ──────────────
+
+class ConectorCockroach(ConectorPostgres):
+    """CockroachDB: mesmo protocolo do PostgreSQL (porta 26257). Use ?sslmode=require na URL."""
+    tipo = 'cockroachdb'
+
+
+class ConectorTimescale(ConectorPostgres):
+    """TimescaleDB: PostgreSQL com extensão de séries temporais."""
+    tipo = 'timescaledb'
+
+    def criar_hipertabela(self, tabela, coluna_tempo='tempo', intervalo=None):
+        """db.criar_hipertabela("sensores", "tempo")  — transforma a tabela em hypertable."""
+        self._executar('CREATE EXTENSION IF NOT EXISTS timescaledb')
+        q = f"SELECT create_hypertable('{self._id(tabela).replace(chr(34), '')}', '{self._id(coluna_tempo).replace(chr(34), '')}', if_not_exists => TRUE)"
+        self._executar(q, buscar=True)
+        return f"✅ Tabela '{tabela}' agora é uma hipertabela (coluna de tempo: {coluna_tempo})"
+
+
+# ── Bancos que guardam nomes em MAIÚSCULAS: Oracle, Firebird, Db2 ────────────
+
+class ConectorMaiusculas(ConectorSQL):
+    """Nomes sem aspas (o banco os guarda em MAIÚSCULAS) e resultados devolvidos em minúsculas."""
+    aspas = ('', '')
+    minusculas = True
+    sem_if_not_exists = True
+    sem_if_exists = True
+
+    def inserir(self, tabela, dados):
+        # sem RETURNING portátil: devolve os dados enviados (use buscar para ler o id gerado)
+        if not dados:
+            raise ErroBanco("inserir: nenhum dado informado")
+        dados = dict(dados)
+        cols = ', '.join(self._id(c) for c in dados)
+        marc = ', '.join(['%s'] * len(dados))
+        self._executar(f'INSERT INTO {self._id(tabela)} ({cols}) VALUES ({marc})', list(dados.values()))
+        return dict(dados)
+
+
+class ConectorOracle(ConectorMaiusculas):
+    tipo = 'oracle'
+    marcador = ':n'
+    autonum = 'NUMBER GENERATED BY DEFAULT ON NULL AS IDENTITY PRIMARY KEY'
+    verdadeiro, falso = '1', '0'
+    texto_indexavel = 'VARCHAR2(255)'
+    tipos = dict(ConectorSQL.tipos, inteiro='NUMBER(10)', numero='NUMBER', decimal='NUMBER(15,2)',
+                 flutuante='BINARY_DOUBLE', grande='NUMBER(19)', texto='CLOB', varchar='VARCHAR2(255)',
+                 hora='VARCHAR2(8)', datahora='TIMESTAMP DEFAULT SYSTIMESTAMP',
+                 booleano='NUMBER(1)', bool='NUMBER(1)', json='CLOB', bytes='BLOB', ref='NUMBER(10)')
+
+    def _conectar_driver(self):
+        oracledb = _carregar_driver('oracle')
+        p = self.params
+        try:
+            oracledb.defaults.fetch_lobs = False          # CLOB/BLOB vêm como texto/bytes
+        except Exception:
+            pass
+        servico = p.get('banco') or (p.get('opcoes') or {}).get('servico') or 'XEPDB1'
+        return oracledb.connect(user=p['usuario'], password=p['senha'] or '',
+                                dsn=f"{p['host']}:{p['porta']}/{servico}")
+
+    def _trocar_marcadores(self, consulta):
+        n = [0]
+
+        def num(_):
+            n[0] += 1
+            return f':{n[0]}'
+        return re.sub(r'%s', num, consulta)
+
+    def _sql_listar_tabelas(self):
+        return "SELECT table_name AS nome FROM user_tables ORDER BY table_name"
+
+    def _sql_colunas(self):
+        return ("SELECT column_name AS coluna, data_type AS tipo, "
+                "CASE nullable WHEN 'Y' THEN 'YES' ELSE 'NO' END AS aceita_nulo "
+                "FROM user_tab_columns WHERE table_name = UPPER(%s) ORDER BY column_id")
+
+    def apagar_tabela(self, nome, cascata=False):
+        if not self.existe_tabela(nome):
+            return f"ℹ️  Tabela '{nome}' não existe"
+        self._executar(f'DROP TABLE {self._id(nome)}' + (' CASCADE CONSTRAINTS' if cascata else ''))
+        return f"✅ Tabela '{nome}' removida"
+
+    def _montar_select(self, cols, tabela, where, ordem, limite, offset):
+        q = f'SELECT {cols} FROM {self._id(tabela)}'
+        if where:
+            q += ' WHERE ' + ' AND '.join(f'({w})' for w in where)
+        if ordem:
+            q += f' ORDER BY {ordem}'
+        if offset:
+            q += f' OFFSET {int(offset)} ROWS'
+        if limite is not None:
+            q += f' FETCH NEXT {int(limite)} ROWS ONLY'
+        return q
+
+
+class ConectorFirebird(ConectorMaiusculas):
+    tipo = 'firebird'
+    marcador = '?'
+    autonum = 'INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY'
+    tipos = dict(ConectorSQL.tipos, numero='NUMERIC(18,6)', decimal='DECIMAL(15,2)',
+                 flutuante='DOUBLE PRECISION', texto='BLOB SUB_TYPE TEXT', json='BLOB SUB_TYPE TEXT',
+                 bytes='BLOB')
+
+    def _conectar_driver(self):
+        fb = _carregar_driver('firebird')
+        p = self.params
+        banco = p.get('banco') or ''
+        if p.get('host') and p['host'] not in ('', 'embedded'):
+            banco = f"{p['host']}/{p['porta']}:{banco}"
+        return fb.connect(banco, user=p['usuario'], password=p['senha'] or '', charset='UTF8')
+
+    def _sql_listar_tabelas(self):
+        return ("SELECT TRIM(rdb$relation_name) AS nome FROM rdb$relations "
+                "WHERE COALESCE(rdb$system_flag, 0) = 0 AND rdb$view_blr IS NULL ORDER BY 1")
+
+    def _sql_colunas(self):
+        return ("SELECT TRIM(rf.rdb$field_name) AS coluna, CAST(f.rdb$field_type AS VARCHAR(10)) AS tipo, "
+                "CASE WHEN rf.rdb$null_flag = 1 THEN 'NO' ELSE 'YES' END AS aceita_nulo "
+                "FROM rdb$relation_fields rf JOIN rdb$fields f ON f.rdb$field_name = rf.rdb$field_source "
+                "WHERE rf.rdb$relation_name = UPPER(%s) ORDER BY rf.rdb$field_position")
+
+    def _montar_select(self, cols, tabela, where, ordem, limite, offset):
+        topo = ''
+        if limite is not None:
+            topo += f'FIRST {int(limite)} '
+        if offset:
+            topo += f'SKIP {int(offset)} '
+        q = f'SELECT {topo}{cols} FROM {self._id(tabela)}'
+        if where:
+            q += ' WHERE ' + ' AND '.join(f'({w})' for w in where)
+        if ordem:
+            q += f' ORDER BY {ordem}'
+        return q
+
+
+class ConectorDb2(ConectorMaiusculas):
+    tipo = 'db2'
+    marcador = '?'
+    autonum = 'INTEGER NOT NULL GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY'
+    verdadeiro, falso = 'TRUE', 'FALSE'
+    tipos = dict(ConectorSQL.tipos, numero='DECIMAL(20,6)', decimal='DECIMAL(15,2)', flutuante='DOUBLE',
+                 texto='VARCHAR(2000)', datahora='TIMESTAMP DEFAULT CURRENT TIMESTAMP',
+                 json='CLOB', bytes='BLOB')
+
+    def _conectar_driver(self):
+        dbi = _carregar_driver('db2')
+        p = self.params
+        dsn = (f"DATABASE={p.get('banco') or ''};HOSTNAME={p['host']};PORT={p['porta']};"
+               f"PROTOCOL=TCPIP;UID={p['usuario']};PWD={p['senha'] or ''};")
+        return dbi.connect(dsn, '', '')
+
+    def _sql_listar_tabelas(self):
+        return ("SELECT tabname AS nome FROM syscat.tables "
+                "WHERE tabschema = CURRENT SCHEMA AND type = 'T' ORDER BY tabname")
+
+    def _sql_colunas(self):
+        return ("SELECT colname AS coluna, typename AS tipo, "
+                "CASE nulls WHEN 'Y' THEN 'YES' ELSE 'NO' END AS aceita_nulo "
+                "FROM syscat.columns WHERE tabschema = CURRENT SCHEMA AND tabname = UPPER(%s) "
+                "ORDER BY colno")
+
+    def _montar_select(self, cols, tabela, where, ordem, limite, offset):
+        q = f'SELECT {cols} FROM {self._id(tabela)}'
+        if where:
+            q += ' WHERE ' + ' AND '.join(f'({w})' for w in where)
+        if ordem:
+            q += f' ORDER BY {ordem}'
+        if offset:
+            q += f' OFFSET {int(offset)} ROWS'
+        if limite is not None:
+            q += f' FETCH FIRST {int(limite)} ROWS ONLY'
         return q
 
 
