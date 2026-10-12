@@ -46,10 +46,10 @@ testar("SQLite - transacao reverter e confirmar", () => {
 
 testar("SQLite - erros em portugues", () => {
     seja erro = "";
-    tentar { db.sql("SELECT * FROM tabela_que_nao_existe"); } capturar (e) { erro = "${e}"; }
+    tentar { db.sql("SELECT * FROM tabela_que_nao_existe"); } capturar (e) { erro = "" + e; }
     afirmar_igual(erro.contem("Erro no"), verdadeiro);
     seja erro2 = "";
-    tentar { db.buscar("a;drop").executar(); } capturar (e) { erro2 = "${e}"; }
+    tentar { db.buscar("a;drop").executar(); } capturar (e) { erro2 = "" + e; }
     afirmar_igual(erro2.contem("inválido"), verdadeiro);
 });
 

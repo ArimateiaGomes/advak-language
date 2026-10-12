@@ -1,0 +1,77 @@
+// Testes contra bancos REAIS (PostgreSQL, MySQL, MariaDB, SQL Server, MongoDB, Redis).
+// Só rodam o que estiver configurado no .env, por exemplo:
+//   ADVAK_TESTE_MYSQL_URL=mysql://root:senha@localhost:3306/teste_advak
+// Use um banco de TESTE: as tabelas "advak_teste_produtos" e as chaves "advak_teste:*" são
+// criadas e apagadas. Os demais bancos são ignorados ("PULADO").
+
+env.carregar(".env");
+
+para (tipo em ["postgres", "mysql", "mariadb", "mssql"]) {
+    seja url = env.texto("ADVAK_TESTE_" + tipo.upper() + "_URL", "");
+    se (url == "") {
+        imprimir("  PULADO " + tipo + " (defina ADVAK_TESTE_" + tipo.upper() + "_URL)");
+    } senao {
+        seja db = banco.conectar(url);
+        testar(tipo + " - CRUD completo", () => {
+            db.apagar_tabela("advak_teste_produtos");
+            db.tabela("advak_teste_produtos", {id: "autonum", nome: "texto obrigatorio", preco: "decimal"});
+            seja novo = db.inserir("advak_teste_produtos", {nome: "Caneta", preco: 2.5});
+            afirmar_igual(novo.nome, "Caneta");
+            db.inserir_varios("advak_teste_produtos", [{nome: "Lapis", preco: 1}, {nome: "Caderno", preco: 15}]);
+            afirmar_igual(db.contar("advak_teste_produtos"), 3);
+            seja caros = db.buscar("advak_teste_produtos").onde("preco > %s", 2).ordenar("nome").executar();
+            afirmar_igual(caros.tamanho, 2);
+            afirmar_igual(caros[0].nome, "Caderno");
+            afirmar_igual(db.buscar("advak_teste_produtos").ordenar("id").pagina(2, 2).executar().tamanho, 1);
+            afirmar_igual(db.atualizar("advak_teste_produtos", {preco: 20}).onde("nome = %s", "Caderno").executar(), 1);
+            afirmar_igual(db.sql("SELECT nome FROM advak_teste_produtos WHERE nome = $1", ["Lapis"])[0].nome, "Lapis");
+            afirmar_igual(db.deletar("advak_teste_produtos").onde("nome = %s", "Lapis").executar(), 1);
+            db.iniciar();
+            db.inserir("advak_teste_produtos", {nome: "Temp", preco: 1});
+            db.reverter();
+            afirmar_igual(db.contar("advak_teste_produtos"), 2);
+            db.apagar_tabela("advak_teste_produtos");
+        });
+        db.fechar();
+    }
+}
+
+seja url_mongo = env.texto("ADVAK_TESTE_MONGODB_URL", "");
+se (url_mongo == "") {
+    imprimir("  PULADO mongodb (defina ADVAK_TESTE_MONGODB_URL)");
+} senao {
+    seja mongo = banco.conectar(url_mongo);
+    testar("mongodb - CRUD de documentos", () => {
+        mongo.apagar_tabela("advak_teste_clientes");
+        seja novo = mongo.inserir("advak_teste_clientes", {nome: "Ana", idade: 20});
+        afirmar_igual(novo.nome, "Ana");
+        mongo.inserir_varios("advak_teste_clientes", [{nome: "Bia", idade: 30}, {nome: "Caio", idade: 40}]);
+        afirmar_igual(mongo.contar("advak_teste_clientes"), 3);
+        afirmar_igual(mongo.buscar("advak_teste_clientes").onde("idade >= %s", 30).ordenar("idade", "DESC").executar()[0].nome, "Caio");
+        afirmar_igual(mongo.buscar_id("advak_teste_clientes", novo.id).nome, "Ana");
+        afirmar_igual(mongo.atualizar("advak_teste_clientes", {idade: 21}).onde("nome = %s", "Ana").executar(), 1);
+        afirmar_igual(mongo.deletar("advak_teste_clientes").onde("nome = %s", "Bia").executar(), 1);
+        mongo.apagar_tabela("advak_teste_clientes");
+    });
+    mongo.fechar();
+}
+
+seja url_redis = env.texto("ADVAK_TESTE_REDIS_URL", "");
+se (url_redis == "") {
+    imprimir("  PULADO redis (defina ADVAK_TESTE_REDIS_URL)");
+} senao {
+    seja cache = banco.conectar(url_redis);
+    testar("redis - chave-valor", () => {
+        cache.definir("advak_teste:a", "oi");
+        afirmar_igual(cache.obter("advak_teste:a"), "oi");
+        cache.definir("advak_teste:u", {nome: "Ana"}, 30);
+        afirmar_igual(cache.obter_json("advak_teste:u").nome, "Ana");
+        afirmar_igual(cache.incrementar("advak_teste:n"), 1);
+        afirmar_igual(cache.existe("advak_teste:a"), verdadeiro);
+        cache.excluir("advak_teste:a", "advak_teste:u", "advak_teste:n");
+        afirmar_igual(cache.existe("advak_teste:a"), falso);
+    });
+    cache.fechar();
+}
+
+resumo_testes();

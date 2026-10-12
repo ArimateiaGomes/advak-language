@@ -54,7 +54,7 @@ def _registrar(tipo, nome, grupo, modulo, pip, esquemas, porta, classe, testado,
 _registrar('sqlite',   'SQLite',     'Relacional', 'sqlite3',  '(já vem com o Python)',
            ['sqlite', 'sqlite3'], None, 'ConectorSQLite', 'real')
 _registrar('duckdb',   'DuckDB',     'Analítico',  'duckdb',   'duckdb',
-           ['duckdb'], None, 'ConectorDuckDB', 'real')
+           ['duckdb'], None, 'ConectorDuckDB', 'instavel')
 _registrar('postgres', 'PostgreSQL', 'Relacional', 'psycopg2', 'psycopg2-binary',
            ['postgresql', 'postgres', 'pg'], 5432, 'ConectorPostgres', 'mock', ('postgresql', 'pg'))
 _registrar('mysql',    'MySQL',      'Relacional', 'pymysql',  'pymysql',
@@ -99,7 +99,7 @@ def tabela_bancos():
               "  " + "─" * 86]
     for b in listar_bancos():
         inst = "sim" if b['instalado'] else "não"
-        teste = "real" if b['testado'] == 'real' else "simulado"
+        teste = {'real': 'real', 'instavel': 'em teste / instável no Windows'}.get(b['testado'], 'simulado')
         linhas.append(f"  {b['nome']:<12}{b['grupo']:<22}{b['pip']:<28}{inst:<11}{teste}")
     linhas += ["  " + "─" * 86,
                "  Conexão: banco.conectar(\"mysql://usuario:senha@host:3306/nome\")",
@@ -702,6 +702,11 @@ class ConectorSQLite(ConectorSQL):
 
 
 # ── DuckDB ───────────────────────────────────────────────────────────────────
+# ATENÇÃO — EM TESTE / INSTÁVEL NO WINDOWS: com o duckdb 1.5.6 (Python 3.13, Windows) um
+# INSERT com parâmetro de texto executado dentro de uma thread travou, e o python.exe chegou
+# a fechar com erro de memória. Como o `testar` e o servidor web do Advak rodam em threads,
+# use o DuckDB só em scripts simples (thread principal) até isso ser resolvido.
+# O teste automático foi desativado: testes/_desativados/bancos_duckdb.dk.desativado
 
 class ConectorDuckDB(ConectorSQL):
     tipo = 'duckdb'
@@ -936,17 +941,21 @@ def cond_para_filtro(condicao, params):
     if isinstance(condicao, dict):
         return dict(condicao)
     params = list(params)
-    filtro = {}
+    filtro, seq = {}, 0
     for parte in re.split(r'\s+AND\s+', str(condicao), flags=re.IGNORECASE):
         m = _RE_COND.match(parte)
         if not m:
             raise ErroBanco(f"MongoDB: condição não suportada: '{parte.strip()}'. Use campo = %s, "
                             "campo > %s, ... ligados por AND, ou passe um dicionário de filtro.")
         campo, op, marc = m.groups()
-        if marc.startswith('$'):
-            valor = params[int(marc[1:]) - 1]
-        else:
-            valor = params.pop(0)
+        try:
+            if marc.startswith('$'):
+                valor = params[int(marc[1:]) - 1]
+            else:
+                valor = params[seq]
+                seq += 1
+        except IndexError:
+            raise ErroBanco("MongoDB: faltam valores para os marcadores da condição")
         mongo_op = _OPS_MONGO[op]
         if mongo_op is None:
             filtro[campo] = valor
