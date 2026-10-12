@@ -944,7 +944,9 @@ Um bom roteiro para quem quer estudar como uma linguagem de programação é con
 
 ## Licença
 
-Defina aqui a licença do projeto (por exemplo, MIT).
+Este projeto está sob a licença **MIT**. Você pode usar, estudar, modificar e distribuir a Advak Language livremente, inclusive em projetos comerciais, desde que mantenha o aviso de direitos autorais e a licença. Veja o arquivo [LICENSE](LICENSE).
+
+© 2026 Prof. Arimatéa Gomes
 
 ## Autor
 
