@@ -113,7 +113,8 @@ TOKEN_SPECS = [
 
 class AdvakLexer:
     def __init__(self, source_code):
-        self.source = source_code
+        # Bloco de Notas do Windows grava BOM UTF-8 no início do arquivo
+        self.source = source_code.lstrip('﻿') if isinstance(source_code, str) else source_code
         self.tokens = []
         self._combined = re.compile(
             '|'.join(f'(?P<{n}>{p})' for n, p in TOKEN_SPECS), re.UNICODE)
