@@ -134,7 +134,7 @@ try:
 except ImportErro:
     cmd_repl = None
 
-VERSION = "5.1.0"
+VERSION = "5.2.0"
 
 def cmd_run(path, with_db=False, debug=False, passo=False):
     if not os.path.exists(path):

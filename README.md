@@ -9,7 +9,23 @@ seja nome = entrada("Qual é o seu nome? ")
 imprimir(`Olá, ${nome}! Bem-vindo ao Advak.`)
 ```
 
-> Versão atual: **5.1.0** · Autor: **Prof. Arimatéa Gomes** — CETI Silvestre Rocha, Arraial-PI
+> Versão atual: **5.2.0** · Autor: **Prof. Arimatéa Gomes** — CETI Silvestre Rocha, Arraial-PI
+
+## 📚 Aprenda a programar com Advak
+
+**Nunca programou? Comece aqui:** [docs/curso/README.md](docs/curso/README.md) — um curso de 24 aulas curtas,
+do primeiro `imprimir` até um sistema completo, feito para alunos do ensino médio e da EJA. Todos os
+exemplos do curso foram executados com a Advak e a saída mostrada é a real. O curso **não depende de
+internet, de chave de API nem de IA**.
+
+| Quero... | Vá para |
+|---|---|
+| Instalar a Advak (Windows ou Linux), com PostgreSQL | [docs/INSTALACAO.md](docs/INSTALACAO.md) |
+| Aprender do zero | [docs/curso/README.md](docs/curso/README.md) |
+| Ver aplicativos completos do dia a dia, explicados | [docs/GUIA_PRATICO.md](docs/GUIA_PRATICO.md) |
+| Conectar a um dos 23 bancos de dados | [docs/BANCOS_DE_DADOS.md](docs/BANCOS_DE_DADOS.md) |
+| Usar IA (opcional) | [docs/IA.md](docs/IA.md) e [docs/DOCUMENTOS.md](docs/DOCUMENTOS.md) |
+| Ver o que mudou | [CHANGELOG.md](CHANGELOG.md) |
 
 ---
 
@@ -30,6 +46,7 @@ A linguagem de programação Advak foi influenciada por **Python**, **C**, **Pro
 ## Sumário
 
 1. [Influências](#influências)
+1. [Novidades da versão 5.2](#novidades-da-versão-52)
 1. [Instalação](#instalação)
 2. [Como executar](#como-executar)
 3. [Primeiro programa](#primeiro-programa)
@@ -48,7 +65,7 @@ A linguagem de programação Advak foi influenciada por **Python**, **C**, **Pro
    - [Módulos](#módulos)
 5. [Biblioteca padrão](#biblioteca-padrão)
    - [Inteligência artificial (opcional)](#inteligência-artificial-opcional)
-6. [Banco de dados](#banco-de-dados)
+6. [Banco de dados](#banco-de-dados) (PostgreSQL e [23 bancos suportados](#bancos-de-dados-suportados))
 7. [Servidor web](#servidor-web)
 8. [Interface gráfica](#interface-gráfica)
 9. [Testes unitários](#testes-unitários)
@@ -60,7 +77,31 @@ A linguagem de programação Advak foi influenciada por **Python**, **C**, **Pro
 
 ---
 
+## Novidades da versão 5.2
+
+| Novidade | Exemplo |
+|---|---|
+| **Intervalos** | `para (i em 1..=10 passo 2) { }` — `1..10` não inclui o fim, `1..=10` inclui |
+| **Compreensão de listas** | `[x * 2 para x em lista se x > 0]` |
+| **Interpolação com formatação** | `` `Total: ${preco:moeda}` `` → `R$ 1.500,50`; `` `${d:dd/mm/aaaa}` `` |
+| **Tipagem opcional** | `seja idade: inteiro = 17`, `função somar(a: numero, b: numero) -> numero { ... }` |
+| **23 bancos de dados** | `banco.conectar("mysql://usuario:senha@localhost/loja")` — mesma API para todos |
+| **IA (opcional)** | `seja assistente = ia.conectar("ollama")` — 8 provedores, só carregada se você usar |
+| **Documentos** | `documento.ler("relatorio.pdf")` e `assistente.perguntar("Resuma", {anexos: ["a.pdf"]})` |
+| **Ferramentas corrigidas** | `advak formatar` (`+=`, `=>`, textos de várias linhas), `--verificar` e o transpilador Python (números negativos) |
+| **Correções** | `caso` com condição, `importar` com `;`, `servidor.rota`, `enum`, geradores, `inicio(...)` como construtor, `lista.primeiro`, arquivos `.dk` com BOM do Bloco de Notas |
+
+Veja o detalhe de cada uma nas seções abaixo, no [CHANGELOG](CHANGELOG.md) e em
+[docs/RECURSOS_5_2.md](docs/RECURSOS_5_2.md).
+
+> **A IA é opcional.** A Advak funciona 100% sem ela: sem internet, sem chave de API e sem custo.
+
+---
+
 ## Instalação
+
+> Guia completo, passo a passo para iniciantes (Windows e Linux, PostgreSQL, problemas comuns):
+> **[docs/INSTALACAO.md](docs/INSTALACAO.md)**.
 
 ### Requisitos
 
@@ -76,7 +117,7 @@ A linguagem de programação Advak foi influenciada por **Python**, **C**, **Pro
 ### Passo a passo (Windows)
 
 ```cmd
-git clone https://github.com/SEU_USUARIO/advak-language.git
+git clone https://github.com/ArimateiaGomes/advak-language.git
 cd advak-language
 pip install ttkbootstrap psycopg2-binary pyserial paho-mqtt pyinstaller
 INSTALAR.bat
@@ -93,6 +134,10 @@ O `INSTALAR.bat` coloca a pasta do Advak no PATH do Windows. **Feche e abra o te
 | `pyinstaller` | Compilar programas `.dk` para `.exe` |
 | `pyserial` | Comunicação com Arduino pela porta serial |
 | `paho-mqtt` | Comunicação com dispositivos IoT (ESP32) |
+
+Os drivers dos outros bancos (MySQL, SQL Server, MongoDB, Redis...) e de leitura de documentos (PDF, Word...)
+também são opcionais e instalados só quando você usar: veja [docs/BANCOS_DE_DADOS.md](docs/BANCOS_DE_DADOS.md)
+e [docs/DOCUMENTOS.md](docs/DOCUMENTOS.md).
 
 ### Configurando o PostgreSQL
 
@@ -182,6 +227,20 @@ imprimir(tipo(idade))         // numero
 imprimir(tipo([1, 2]))        // lista
 ```
 
+**Tipos opcionais** (novo na 5.2): você pode dizer o tipo e a Advak confere para você. Sem o tipo, tudo
+continua livre:
+
+```advak
+seja idade: inteiro = 17
+seja apelido: texto? = nulo                       // o ? aceita também nulo
+função somar(a: numero, b: numero = 0) -> numero { retornar a + b }
+
+idade = "dezoito"   // Tipo incorreto: 'idade' é inteiro, mas recebeu texto ("dezoito").
+```
+
+Tipos: `inteiro`, `numero`, `texto`, `booleano`, `lista` (`lista[numero]`), `mapa`, `funcao`, `nulo`, `qualquer`,
+o nome de uma classe, e `A | B` para "um ou outro".
+
 ### Operadores
 
 ```advak
@@ -233,6 +292,20 @@ s.aparar()                // remove espaços das pontas
 "abcdef".primeiros(3)     // "abc"
 ```
 
+**Formatando valores dentro do texto** (novo na 5.2): depois de `:` vem o formato — dinheiro, porcentagem,
+casas decimais, zeros à esquerda, alinhamento e datas, sempre com vírgula decimal e ponto de milhar:
+
+```advak
+seja preco = 1500.5
+imprimir(`Total: ${preco:moeda}`)                         // Total: R$ 1.500,50
+imprimir(`Desconto: ${0.075:porcentagem.1}`)              // Desconto: 7,5%
+imprimir(`Pedido ${7:03d} | Pi ${3.14159:.2f}`)           // Pedido 007 | Pi 3,14
+imprimir(`Hoje: ${"2024-12-25":dd/mm/aaaa} (${"2024-12-25":dddd})`)   // Hoje: 25/12/2024 (quarta-feira)
+```
+
+Formatos: `moeda`, `numero`, `porcentagem`, `maiusculo`, `minusculo`, `titulo`, `data`, `hora`, `datahora`,
+padrões de data (`dd/mm/aaaa hh:mm`) e estilo Python (`.2f`, `05d`, `>10`). Só vale em textos com crase.
+
 ### Condicionais
 
 ```advak
@@ -275,6 +348,18 @@ para (i em Lista.intervalo(10)) {
     imprimir(i)
 }
 ```
+
+**Intervalos** (novo na 5.2): `1..4` vai de 1 até 3 (o fim **não** entra); `1..=4` vai de 1 até 4 (o fim entra).
+O `passo` (ou `step`) é opcional e, para contar para trás, use passo negativo:
+
+```advak
+para (i em 1..4) { imprimir(i) }              // 1 2 3
+para (i em 1..=4) { imprimir(i) }             // 1 2 3 4
+para (i em 10..=0 passo -5) { imprimir(i) }   // 10 5 0
+seja pares = 2..=10 passo 2                   // fora de um laço vira lista: [2, 4, 6, 8, 10]
+```
+
+Intervalos só aceitam números inteiros e `10..1` é um intervalo vazio (não conta para trás sozinho).
 
 ### Funções e lambdas
 
@@ -346,6 +431,17 @@ seja a = [1, 2]
 seja b = [...a, 3]           // [1, 2, 3]
 seja [x, y] = [10, 20]       // x = 10, y = 20
 ```
+
+**Compreensão de listas** (novo na 5.2): monta uma lista nova a partir de outra, em uma linha:
+
+```advak
+seja nums = [1, -2, 3, -4, 5]
+imprimir([x * 2 para x em nums se x > 0])                 // [2, 6, 10]
+imprimir([x * x para x em 1..=5])                         // [1, 4, 9, 16, 25]
+imprimir([[a, b] para a em 1..=3 para b em 1..=3 se a < b])   // [[1, 2], [1, 3], [2, 3]]
+```
+
+Em inglês: `[x * 2 for x in nums if x > 0]`.
 
 ### Mapas (objetos)
 
@@ -695,6 +791,37 @@ Dentro do `advak` interativo:
 | `:menu` | Documentação completa |
 | `:sair` | Sai do REPL |
 
+### Bancos de dados suportados
+
+Além do PostgreSQL de cima, a versão 5.2 conecta com **23 bancos**, todos com os **mesmos comandos**. Para
+trocar de banco, você muda só a linha de conexão (a senha fica no `.env`, nunca no programa):
+
+```advak
+seja db = banco.conectar("sqlite:///loja.db")      // ou "mysql://usuario:senha@localhost/loja", "mongodb://..."
+db.tabela("clientes", {id: "autonum", nome: "texto obrigatorio", cidade: "texto"})
+db.inserir("clientes", {nome: "Ana", cidade: "Picos"})
+para (c em db.buscar("clientes").onde("cidade = %s", "Picos").executar()) {
+    imprimir(c.id, c.nome)
+}
+db.fechar()
+```
+
+| Tipo | Bancos |
+|---|---|
+| Relacionais | **SQLite**, **PostgreSQL**, MySQL, MariaDB, SQL Server, Oracle, Firebird, IBM Db2, CockroachDB |
+| Séries temporais | TimescaleDB, InfluxDB |
+| Analíticos | DuckDB (em teste / instável no Windows), ClickHouse, Snowflake, Google BigQuery |
+| Documentos | MongoDB, CouchDB, Google Firestore, Amazon DynamoDB |
+| Busca, cache e grafos | Elasticsearch, Redis, Neo4j |
+| Colunar distribuído | Cassandra |
+
+Os drivers são opcionais e só são carregados quando o banco é usado; se faltar um, a Advak mostra o
+`pip install` exato. `advak bancos` lista tudo e mostra o que está instalado.
+
+> **Seja honesto com os testes:** só o **SQLite** foi testado contra um banco de verdade (e o PostgreSQL pelo
+> modo antigo `--db`). Os outros foram testados com drivers simulados. A tabela completa, links de download,
+> strings de conexão e um exemplo de cada banco estão em **[docs/BANCOS_DE_DADOS.md](docs/BANCOS_DE_DADOS.md)**.
+
 ---
 
 ## Servidor web
@@ -828,6 +955,9 @@ Veja `syntax_english.dk` e `english_full.dk`.
 | `advak run arquivo.dk` | Executa um arquivo |
 | `advak run arquivo.dk --db` | Executa com banco de dados |
 | `advak check arquivo.dk` | Verifica a sintaxe |
+| `advak bancos` | Lista os 23 bancos suportados e quais drivers estão instalados |
+| `advak ia` | Lista os provedores de IA e se a chave está configurada (opcional) |
+| `advak documentos` | Lista os formatos de documento que a Advak sabe ler (PDF, DOCX, XLSX...) |
 | `advak --verificar arquivo.dk` | Verifica tipos e padrões (linter) |
 | `advak formatar arquivo.dk` | Formata o código automaticamente |
 | `advak --doc arquivo.dk` | Gera documentação HTML do arquivo |
@@ -887,6 +1017,21 @@ Na pasta `projetos/`:
 | `firmware_arduino/`, `firmware_esp32/`, `firmware_micropython/` | Código gerado para placas |
 | `REFERENCIA.md` | Glossário com todas as funções |
 
+Na pasta `testes/` há um `.dk` de teste para cada recurso novo (`intervalos.dk`, `compreensao.dk`,
+`formatacao.dk`, `tipagem.dk`, `bancos_sqlite.dk`...), que também servem de exemplo de uso.
+
+### Documentação
+
+| Documento | Conteúdo |
+|---|---|
+| [docs/curso/README.md](docs/curso/README.md) | **Aprenda a programar com Advak** — curso de 24 aulas para quem nunca programou |
+| [docs/INSTALACAO.md](docs/INSTALACAO.md) | Instalação passo a passo (Windows e Linux), PostgreSQL e problemas comuns |
+| [docs/GUIA_PRATICO.md](docs/GUIA_PRATICO.md) | Aplicativos completos do dia a dia, explicados linha a linha |
+| [docs/BANCOS_DE_DADOS.md](docs/BANCOS_DE_DADOS.md) | Os 23 bancos suportados: quando usar, download, driver, conexão e exemplo |
+| [docs/IA.md](docs/IA.md), [docs/DOCUMENTOS.md](docs/DOCUMENTOS.md) | IA e leitura de documentos (opcionais) |
+| [docs/RECURSOS_5_2.md](docs/RECURSOS_5_2.md) | Detalhes dos recursos novos da linguagem |
+| [CHANGELOG.md](CHANGELOG.md) | Histórico de versões |
+
 ---
 
 ## Estrutura do projeto
@@ -901,6 +1046,11 @@ advak-language/
 ├── advak_erros.py           # Mensagens de erro em português
 │
 ├── advak_db.py              # Motor de banco PostgreSQL
+├── advak_conectores.py      # Conectores dos 23 bancos (API única)
+├── advak_ia.py              # IA com 8 provedores (opcional, carregada sob demanda)
+├── advak_documentos.py      # Leitura de PDF, DOCX, XLSX, PPTX, imagens (opcional)
+├── advak_formatacao.py      # Formatos de ${valor:moeda}, datas e números
+├── advak_tipos.py           # Tipagem opcional (seja x: inteiro)
 ├── advak_bancoweb.py        # Banco automático (PostgreSQL ou SQLite)
 ├── advak_http.py            # Servidor HTTP nativo
 ├── advak_web.py             # Servidor web completo, autenticação
@@ -929,7 +1079,10 @@ advak-language/
 ├── .env.exemplo             # Modelo de configuração
 │
 ├── *.dk                     # Exemplos principais
-└── projetos/                # Mais exemplos e projetos
+├── projetos/                # Mais exemplos e projetos
+├── docs/                    # Documentação, guia prático e o curso (docs/curso/)
+├── exemplos/                # Aplicativos do guia prático (docs/GUIA_PRATICO.md)
+└── testes/                  # Testes de cada recurso (.dk e Python)
 ```
 
 ### Como funciona por dentro
@@ -967,6 +1120,9 @@ Um bom roteiro para quem quer estudar como uma linguagem de programação é con
 | `nulo` | `null` | Sem valor |
 | `imprimir` | `print` | Mostrar na tela |
 | `entrada` | `input` | Ler do teclado |
+| `1..10` / `1..=10` / `passo` | `step` | Intervalo sem / com o fim, e o salto |
+| `[x para x em l se c]` | `[x for x in l if c]` | Compreensão de listas |
+| `: tipo` / `-> tipo` | | Tipo opcional de variável / parâmetro / retorno |
 
 ---
 
