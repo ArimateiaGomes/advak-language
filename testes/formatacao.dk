@@ -1,0 +1,167 @@
+// Interpolação com formatação:  `${valor:formato}`  (só em textos com crase)
+
+testar("sem formato continua igual", () => {
+    seja a = 8;
+    seja b = 4;
+    afirmar_igual(`${a} + ${b} = ${a + b}`, "8 + 4 = 12");
+    afirmar_igual(`${nulo} ${verdadeiro} ${[1, 2]}`, "nulo verdadeiro [1, 2]");
+    afirmar_igual(`sem nada`, "sem nada");
+    afirmar_igual(`${}`, "${}");
+});
+
+testar("moeda", () => {
+    afirmar_igual(`${1500.5:moeda}`, "R$ 1.500,50");
+    afirmar_igual(`${1500.5:moeda.0}`, "R$ 1.501");
+    afirmar_igual(`${1234567:moeda}`, "R$ 1.234.567,00");
+    afirmar_igual(`${-9.9:moeda}`, "-R$ 9,90");
+    afirmar_igual(`${0:moeda}`, "R$ 0,00");
+    afirmar_igual(`${2.675:moeda}`, "R$ 2,68");
+    afirmar_igual(`${3:currency}`, "R$ 3,00");
+    afirmar_igual(`${1500.5:moeda.3}`, "R$ 1.500,500");
+});
+
+testar("numero", () => {
+    afirmar_igual(`${1234567:numero}`, "1.234.567");
+    afirmar_igual(`${1234.5:numero}`, "1.234,5");
+    afirmar_igual(`${3.14159:numero}`, "3,14159");
+    afirmar_igual(`${2.0:numero}`, "2");
+    afirmar_igual(`${1234.5:numero.2}`, "1.234,50");
+    afirmar_igual(`${1234.567:numero.1}`, "1.234,6");
+    afirmar_igual(`${-1234:number}`, "-1.234");
+});
+
+testar("porcentagem", () => {
+    afirmar_igual(`${0.75:porcentagem}`, "75%");
+    afirmar_igual(`${0.075:porcentagem.1}`, "7,5%");
+    afirmar_igual(`${75:pct}`, "75%");
+    afirmar_igual(`${12.345:porcentagem.2}`, "12,35%");
+    afirmar_igual(`${0.5:percent}`, "50%");
+    afirmar_igual(`${1:pct}`, "100%");
+});
+
+testar("estilo Python com separadores do Brasil", () => {
+    afirmar_igual(`${3.14159:.2f}`, "3,14");
+    afirmar_igual(`${1234.5:,.2f}`, "1.234,50");
+    afirmar_igual(`${7:03d}`, "007");
+    afirmar_igual(`${-7:03d}`, "-07");
+    afirmar_igual(`${255:x}`, "ff");
+    afirmar_igual(`${5:+d}`, "+5");
+    afirmar_igual(`${0.256:.1%}`, "25,6%");
+    afirmar_igual(`${5:.2f}`, "5,00");
+    afirmar_igual(`${2.5:.0f}`, "3");
+    afirmar_igual(`${1234567:,d}`, "1.234.567");
+});
+
+testar("alinhamento e preenchimento", () => {
+    seja nome = "Ana";
+    afirmar_igual(`[${nome:>6}]`, "[   Ana]");
+    afirmar_igual(`[${nome:<6}]`, "[Ana   ]");
+    afirmar_igual(`[${nome:^7}]`, "[  Ana  ]");
+    afirmar_igual(`[${nome:*^9}]`, "[***Ana***]");
+    afirmar_igual(`[${42:>6}]`, "[    42]");
+    afirmar_igual(`[${42:<6}]`, "[42    ]");
+    afirmar_igual(`[${3.5:8.2f}]`, "[    3,50]");
+    afirmar_igual(`[${nome:.2}]`, "[An]");
+});
+
+testar("maiusculo, minusculo, titulo", () => {
+    afirmar_igual(`${"ana maria":maiusculo}`, "ANA MARIA");
+    afirmar_igual(`${"ANA":minusculo}`, "ana");
+    afirmar_igual(`${"ana maria":titulo}`, "Ana Maria");
+    afirmar_igual(`${"abc":upper}`, "ABC");
+    afirmar_igual(`${42:maiusculo}`, "42");
+});
+
+testar("datas: nomes e padroes", () => {
+    seja d = "2024-12-25";
+    afirmar_igual(`${d:data}`, "25/12/2024");
+    afirmar_igual(`${d:dd/mm/aaaa}`, "25/12/2024");
+    afirmar_igual(`${d:dd/mm/aa}`, "25/12/24");
+    afirmar_igual(`${d:aaaa-mm-dd}`, "2024-12-25");
+    afirmar_igual(`${d:yyyy-mm-dd}`, "2024-12-25");
+    afirmar_igual(`${d:dddd}`, "quarta-feira");
+    afirmar_igual(`${d:ddd, dd mmm aaaa}`, "qua, 25 dez 2024");
+    afirmar_igual(`${d:dddd, dd [de] mmmm [de] aaaa}`, "quarta-feira, 25 de dezembro de 2024");
+    afirmar_igual(`${"05/03/2024":dd mmmm}`, "05 março");
+    afirmar_igual(`${"5-3-2024":dd/mm/aaaa}`, "05/03/2024");
+});
+
+testar("horas e mm como minuto", () => {
+    seja dh = "2024-03-09 07:05:09";
+    afirmar_igual(`${dh:datahora}`, "09/03/2024 07:05");
+    afirmar_igual(`${dh:hora}`, "07:05");
+    afirmar_igual(`${dh:hh:mm:ss}`, "07:05:09");
+    afirmar_igual(`${dh:dd/mm/aaaa hh:mm}`, "09/03/2024 07:05");
+    afirmar_igual(`${dh:mm/dd hh[h]mm}`, "03/09 07h05");
+    afirmar_igual(`${"2024-03-09T18:30:00":hh:mm}`, "18:30");
+    afirmar_igual(`${"14:30":hora}`, "14:30");
+    afirmar_igual(`${"09/03/2024 18:30":datahora}`, "09/03/2024 18:30");
+});
+
+testar("ternario com e sem formato, chaves e textos dentro da expressao", () => {
+    seja p = 1500.5;
+    afirmar_igual(`${p > 1000 ? "caro" : "barato"}`, "caro");
+    afirmar_igual(`${p > 1000 ? p : 0:moeda}`, "R$ 1.500,50");
+    afirmar_igual(`${p > 9999 ? p : 0:moeda}`, "R$ 0,00");
+    afirmar_igual(`${ {a: 1}.a }`, "1");
+    afirmar_igual(`${"}"}`, "}");
+    afirmar_igual(`${"a:b"}`, "a:b");
+    afirmar_igual(`${(p > 1 ? "x" : "y")}`, "x");
+    afirmar_igual(`${nulo ?? "padrao"}`, "padrao");
+});
+
+testar("nulo nao recebe formato", () => {
+    afirmar_igual(`${nulo:moeda}`, "nulo");
+    afirmar_igual(`${nulo:dd/mm/aaaa}`, "nulo");
+});
+
+testar("em funcoes e laços", () => {
+    funcao linha(item, qtd, preco) {
+        retornar `${item:<8}${qtd:>3} x ${preco:moeda}`;
+    }
+    afirmar_igual(linha("Caneta", 2, 2.5), "Caneta    2 x R$ 2,50");
+    seja saida = [];
+    para (i em 1..=3) { saida.adicionar(`#${i:02d}`); }
+    afirmar_igual(saida, ["#01", "#02", "#03"]);
+});
+
+testar("erros em portugues", () => {
+    seja m1 = "";
+    tentar { seja x = `${"abc":moeda}`; } pegar (e) { m1 = "" + e; }
+    afirmar_igual(m1.contem("precisa de um número"), verdadeiro);
+    seja m2 = "";
+    tentar { seja x = `${5:coisa}`; } pegar (e) { m2 = "" + e; }
+    afirmar_igual(m2.contem("desconhecido"), verdadeiro);
+    afirmar_igual(m2.contem("Disponíveis"), verdadeiro);
+    seja m3 = "";
+    tentar { seja x = `${"ontem":data}`; } pegar (e) { m3 = "" + e; }
+    afirmar_igual(m3.contem("não reconheci"), verdadeiro);
+    seja m4 = "";
+    tentar { seja x = `${"2024-13-45":data}`; } pegar (e) { m4 = "" + e; }
+    afirmar_igual(m4.contem("não é uma data válida"), verdadeiro);
+    seja m5 = "";
+    tentar { seja x = `${"2024-12-25":hora}`; } pegar (e) { m5 = "" + e; }
+    afirmar_igual(m5.contem("só tem data"), verdadeiro);
+    seja m6 = "";
+    tentar { seja x = `${5.5:d}`; } pegar (e) { m6 = "" + e; }
+    afirmar_igual(m6.contem("inteiros"), verdadeiro);
+    seja m7 = "";
+    tentar { seja x = `${5:}`; } pegar (e) { m7 = "" + e; }
+    afirmar_igual(m7.contem("vazio"), verdadeiro);
+    seja m8 = "";
+    tentar { seja x = `${:moeda}`; } pegar (e) { m8 = "" + e; }
+    afirmar_igual(m8.contem("Falta a expressão"), verdadeiro);
+    seja m9 = "";
+    tentar { seja x = `${5:moeda.x}`; } pegar (e) { m9 = "" + e; }
+    afirmar_igual(m9.contem("casas decimais"), verdadeiro);
+    seja m10 = "";
+    tentar { seja x = `${verdadeiro:moeda}`; } pegar (e) { m10 = "" + e; }
+    afirmar_igual(m10.contem("booleano"), verdadeiro);
+});
+
+testar("aspas comuns nao interpolam (como sempre)", () => {
+    seja n = 5;
+    afirmar_igual("${n:moeda}", "${n:moeda}");
+});
+
+resumo_testes();

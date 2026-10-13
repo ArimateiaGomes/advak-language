@@ -490,7 +490,8 @@ Regras da sintaxe (use SOMENTE isto):
 - Laços: para (item em lista) { }   para (seja i = 0; i < 10; i++) { }   enquanto (x > 0) { }
 - Funções: funcao somar(a, b) { retornar a + b }
 - Listas: seja l = [1, 2]   l.adicionar(3)   l.tamanho   Mapas: seja m = {nome: "Ana", idade: 20}   m.nome
-- Texto: "Olá ${nome}" (interpolação)   texto.contem("a")
+- Texto: interpolação SÓ com crases: `Olá ${nome}, total ${preco:moeda}, data ${data:dd/mm/aaaa}` (aspas não interpolam)
+  Formatos: moeda, numero, porcentagem, maiusculo, minusculo, data, hora, datahora, .2f, 05d, >10   texto.contem("a")
 - Classes: classe Pessoa { inicio(nome) { isso.nome = nome } }   seja p = novo Pessoa("Ana")
 - Erros: tentar { } pegar (e) { }
 - Comentários: // em português. Use ponto e vírgula opcional. Nomes de variáveis sem acento.

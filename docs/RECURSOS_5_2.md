@@ -74,3 +74,77 @@ Onde está o código: `parse_list_literal` e `_parse_compreensao` em `advak_pars
 
 Testes: `testes/compreensao.dk` (16 casos) e `testes/test_compreensao.py` (parser, erros de sintaxe, limite,
 transpilador, formatador).
+
+## Interpolação com formatação
+
+Só em textos com **crase** (como sempre); textos com aspas não interpolam. Depois de `:` vem o formato:
+
+```
+seja preco = 1500.5
+imprimir(`Total: ${preco:moeda}`)                  // Total: R$ 1.500,50
+imprimir(`Zero casas: ${preco:moeda.0}`)           // R$ 1.501
+imprimir(`Desconto: ${0.075:porcentagem.1}`)       // 7,5%
+imprimir(`Habitantes: ${1234567:numero}`)          // 1.234.567
+imprimir(`Pi: ${3.14159:.2f}`)                     // 3,14
+imprimir(`Pedido ${7:03d}`)                        // Pedido 007
+imprimir(`[${nome:>10}] [${nome:<10}] [${nome:^10}] [${nome:*^9}]`)
+imprimir(`${nome:maiusculo}`)                      // ANA
+imprimir(`Hoje: ${"2024-12-25":dd/mm/aaaa}`)       // Hoje: 25/12/2024
+imprimir(`${"2024-12-25 14:30":dd/mm/aaaa hh:mm}`) // 25/12/2024 14:30
+imprimir(`${"2024-12-25":dddd, dd [de] mmmm [de] aaaa}`)   // quarta-feira, 25 de dezembro de 2024
+```
+
+**Formatos com nome** (sinônimo em inglês entre parênteses):
+
+| Formato | Resultado |
+|---|---|
+| `moeda` (`currency`), `moeda.N` | `R$ 1.500,50`; `-R$ 9,90`; `.N` = casas decimais |
+| `numero` (`number`), `numero.N` | `1.234.567`; `1.234,5` (decimais sem zeros à direita); `.N` fixa as casas |
+| `porcentagem` (`pct`, `percent`), `porcentagem.N` | `75%`, `7,5%` |
+| `maiusculo` (`upper`), `minusculo` (`lower`), `titulo` (`title`) | transforma o texto |
+| `data` (`date`), `hora` (`time`), `datahora` (`datetime`) | `25/12/2024`, `14:30`, `25/12/2024 14:30` |
+
+**Padrão de data** (qualquer formato com `dd`, `mm`, `aaaa`/`yyyy`, `aa`/`yy`, `hh` ou `ss`): `mmmm` = mês por
+extenso, `mmm` = jan, `dddd` = dia da semana por extenso, `ddd` = seg. Texto entre colchetes sai como está
+(`dd [de] mmmm`). `mm` é o **mês**, exceto quando vem logo depois de `hh` (com um separador curto como `:`, `h`
+ou espaço) ou antes de `:ss`: aí são **minutos**. Meses e dias são sempre em português.
+
+**Estilo Python** (alinhamento, zeros, casas): `.2f`, `,.2f`, `05d`, `>10`, `<10`, `^10`, `*^20`, `+.1f`, `x`, `.1%`.
+
+Regras e decisões:
+
+- **Separadores do Brasil em todo formato numérico**, inclusive no estilo Python: `${3.14159:.2f}` dá `3,14` e
+  `${1234.5:,.2f}` dá `1.234,50` (diferente do Python puro, que usaria o ponto decimal).
+- **Arredondamento escolar** (0,5 sobe): `${2.675:moeda}` dá `R$ 2,68` e `${2.5:.0f}` dá `3`. O Python puro daria
+  `2,67` e `2`, por causa da representação binária e do arredondamento para o par.
+- **`porcentagem` segue a função `porcentagem()`**: valores de 0 a 1 são tratados como fração (`0.75` → 75%),
+  os outros ficam como estão (`75` → 75%). Pegadinha: `1` vira `100%`. (Diferença mínima: no formato, 0,5 sobe;
+  a função arredonda para o par.)
+- **Nulo** continua saindo como `nulo`, sem aplicar o formato. Formato numérico em texto/booleano, formato
+  desconhecido, data inválida, `hora` em um valor sem hora etc. dão **erro em português**
+  (`Formato inválido em ${...}: ...`) na hora em que o texto é montado (`advak check` não olha dentro dos templates).
+- **Datas** aceitas: texto `aaaa-mm-dd`, `dd/mm/aaaa`, `dd-mm-aaaa`, com hora opcional (`T` ou espaço; segundos;
+  fração; fuso é ignorado), texto `hh:mm`, e objetos `date`/`datetime`/`time` do Python (os que vêm do banco).
+  Números não são datas.
+- **O `:` do formato** é o primeiro que está fora de `()`, `[]`, `{}` e textos e que não é de um ternário.
+  `${p > 1 ? a : b}` continua um ternário; com formato: `${p > 1 ? a : b :moeda}`; para o contrário, use
+  parênteses. O formato pode ter `:` (`hh:mm`). **Aspas e crases dentro do formato não são aceitas.**
+- **Chaves dentro de `${}`** agora funcionam (`` `${ {a: 1}.a }` ``, `` `${"}"}` ``), o que antes dava erro.
+  Templates sem formato e sem chaves aninhadas continuam com exatamente o mesmo resultado (testado contra o
+  comportamento antigo com milhares de textos aleatórios).
+- Fora desta versão: `abrev` (a função `num_abrev()` continua existindo) e moedas estrangeiras.
+
+Efeitos em ferramentas (corrigidos junto, porque o recurso os expôs):
+
+- `advak formatar` mexia **dentro de textos** (`:,.2f` virava `:, .2f`; `"a,b"` virava `"a, b"`; espaços duplos
+  eram colapsados) e **colapsava o recuo** das linhas para 1 espaço. Agora textos e comentários ficam intactos,
+  textos de crase de várias linhas não são tocados e o recuo é preservado.
+- `advak --verificar` sugeria "possível divisão" para o `/` de `dd/mm/aaaa` e de qualquer texto/comentário;
+  agora ignora o que está dentro de textos e comentários.
+- O texto de instruções do `gerar_codigo` (IA) dizia que `"..."` interpola; corrigido para crases.
+
+Onde está o código: `advak_formatacao.py` (novo; sem dependências), `_interp_template` em `advak_interpreter.py`,
+`advak_formatador.py` e `advak_verificador.py`. O transpilador Python não suporta templates (já era assim).
+
+Testes: `testes/formatacao.dk` (14 casos) e `testes/test_formatacao.py` (37 testes: divisor de templates,
+separador de formato, números, estilo Python, datas, integração e ferramentas).

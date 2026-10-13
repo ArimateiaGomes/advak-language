@@ -9,6 +9,9 @@ Uso:  advak --formatar arquivo.dk          (formata e salva)
 import re, sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from advak_formatacao import proteger_literais, restaurar_literais
+
 class Formatador:
     """Formata código Advak aplicando estilo consistente."""
     
@@ -18,10 +21,17 @@ class Formatador:
         linhas = codigo.split('\n')
         resultado = []
         nivel = 0
-        
+        em_template = False       # dentro de um texto de crase que continua em várias linhas
+
         for linha in linhas:
+            if em_template:
+                # o conteúdo de um texto de várias linhas é do usuário: não se mexe
+                em_template = proteger_literais(linha, True)[2]
+                resultado.append(linha)
+                continue
             stripped = linha.strip()
-            
+            em_template = proteger_literais(stripped)[2]
+
             # Linha vazia
             if not stripped:
                 # Máximo 2 linhas vazias consecutivas
@@ -56,16 +66,18 @@ class Formatador:
         return '\n'.join(resultado)
     
     def _normalizar_operadores(self, linha):
+        # Textos ("..", '..', `..`) e comentários ficam intactos (ex.: `${x:,.2f}` e "a,b")
+        recuo = linha[:len(linha) - len(linha.lstrip())]
+        corpo, lits, _ = proteger_literais(linha[len(recuo):])
         # Garante espaço em torno de = (não em == ou !=)
         # (o '.' fica de fora para não separar o intervalo ..= em ".. =")
-        linha = re.sub(r'([^=!<>.])=([^=])', r'\1 = \2', linha)
+        corpo = re.sub(r'([^=!<>.])=([^=])', r'\1 = \2', corpo)
         # Garante espaço após vírgula
-        linha = re.sub(r',([^\s])', r', \1', linha)
-        # Remove espaço duplo
-        linha = re.sub(r'  +', ' ', linha)
+        corpo = re.sub(r',([^\s])', r', \1', corpo)
+        # Remove espaço duplo (o recuo no começo da linha é preservado)
+        corpo = re.sub(r'  +', ' ', corpo)
         # Remove trailing whitespace
-        linha = linha.rstrip()
-        return linha
+        return (recuo + restaurar_literais(corpo, lits)).rstrip()
     
     def formatar_arquivo(self, caminho, ver=False):
         caminho = Path(caminho)

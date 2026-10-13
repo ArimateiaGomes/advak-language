@@ -6174,22 +6174,34 @@ class AdvakInterpreter:
                 (f" (linha {self._current_line})" if hasattr(self, '_current_line') and self._current_line else ""))
 
     async def _interp_template(self, tmpl, scope):
+        # `${expr}` e `${expr:formato}` (moeda, data, .2f ...); veja advak_formatacao.py
         from advak_lexer import AdvakLexer
         from advak_parser import Parser
-        parts = re.split(r'(\$\{[^}]*\})', tmpl)
+        from advak_formatacao import dividir_template, separar_formato, formatar_valor, ErroFormato
+        cache = self.__dict__.setdefault('_cache_interp', {})
         res = []
-        for part in parts:
-            m = re.match(r'^\$\{([^}]*)\}$', part)
-            if m:
-                expr = m.group(1).strip()
-                if not expr:
-                    res.append(part)
-                    continue
-                tokens = AdvakLexer(expr).tokenize()
-                node   = Parser(tokens).parse_expression()
-                res.append(self._to_str(await self.eval(node, scope)))
-            else:
-                res.append(part)
+        for tipo, conteudo in dividir_template(tmpl):
+            if tipo == 't':
+                res.append(conteudo)
+                continue
+            try:
+                expr, formato = separar_formato(conteudo)
+            except ErroFormato as e:
+                raise AdvakError(f"Formato inválido em ${{{conteudo.strip()}}}: {e}")
+            expr = expr.strip()
+            if not expr:
+                raise AdvakError(f"Falta a expressão antes do formato em ${{{conteudo.strip()}}}")
+            node = cache.get(expr)
+            if node is None:
+                node = cache[expr] = Parser(AdvakLexer(expr).tokenize()).parse_expression()
+            valor = await self.eval(node, scope)
+            if formato is None:
+                res.append(self._to_str(valor))
+                continue
+            try:
+                res.append(formatar_valor(valor, formato, self._to_str))
+            except ErroFormato as e:
+                raise AdvakError(f"Formato inválido em ${{{conteudo.strip()}}}: {e}")
         return ''.join(res)
 
     # ── Intervalos: 1..10, 1..=10, 1..=10 passo 2 ──────────────────────────────

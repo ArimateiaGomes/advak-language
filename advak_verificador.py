@@ -4,6 +4,7 @@ Execute: advak --verificar arquivo.dk
 """
 import re, os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from advak_formatacao import proteger_literais
 
 def verificar(source, path=""):
     """Verifica tipos e padrões comuns de erro no código."""
@@ -58,8 +59,10 @@ def verificar(source, path=""):
                 "Use texto(numero) para converter: \"Olá \" + texto(x)")
 
         # Detecta / sem verificação de zero
-        if re.search(r"/\s*(?!/)\w", l) and "!=" not in l and "se" not in l:
-            if re.search(r"\w\s*/\s*\w+[^=]", l) and "http" not in l.lower():
+        # (ignora o que está dentro de textos e comentários: "dd/mm/aaaa", `${d:dd/mm/aaaa}`, // a/b)
+        l_div = re.sub(r'\x00\d+\x00', ' ', proteger_literais(l)[0])
+        if re.search(r"/\s*(?!/)\w", l_div) and "!=" not in l and "se" not in l:
+            if re.search(r"\w\s*/\s*\w+[^=]", l_div) and "http" not in l.lower():
                 problema(i, "💡 Sugestão",
                     "Possível divisão — verifique se o divisor pode ser zero",
                     "Use: se (b != 0) { resultado = a / b }")
