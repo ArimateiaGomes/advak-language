@@ -3,6 +3,7 @@ Advak 3.0 — Interpretador com PostgreSQL nativo
 O objeto 'banco' fica disponível globalmente em qualquer programa .dk
 """
 import asyncio, math, re, json, os, sys
+import advak_tipos            # tipagem opcional (anotações); módulo pequeno, só biblioteca padrão
 sys.setrecursionlimit(max(5000, sys.getrecursionlimit()))
 from advak_db import AdvakDB, QueryBuilder, UpdateBuilder, DeleteBuilder
 
@@ -76,6 +77,7 @@ class AdvakFunction:
     def __init__(self, name, params, body, closure, is_async=False, is_generator=False):
         self.name=name; self.params=params; self.body=body
         self.closure=closure; self.is_async=is_async; self.is_generator=is_generator
+        self.retorno = None      # tipo de retorno anotado (-> tipo); None = livre
     def __repr__(self): return f"<função {self.name or 'anônima'}>"
 
 
@@ -240,6 +242,7 @@ class Scope:
     def __init__(self, parent=None):
         self.vars   = {}
         self.parent = parent
+        self.tipos  = None      # nome → verificador, para variáveis declaradas com tipo (seja x: inteiro)
 
     def get(self, name):
         # Unrolled lookup — evita recursão em cadeia longa
@@ -255,7 +258,12 @@ class Scope:
             raise ImmutableError(f"[Advak] Erro de imutabilidade: '{name}' é imutável e não pode ser reatribuído")
         if self.parent and f'__const_{name}' in (self.parent.vars if hasattr(self.parent, 'vars') else {}):
             raise ImmutableError(f"[Advak] Erro de imutabilidade: '{name}' é imutável e não pode ser reatribuído")
-        if name in self.vars: self.vars[name]=value; return
+        if name in self.vars:
+            if self.tipos is not None:
+                verificador = self.tipos.get(name)
+                if verificador is not None:
+                    verificador(value)          # levanta AdvakError se o tipo não combinar
+            self.vars[name]=value; return
         if self.parent: self.parent.set(name, value); return
         self.vars[name]=value
     def declare(self, name, value): self.vars[name]=value
@@ -392,7 +400,8 @@ class AdvakADTType:
             self.variants[v['name']] = v
     def __repr__(self): return f"<tipo {self.name}>"
     def __getattr__(self, name):
-        if name.startswith('_'): raise AttributeError(name)
+        if name.startswith('_') or name == 'get':      # hasattr(obj, 'get') não pode virar AdvakError
+            raise AttributeError(name)
         if name in self.variants:
             v = self.variants[name]
             if v['fields']:
@@ -577,6 +586,56 @@ def _canvas_to_svg(cmds, width=800, height=600):
             lines.append(f'<text x="{c["x"]}" y="{c["y"]}" fill="{c["cor"]}" font="{c.get("fonte","16px sans-serif")}">{c["txt"]}</text>')
     lines.append('</svg>')
     return '\n'.join(lines)
+
+
+class _CtxTipos:
+    """Contexto da tipagem opcional: reconhece funções e tipos do usuário (classe, estrutura, enum, ADT)."""
+
+    def __init__(self, scope):
+        self.scope = scope
+
+    def eh_funcao(self, v):
+        return isinstance(v, (AdvakFunction, BoundMethod)) or callable(v)
+
+    def conhece(self, nome):
+        # a estrutura é registrada como _struct_<Nome> (o nome comum guarda o construtor)
+        for chave in (nome, f"_struct_{nome}"):
+            try:
+                obj = self.scope.get(chave)
+            except AdvakError:
+                continue
+            if isinstance(obj, (AdvakClass, AdvakStructType, AdvakEnumType, AdvakADTType)):
+                return True
+        return False
+
+    def instancia_de(self, v, nome):
+        if isinstance(v, AdvakInstance):
+            k = v.klass
+            while k:
+                if k.name == nome:
+                    return True
+                k = k.superclass
+            return False
+        if isinstance(v, AdvakStructInstance):
+            return v._type.name == nome
+        if isinstance(v, AdvakEnumVariant):
+            return v._enum.name == nome
+        if isinstance(v, AdvakADTVariant):
+            return v._adt.name == nome
+        return False
+
+    def nome_do_valor(self, v):
+        if isinstance(v, AdvakInstance):
+            return f"instância de {v.klass.name}"
+        if isinstance(v, AdvakStructInstance):
+            return f"estrutura {v._type.name}"
+        if isinstance(v, AdvakEnumVariant):
+            return f"enum {v._enum.name}"
+        if isinstance(v, AdvakADTVariant):
+            return f"tipo {v._adt.name}"
+        if self.eh_funcao(v):
+            return "funcao"
+        return type(v).__name__
 
 
 class AdvakInterpreter:
@@ -4426,6 +4485,20 @@ class AdvakInterpreter:
 
         if t == 'var_decl':
             v = await self.eval(node['value'], scope) if node['value'] else None
+            tipo = node.get('tipo')
+            if isinstance(tipo, dict):
+                # seja x: inteiro = 5  → confere agora e em toda reatribuição
+                nome = node['name']
+                verificador = self._verificador_de_variavel(nome, tipo, scope)
+                if node['value'] is not None:
+                    verificador(v)
+                else:
+                    self._validar_anotacao(tipo, scope, f"variável '{nome}'")
+                if scope.tipos is None:
+                    scope.tipos = {}
+                scope.tipos[nome] = verificador
+            elif scope.tipos and node['name'] in scope.tipos:
+                del scope.tipos[node['name']]            # seja x de novo, sem tipo: a anotação antiga cai
             scope.declare(node['name'], v)
             # BUG 11 FIX: fixo/const marks variable as immutable
             if node.get('const'):
@@ -4434,6 +4507,7 @@ class AdvakInterpreter:
         elif t == 'func_decl':
             fn = AdvakFunction(node['name'], node['params'], node['body'],
                                scope, node.get('async', False), node.get('generator', False))
+            fn.retorno = node.get('retorno')
             scope.declare(node['name'], fn)
 
         elif t == 'interface_decl':
@@ -4471,6 +4545,7 @@ class AdvakInterpreter:
             methods={}; statics={}; getters={}; setters={}
             for m in node['methods']:
                 fn=AdvakFunction(m['name'],m['params'],m['body'],scope,m.get('async',False))
+                fn.retorno = m.get('retorno')
                 if m.get('static'): statics[m['name']]=fn
                 elif m.get('getter'): getters[m['name']]=fn
                 elif m.get('setter'): setters[m['name']]=fn
@@ -4855,9 +4930,11 @@ class AdvakInterpreter:
             return d
 
         if t == 'lambda':
-            return AdvakFunction(node.get('name'), node['params'],
-                                 node['body'], scope, node.get('async', False),
-                                 node.get('generator', False))
+            fn = AdvakFunction(node.get('name'), node['params'],
+                               node['body'], scope, node.get('async', False),
+                               node.get('generator', False))
+            fn.retorno = node.get('retorno')
+            return fn
 
         if t == 'await':
             val = await self.eval(node['value'], scope)
@@ -5203,6 +5280,8 @@ class AdvakInterpreter:
                 inner.declare(pname, await self.eval(param['default'], caller_scope))
             else:
                 inner.declare(pname, None)
+            if param.get('tipo'):                       # a: numero  → confere o valor recebido
+                self._conferir_parametro(fn, pname, inner.vars[pname], param['tipo'], fn.closure)
 
         # ── Generator function ────────────────────────────────────────────
         if fn.is_generator:
@@ -5222,11 +5301,15 @@ class AdvakInterpreter:
 
             return AdvakGenerator(_advak_gen())
 
+        retornou = False
         try:
             await self.exec_node(fn.body, inner)
-            return None
+            valor = None
         except _ReturnSignal as r:
-            return r.value
+            valor, retornou = r.value, True
+        if fn.retorno is not None:                      # -> numero  → confere o valor devolvido
+            self._conferir_retorno(fn, valor, retornou, fn.closure)
+        return valor
 
     async def _collect_yields(self, body, scope, collected, max_yields=10000):
         """
@@ -6204,6 +6287,58 @@ class AdvakInterpreter:
                 raise AdvakError(f"Formato inválido em ${{{conteudo.strip()}}}: {e}")
         return ''.join(res)
 
+    # ── Tipagem opcional: seja x: inteiro / função f(a: numero) -> numero ──────
+
+    def _validar_anotacao(self, tipo, scope, onde):
+        try:
+            advak_tipos.validar(tipo, _CtxTipos(scope))
+            tipo['_validado'] = True
+        except advak_tipos.ErroTipo as e:
+            raise AdvakError(f"Tipo inválido em {onde}: {e}")
+
+    def _combina(self, valor, tipo, scope, onde):
+        """(True/False, contexto); anotação inválida (tipo desconhecido) vira AdvakError em português."""
+        ctx = _CtxTipos(scope)
+        try:
+            if not tipo.get('_validado'):
+                advak_tipos.validar(tipo, ctx)
+                tipo['_validado'] = True               # nomes conferidos uma vez só (a anotação é fixa)
+            return advak_tipos.confere(valor, tipo, ctx), ctx
+        except advak_tipos.ErroTipo as e:
+            raise AdvakError(f"Tipo inválido em {onde}: {e}")
+
+    def _verificador_de_variavel(self, nome, tipo, scope):
+        def verificador(valor):
+            if tipo.get('_validado') and advak_tipos.confere(valor, tipo, _CtxTipos(scope)):
+                return                                  # caminho rápido
+            ok, ctx = self._combina(valor, tipo, scope, f"variável '{nome}'")
+            if not ok:
+                raise AdvakError(f"Tipo incorreto: '{nome}' é {advak_tipos.descrever_tipo(tipo)}, "
+                                 f"mas recebeu {advak_tipos.descrever_valor(valor, ctx)}.")
+        return verificador
+
+    def _conferir_parametro(self, fn, pname, valor, tipo, scope):
+        if tipo.get('_validado') and advak_tipos.confere(valor, tipo, _CtxTipos(scope)):
+            return                                      # caminho rápido
+        onde = f"parâmetro '{pname}' de {fn.name or 'função anônima'}()"
+        ok, ctx = self._combina(valor, tipo, scope, onde)
+        if not ok:
+            dica = " (faltou passar este argumento?)" if valor is None else ""
+            raise AdvakError(f"Tipo incorreto no {onde}: esperava {advak_tipos.descrever_tipo(tipo)}, "
+                             f"mas recebeu {advak_tipos.descrever_valor(valor, ctx)}.{dica}")
+
+    def _conferir_retorno(self, fn, valor, retornou, scope):
+        tipo = fn.retorno
+        if tipo.get('_validado') and advak_tipos.confere(valor, tipo, _CtxTipos(scope)):
+            return                                      # caminho rápido
+        onde = f"retorno de {fn.name or 'função anônima'}()"
+        ok, ctx = self._combina(valor, tipo, scope, onde)
+        if not ok:
+            if not retornou:
+                raise AdvakError(f"Tipo incorreto no {onde}: esperava {advak_tipos.descrever_tipo(tipo)}, "
+                                 "mas a função terminou sem 'retornar' um valor (nulo).")
+            raise AdvakError(f"Tipo incorreto no {onde}: esperava {advak_tipos.descrever_tipo(tipo)}, "
+                             f"mas retornou {advak_tipos.descrever_valor(valor, ctx)}.")
     # ── Intervalos: 1..10, 1..=10, 1..=10 passo 2 ──────────────────────────────
 
     _MAX_INTERVALO = 10_000_000

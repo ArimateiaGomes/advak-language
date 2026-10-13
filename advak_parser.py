@@ -233,12 +233,59 @@ class Parser:
         tipo = None
         if self.check('COLON'):
             self.advance()
-            tipo = self.advance()['value']
+            tipo = self.parse_tipo()
         value = None
         if self.match('ASSIGN'):
             value = self.parse_expression()
         self.match('SEMICOLON')
         return {'type': 'var_decl', 'name': name, 'value': value, 'const': is_const, 'tipo': tipo}
+
+    # ─── Tipos opcionais (anotações) ─────────────────────────────────────────
+
+    def parse_tipo(self):
+        """
+        Anotação de tipo:  inteiro | texto? | lista[numero] | Pessoa | inteiro | texto
+        Devolve {'alts': [{'nome', 'args', 'nulavel'}], 'texto': 'inteiro | texto'}.
+        """
+        alts = []
+        while True:
+            t = self.peek()
+            if not t or not str(t['value']).replace('_', 'a').isalnum() or \
+                    t['type'] in ('NUMBER', 'FLOAT', 'STRING') or str(t['value'])[:1].isdigit():
+                linha = t['line'] if t else '?'
+                achou = t['value'] if t else 'fim do arquivo'
+                raise SyntaxError(f"[Advak] Linha {linha}: esperado o nome de um tipo (ex.: inteiro, texto, "
+                                  f"lista[numero]), encontrado '{achou}'")
+            valor = self.advance()['value']
+            nome = 'nulo' if valor is None else str(valor)        # o lexer guarda nulo/null como None
+            args = None
+            if self.check('LBRACKET'):
+                self.advance()
+                args = [self.parse_tipo()]
+                self.consume('RBRACKET')
+            nulavel = False
+            if self.check('TERNARY'):
+                self.advance()
+                nulavel = True
+            alts.append({'nome': nome, 'args': args, 'nulavel': nulavel})
+            if self.check('BIT_OR'):
+                self.advance()
+                continue
+            break
+
+        def _txt(a):
+            s = a['nome']
+            if a['args']:
+                s += '[' + a['args'][0]['texto'] + ']'
+            return s + ('?' if a['nulavel'] else '')
+        return {'alts': alts, 'texto': ' | '.join(_txt(a) for a in alts)}
+
+    def parse_retorno(self):
+        """Tipo de retorno opcional depois dos parâmetros:  -> numero"""
+        if self.check('RET_ARROW'):
+            self.advance()
+            return self.parse_tipo()
+        return None
 
     # ─── Funções ──────────────────────────────────────────────────────────────
 
@@ -262,9 +309,10 @@ class Parser:
             is_generator = True
         name = self.consume('IDENT')['value']
         params = self.parse_params()
+        retorno = self.parse_retorno()
         body = self.parse_block()
         return {'type': 'func_decl', 'name': name, 'params': params, 'body': body,
-                'async': is_async, 'generator': is_generator, 'inline': is_inline}
+                'async': is_async, 'generator': is_generator, 'inline': is_inline, 'retorno': retorno}
 
     def parse_params(self):
         self.consume('LPAREN')
@@ -320,10 +368,14 @@ class Parser:
                     name = self.advance()['value']
                 else:
                     name = self.consume('IDENT')['value']
+                tipo = None
+                if self.check('COLON'):                       # a: numero
+                    self.advance()
+                    tipo = self.parse_tipo()
                 default = None
                 if self.match('ASSIGN'):
                     default = self.parse_expression()
-                params.append({'name': name, 'default': default, 'spread': spread})
+                params.append({'name': name, 'default': default, 'spread': spread, 'tipo': tipo})
             if not self.check('RPAREN'):
                 self.consume('COMMA')
         self.consume('RPAREN')
@@ -430,6 +482,7 @@ class Parser:
                 membro_nome = self.advance()['value']
                 if self.check('LPAREN'):
                     params = self.parse_params()
+                    self.parse_retorno()                       # -> tipo (aceito; interfaces não conferem tipos)
                     self.match('SEMICOLON')
                     membros.append({'tipo': 'metodo', 'nome': membro_nome, 'params': params})
                 else:
@@ -479,12 +532,13 @@ class Parser:
                 mname = self.advance()['value']
             else:
                 mname = self.consume('IDENT')['value']
-            params = self.parse_params()
-            body   = self.parse_block()
+            params  = self.parse_params()
+            retorno = self.parse_retorno()
+            body    = self.parse_block()
             methods.append({
                 'name': mname, 'params': params, 'body': body,
                 'async': is_async, 'static': is_static,
-                'getter': is_get, 'setter': is_set
+                'getter': is_get, 'setter': is_set, 'retorno': retorno
             })
         self.consume('RCURLY')
         return {
@@ -1634,9 +1688,10 @@ class Parser:
         if self.peek() and self.peek()['type'] == 'IDENT':
             name = self.advance()['value']
         params = self.parse_params()
+        retorno = self.parse_retorno()
         body = self.parse_block()
         return {'type': 'lambda', 'name': name, 'params': params, 'body': body,
-                'generator': is_generator}
+                'generator': is_generator, 'retorno': retorno}
 
     def parse_async_expr(self):
         self.advance()  # 'async'

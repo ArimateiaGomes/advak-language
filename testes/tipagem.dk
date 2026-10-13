@@ -1,0 +1,293 @@
+// Tipagem opcional:  seja x: inteiro = 5   |   função f(a: numero) -> numero { ... }
+// Só o que foi anotado é conferido; código sem tipos não muda.
+
+funcao erro_de(f) {
+    seja msg = "";
+    tentar { f(); } pegar (e) { msg = "" + e; }
+    retornar msg;
+}
+
+testar("variaveis: cada tipo aceita o que deve", () => {
+    seja a: inteiro = 17;
+    seja b: numero = 2.5;
+    seja c: numero = 3;
+    seja d: texto = "Ana";
+    seja e: booleano = verdadeiro;
+    seja f: lista = [1, "a"];
+    seja g: mapa = {x: 1};
+    seja h: funcao = (n) => n + 1;
+    seja i: nulo = nulo;
+    seja j: qualquer = 42;
+    afirmar_igual(a + c, 20);
+    afirmar_igual(h(1), 2);
+    afirmar_igual(j, 42);
+});
+
+testar("sinonimos em ingles e portugues", () => {
+    seja a: int = 1;
+    seja b: integer = 2;
+    seja c: float = 1.5;
+    seja d: decimal = 2;
+    seja e: number = 3;
+    seja f: string = "x";
+    seja g: str = "y";
+    seja h: bool = falso;
+    seja i: boolean = verdadeiro;
+    seja j: list = [];
+    seja k: array = [1];
+    seja l: objeto = {};
+    seja m: dict = {};
+    seja n: map = {};
+    seja o: function = () => 1;
+    seja p: any = nulo;
+    seja q: null = nulo;
+    afirmar_igual(a + b, 3);
+});
+
+testar("inteiro e estrito: decimal e booleano nao entram", () => {
+    afirmar_igual(erro_de(() => { seja x: inteiro = 5.0; }).contem("'x' é inteiro, mas recebeu decimal (5.0)"), verdadeiro);
+    afirmar_igual(erro_de(() => { seja x: inteiro = 10 / 2; }).contem("decimal (5.0)"), verdadeiro);
+    afirmar_igual(erro_de(() => { seja x: inteiro = verdadeiro; }).contem("booleano (verdadeiro)"), verdadeiro);
+    afirmar_igual(erro_de(() => { seja x: numero = falso; }).contem("booleano (falso)"), verdadeiro);
+    seja ok: inteiro = 10 // 2;
+    afirmar_igual(ok, 5);
+});
+
+testar("tipos errados na declaracao", () => {
+    afirmar_igual(erro_de(() => { seja x: texto = 5; }).contem("Tipo incorreto: 'x' é texto, mas recebeu inteiro (5)."), verdadeiro);
+    afirmar_igual(erro_de(() => { seja x: lista = "a"; }).contem('texto ("a")'), verdadeiro);
+    afirmar_igual(erro_de(() => { seja x: mapa = [1]; }).contem("lista ([1])"), verdadeiro);
+    afirmar_igual(erro_de(() => { seja x: funcao = 3; }).contem("esperava funcao") || erro_de(() => { seja x: funcao = 3; }).contem("é funcao"), verdadeiro);
+    afirmar_igual(erro_de(() => { seja x: booleano = 0; }).contem("inteiro (0)"), verdadeiro);
+    afirmar_igual(erro_de(() => { seja x: nulo = 1; }).contem("é nulo"), verdadeiro);
+});
+
+testar("nulo so entra com ?, nulo ou qualquer", () => {
+    afirmar_igual(erro_de(() => { seja x: inteiro = nulo; }).contem("mas recebeu nulo"), verdadeiro);
+    seja a: inteiro? = nulo;
+    seja b: texto? = "oi";
+    seja c: qualquer = nulo;
+    afirmar_igual(a, nulo);
+    afirmar_igual(b, "oi");
+    afirmar_igual(erro_de(() => { seja x: inteiro? = "a"; }).contem("'x' é inteiro?"), verdadeiro);
+});
+
+testar("uniao com |", () => {
+    seja a: inteiro | texto = "10";
+    seja b: inteiro | texto = 10;
+    seja c: inteiro | texto | nulo = nulo;
+    afirmar_igual(a, "10");
+    afirmar_igual(b, 10);
+    afirmar_igual(erro_de(() => { seja x: inteiro | texto = 1.5; }).contem("é inteiro | texto"), verdadeiro);
+    a = 5;
+    afirmar_igual(a, 5);
+});
+
+testar("lista[T] e mapa[T] conferem cada elemento", () => {
+    seja notas: lista[numero] = [7, 8.5, 10];
+    seja nomes: lista[texto] = ["a", "b"];
+    seja vazia: lista[inteiro] = [];
+    seja matriz: lista[lista[inteiro]] = [[1, 2], [3]];
+    seja idades: mapa[inteiro] = {ana: 20, bia: 30};
+    afirmar_igual(notas.tamanho, 3);
+    afirmar_igual(erro_de(() => { seja x: lista[numero] = [1, "a"]; }).contem("lista[numero]"), verdadeiro);
+    afirmar_igual(erro_de(() => { seja x: lista[lista[inteiro]] = [[1], [2.5]]; }).contem("esperava") || erro_de(() => { seja x: lista[lista[inteiro]] = [[1], [2.5]]; }).contem("lista[lista[inteiro]]"), verdadeiro);
+    afirmar_igual(erro_de(() => { seja x: mapa[texto] = {a: "x", b: 2}; }).contem("mapa[texto]"), verdadeiro);
+    afirmar_igual(erro_de(() => { seja x: lista[numero] = 5; }).contem("inteiro (5)"), verdadeiro);
+    seja misturada: lista[inteiro | texto] = [1, "a", 2];
+    afirmar_igual(misturada.tamanho, 3);
+});
+
+testar("declaracao sem valor e primeira atribuicao conferida", () => {
+    seja x: inteiro;
+    afirmar_igual(x, nulo);
+    x = 5;
+    afirmar_igual(x, 5);
+    seja y: texto;
+    afirmar_igual(erro_de(() => { y = 3; }).contem("'y' é texto"), verdadeiro);
+});
+
+testar("reatribuicao, += e ++ sao conferidos", () => {
+    seja idade: inteiro = 17;
+    idade = 18;
+    idade += 2;
+    idade++;
+    afirmar_igual(idade, 21);
+    afirmar_igual(erro_de(() => { idade = "vinte"; }).contem("Tipo incorreto: 'idade' é inteiro, mas recebeu texto (\"vinte\")."), verdadeiro);
+    afirmar_igual(erro_de(() => { idade = 1.5; }).contem("decimal (1.5)"), verdadeiro);
+    afirmar_igual(erro_de(() => { idade += 0.5; }).contem("decimal"), verdadeiro);
+    afirmar_igual(idade, 21);
+    seja preco: numero = 10;
+    preco = preco / 4;
+    afirmar_igual(preco, 2.5);
+    fixo nome: texto = "Ana";
+    afirmar_igual(nome, "Ana");
+});
+
+testar("funcoes internas que alteram variavel tipada de fora", () => {
+    seja total: inteiro = 0;
+    funcao soma(n) { total = total + n; }
+    soma(5);
+    afirmar_igual(total, 5);
+    afirmar_igual(erro_de(() => { soma(1.5); }).contem("'total' é inteiro"), verdadeiro);
+    afirmar_igual(total, 5);
+});
+
+testar("seja de novo, sem tipo, remove a anotacao", () => {
+    seja v: inteiro = 1;
+    seja v = "agora texto";
+    v = "outra";
+    afirmar_igual(v, "outra");
+});
+
+testar("parametros tipados", () => {
+    funcao somar(a: numero, b: numero = 0) -> numero { retornar a + b; }
+    afirmar_igual(somar(2, 3), 5);
+    afirmar_igual(somar(1.5), 1.5);
+    afirmar_igual(somar(b=1, a=5), 6);
+    seja m1 = erro_de(() => { somar("x", 1); });
+    afirmar_igual(m1.contem("Tipo incorreto no parâmetro 'a' de somar(): esperava numero, mas recebeu texto (\"x\")."), verdadeiro);
+    seja m2 = erro_de(() => { somar(1, "y"); });
+    afirmar_igual(m2.contem("parâmetro 'b'"), verdadeiro);
+    seja m3 = erro_de(() => { somar(); });
+    afirmar_igual(m3.contem("recebeu nulo"), verdadeiro);
+    afirmar_igual(m3.contem("faltou passar este argumento"), verdadeiro);
+});
+
+testar("parametro com valor padrao do tipo errado e conferido", () => {
+    funcao f(a: inteiro = "x") { retornar a; }
+    afirmar_igual(f(3), 3);
+    afirmar_igual(erro_de(() => { f(); }).contem("parâmetro 'a'"), verdadeiro);
+});
+
+testar("parametro opcional com ?", () => {
+    funcao saudar(nome: texto, titulo: texto? = nulo) -> texto {
+        retornar titulo == nulo ? "Oi " + nome : titulo + " " + nome;
+    }
+    afirmar_igual(saudar("Ana"), "Oi Ana");
+    afirmar_igual(saudar("Ana", "Dra."), "Dra. Ana");
+});
+
+testar("retorno tipado", () => {
+    funcao ok(x) -> inteiro { retornar x; }
+    afirmar_igual(ok(3), 3);
+    seja m = erro_de(() => { ok("a"); });
+    afirmar_igual(m.contem("Tipo incorreto no retorno de ok(): esperava inteiro, mas retornou texto (\"a\")."), verdadeiro);
+    funcao sem_retorno() -> inteiro { seja a = 1; }
+    seja m2 = erro_de(() => { sem_retorno(); });
+    afirmar_igual(m2.contem("terminou sem 'retornar'"), verdadeiro);
+    funcao nada() -> nulo { seja a = 1; }
+    afirmar_igual(nada(), nulo);
+    funcao talvez(x) -> texto? { se (x > 0) { retornar "pos"; } }
+    afirmar_igual(talvez(1), "pos");
+    afirmar_igual(talvez(0), nulo);
+    funcao lista_de(n) -> lista[inteiro] { retornar [n, n + 1]; }
+    afirmar_igual(lista_de(1), [1, 2]);
+    funcao qualquer_coisa(x) -> qualquer { retornar x; }
+    afirmar_igual(qualquer_coisa("a"), "a");
+});
+
+testar("retorno sem anotacao continua livre", () => {
+    funcao livre(x) { retornar x; }
+    afirmar_igual(livre("a"), "a");
+    afirmar_igual(livre(1), 1);
+    funcao so_param(x: inteiro) { retornar "texto"; }
+    afirmar_igual(so_param(1), "texto");
+});
+
+testar("recursao tipada", () => {
+    funcao fatorial(n: inteiro) -> inteiro {
+        se (n <= 1) { retornar 1; }
+        retornar n * fatorial(n - 1);
+    }
+    afirmar_igual(fatorial(5), 120);
+    afirmar_igual(erro_de(() => { fatorial(2.5); }).contem("esperava inteiro"), verdadeiro);
+});
+
+testar("funcao anonima com tipos", () => {
+    seja dobro = função(x: numero) -> numero { retornar x * 2; };
+    afirmar_igual(dobro(4), 8);
+    afirmar_igual(erro_de(() => { dobro("a"); }).contem("função anônima"), verdadeiro);
+});
+
+testar("lambdas com seta continuam sem tipos", () => {
+    seja f = (a, b) => a + b;
+    afirmar_igual(f(1, 2), 3);
+    afirmar_igual(f("a", "b"), "ab");
+});
+
+testar("classes: metodos, construtor e tipo da instancia", () => {
+    classe Animal {
+        inicio(nome: texto) { isso.nome = nome; }
+        falar(vezes: inteiro = 1) -> texto { retornar isso.nome + "!" ; }
+    }
+    classe Cao herda Animal { }
+    seja a: Animal = novo Animal("Rex");
+    seja c: Animal = novo Cao("Bob");
+    seja d: Cao = novo Cao("Bob");
+    afirmar_igual(a.falar(), "Rex!");
+    afirmar_igual(c.falar(2), "Bob!");
+    afirmar_igual(erro_de(() => { novo Animal(5); }).contem("parâmetro 'nome' de inicio()"), verdadeiro);
+    afirmar_igual(erro_de(() => { a.falar("x"); }).contem("parâmetro 'vezes' de falar()"), verdadeiro);
+    afirmar_igual(erro_de(() => { seja z: Cao = novo Animal("x"); }).contem("'z' é Cao, mas recebeu instância de Animal"), verdadeiro);
+    afirmar_igual(erro_de(() => { seja z: Animal = 5; }).contem("é Animal"), verdadeiro);
+    funcao apresenta(x: Animal) -> texto { retornar x.nome; }
+    afirmar_igual(apresenta(d), "Bob");
+    afirmar_igual(erro_de(() => { apresenta("rex"); }).contem("esperava Animal"), verdadeiro);
+});
+
+testar("estrutura, enum e tipo algebrico como tipos", () => {
+    estrutura Ponto { x: inteiro, y: inteiro }
+    enum Cor { VERMELHO, VERDE }
+    tipo Arvore { Folha, No(esq, val, dir) }
+    seja p: Ponto = Ponto(1, 2);
+    seja c: Cor = Cor.VERDE;
+    seja a: Arvore = Arvore.Folha;
+    afirmar_igual(p.x, 1);
+    afirmar_igual(erro_de(() => { seja q: Ponto = Cor.VERDE; }).contem("é Ponto, mas recebeu enum Cor"), verdadeiro);
+    afirmar_igual(erro_de(() => { seja q: Cor = p; }).contem("estrutura Ponto"), verdadeiro);
+    afirmar_igual(erro_de(() => { seja q: Arvore = c; }).contem("é Arvore"), verdadeiro);
+    afirmar_igual(erro_de(() => { seja q: Cor = a; }).contem("tipo Arvore"), verdadeiro);
+});
+
+testar("geradores: parametros conferidos, valores produzidos livres", () => {
+    função* conta(ate: inteiro) { produzir 1; produzir ate; }
+    afirmar_igual([x para x em conta(3)], [1, 3]);
+    afirmar_igual(erro_de(() => { conta("a"); }).contem("parâmetro 'ate' de conta()"), verdadeiro);
+});
+
+testar("funcao assincrona: retorno conferido no valor final", () => {
+    assincrona funcao dobro(n: numero) -> numero { retornar n * 2; }
+    assincrona funcao ruim(n) -> inteiro { retornar "x"; }
+    seja r = aguarda dobro(4);
+    afirmar_igual(r, 8);
+    afirmar_igual(erro_de(() => { aguarda ruim(1); }).contem("retorno de ruim(): esperava inteiro, mas retornou texto"), verdadeiro);
+    afirmar_igual(erro_de(() => { aguarda dobro("a"); }).contem("parâmetro 'n' de dobro()"), verdadeiro);
+});
+
+testar("parametro spread nao e conferido", () => {
+    funcao soma(a: numero, ...resto) -> numero { retornar a + resto.tamanho; }
+    afirmar_igual(soma(1, "x", nulo), 3);
+});
+
+testar("tipo desconhecido: erro claro", () => {
+    seja m = erro_de(() => { seja z: Int = 5; });
+    afirmar_igual(m.contem("tipo desconhecido 'Int'"), verdadeiro);
+    afirmar_igual(m.contem("Tipos disponíveis"), verdadeiro);
+    funcao f(a: strng) { retornar a; }
+    afirmar_igual(erro_de(() => { f("x"); }).contem("tipo desconhecido 'strng'"), verdadeiro);
+    afirmar_igual(erro_de(() => { seja z: lista[Foo] = []; }).contem("tipo desconhecido 'Foo'"), verdadeiro);
+    afirmar_igual(erro_de(() => { seja z: inteiro[texto] = 1; }).contem("não aceita"), verdadeiro);
+    afirmar_igual(erro_de(() => { seja z: Foo? = nulo; }).contem("tipo desconhecido 'Foo'"), verdadeiro);
+});
+
+testar("codigo sem tipos nao muda", () => {
+    seja a = 5;
+    a = "agora texto";
+    funcao f(x) { retornar x; }
+    afirmar_igual(f([1]), [1]);
+    seja t = (x) => x;
+    afirmar_igual(a, "agora texto");
+});
+
+resumo_testes();

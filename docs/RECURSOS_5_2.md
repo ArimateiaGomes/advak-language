@@ -148,3 +148,81 @@ Onde está o código: `advak_formatacao.py` (novo; sem dependências), `_interp_
 
 Testes: `testes/formatacao.dk` (14 casos) e `testes/test_formatacao.py` (37 testes: divisor de templates,
 separador de formato, números, estilo Python, datas, integração e ferramentas).
+
+## Tipagem opcional
+
+Anotações de tipo são **opcionais**: só o que foi anotado é conferido, em **tempo de execução**. Programas sem
+tipos funcionam exatamente como antes.
+
+```
+seja idade: inteiro = 17
+fixo nome: texto = "Ana"
+seja apelido: texto? = nulo                       // ? aceita também nulo
+seja valor: inteiro | texto = "10"                // um tipo OU outro
+seja notas: lista[numero] = [7, 8.5]              // cada elemento é conferido
+seja pessoa: Pessoa = novo Pessoa("Ana")          // classe, estrutura, enum ou tipo algébrico
+
+função somar(a: numero, b: numero = 0) -> numero { retornar a + b }
+função saudar(nome: texto) { imprimir(`Oi ${nome}`) }       // sem -> : o retorno é livre
+classe Conta { inicio(saldo: numero) { ... }   depositar(v: numero) -> nulo { ... } }
+```
+
+| Tipo (sinônimos) | Aceita |
+|---|---|
+| `inteiro` (`int`, `integer`) | só inteiros. `5.0` **não** é inteiro; booleano também não |
+| `numero` (`número`, `decimal`, `flutuante`, `float`, `number`) | inteiro ou decimal (nunca booleano) |
+| `texto` (`string`, `str`) | texto |
+| `booleano` (`bool`, `boolean`) | `verdadeiro` / `falso` |
+| `lista` (`list`, `array`), `lista[T]` | lista; com `[T]`, cada elemento é conferido |
+| `mapa` (`objeto`, `dict`, `map`), `mapa[T]` | mapa; com `[T]`, cada valor é conferido |
+| `funcao` (`função`, `function`) | função, lambda ou método |
+| `nulo` (`null`) | só nulo |
+| `qualquer` (`any`) | qualquer valor |
+| nome de classe / `estrutura` / `enum` / `tipo` | instância daquele tipo (classes: inclui as subclasses) |
+
+Modificadores: `T?` também aceita `nulo`; `A | B` aceita qualquer um dos dois; `lista[lista[inteiro]]` aninha.
+
+Quando a conferência acontece:
+
+- **Declaração**: `seja x: T = valor` confere o valor. `seja x: T` sem valor é permitido (começa como `nulo`); o
+  primeiro valor atribuído é conferido. `= nulo` explícito só passa em `T?`, `nulo` ou `qualquer`.
+- **Reatribuição**: toda atribuição (`=`, `+=`, `++`...) é conferida, inclusive por uma função interna que altera
+  a variável de fora. Um novo `seja x = ...` sem tipo, no mesmo escopo, remove a anotação.
+- **Parâmetros**: conferidos a cada chamada, também o valor padrão quando é usado. Argumento que faltou chega como
+  `nulo` e a mensagem sugere isso. Parâmetro `...resto` (spread) não é conferido.
+- **Retorno** (`-> T`): conferido quando a função retorna. Se terminar sem `retornar`, o valor é `nulo` e só passa em
+  `nulo`, `T?` ou `qualquer`. Em função assíncrona vale o valor final; em geradores só os parâmetros são conferidos.
+- **Tipo desconhecido** (`Int`, `strng`, `lista[Foo]`) dá erro listando os tipos válidos, na declaração da variável
+  ou na primeira chamada da função.
+
+Mensagens (português, com a linha do erro):
+
+```
+Tipo incorreto: 'idade' é inteiro, mas recebeu texto ("abc").
+Tipo incorreto no parâmetro 'a' de somar(): esperava numero, mas recebeu texto ("x").
+Tipo incorreto no retorno de somar(): esperava numero, mas retornou texto ("x").
+Tipo inválido em variável 'z': tipo desconhecido 'Int'. Tipos disponíveis: ...
+```
+
+Decisões e limites desta versão:
+
+- **`inteiro` é estrito e não há conversão automática**: `seja x: inteiro = 10 / 2` dá erro, porque `/` devolve
+  decimal (use `10 // 2` ou `inteiro(10 / 2)`). `seja nota: numero = 7` funciona.
+- **Fora desta versão**: parâmetros tipados em **lambdas com seta** (`(a: numero) => ...` é erro de sintaxe; a
+  função anônima `função(a: numero) { }` aceita), tipos em desestruturação e em `para (x: T em ...)`, conferência
+  dos **campos** de `estrutura` (continuam só anotados) e checagem **estática** no `advak --verificar`
+  (os erros aparecem ao executar).
+- `->` virou um símbolo da linguagem (tipo de retorno); em `i-->0` o `--` continua sendo o decremento.
+- Interfaces aceitam `-> T` nos métodos, mas não conferem tipos.
+- Custo: só o código anotado paga. Medido em 30.000 repetições: variável tipada ≈ +9% de tempo em um laço que só
+  atribui; função com 2 parâmetros e retorno tipados ≈ +28% por chamada (≈ 40 µs).
+
+Efeito colateral corrigido: usar um tipo algébrico (`tipo Arvore { Folha, ... }`) como valor, por exemplo
+`seja a = Arvore.Folha`, dava "Variante 'get' não existe" (o mesmo defeito que o `enum` tinha); agora funciona.
+
+Onde está o código: `advak_tipos.py` (novo, sem dependências), `parse_tipo` / `parse_retorno` / `parse_params` em
+`advak_parser.py`, o token `->` em `advak_lexer.py`, e em `advak_interpreter.py`: `Scope.tipos`, `_CtxTipos`,
+`_conferir_parametro` / `_conferir_retorno` e `var_decl`.
+
+Testes: `testes/tipagem.dk` (26 casos) e `testes/test_tipagem.py` (21 testes: lexer, parser, tabela de conferência,
+mensagens, e verificação de que nenhum `.dk` do repositório usa anotações).

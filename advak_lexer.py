@@ -67,6 +67,7 @@ TOKEN_SPECS = [
     ('FLOAT',          r'\d+\.\d+'),
     ('NUMBER',         r'\d+'),
     ('ARROW',          r'=>'),
+    ('RET_ARROW',      r'->'),        # função f(a: numero) -> numero  (tipo de retorno)
     ('PIPE',           r'\|>'),
     ('SPREAD',         r'\.\.\.'),
     ('RANGE_INC',      r'\.\.='),     # 1..=10  (intervalo com o fim incluído)
