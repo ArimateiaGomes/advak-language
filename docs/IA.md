@@ -67,8 +67,9 @@ assistente.perguntar("Resuma", {anexos: ["ata.pdf", "tabela.xlsx", "foto.png"]})
 ```
 
 A Advak lê os arquivos (módulo `advak_documentos.py`, opcional e carregado só quando você usa anexos),
-coloca o texto em blocos de **dados** com marcador aleatório e avisa a IA para **não obedecer nada escrito
-dentro dos documentos**. Imagens usam o OCR local ou, se você pedir e o provedor suportar, a visão da IA.
+coloca o texto em blocos de **dados** com marcador aleatório e avisa a IA, **no prompt de sistema do
+provedor** (com uma cópia no texto como reforço), para **não obedecer nada escrito dentro dos documentos**.
+Isso reduz, mas não elimina, o risco de *prompt injection* (detalhes em DOCUMENTOS.md). Imagens usam o OCR local ou, se você pedir e o provedor suportar, a visão da IA.
 Formatos, drivers (`pip install ...`), OCR, limites e a lista do que foi testado: **[DOCUMENTOS.md](DOCUMENTOS.md)**.
 
 > **Atenção:** anexos enviados a um provedor em nuvem **saem do computador**. Para dados sensíveis (ex.: dados

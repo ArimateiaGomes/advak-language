@@ -339,6 +339,14 @@ class ClienteIA:
 
     def _chamar(self, mensagens, op):
         sistema = op.get('sistema', self._sistema)
+        # Regras de segurança de anexos (texto de documento = DADO) vão no prompt de SISTEMA do provedor.
+        regras = []
+        for m in mensagens:
+            r = m.get('regra_sistema')
+            if r and r not in regras:
+                regras.append(r)
+        if regras:
+            sistema = "\n\n".join(([str(sistema)] if sistema else []) + regras)
         falhas = []
         for prov in self._escolher(op):
             if op.get('modelo') and len(self._provedores) == 1:
