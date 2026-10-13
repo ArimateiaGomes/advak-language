@@ -368,7 +368,7 @@ class TranspiladorPython:
 
         t = node.get('type', '')
 
-        if t == 'number':
+        if t in ('number', 'float'):                 # o parser usa 'float' para 2.5
             return repr(node['value'])
 
         elif t == 'string':
@@ -404,7 +404,7 @@ class TranspiladorPython:
             right = self._transpilar_expr(node['right'])
             op = node['op']
             op_map = {
-                '&&': 'and', '||': 'or',
+                '&&': 'and', '||': 'or', 'e': 'and', 'ou': 'or',     # e/ou: operadores em português
                 '==': '==', '!=': '!=',
                 '<=': '<=', '>=': '>=',
                 '<': '<', '>': '>',
@@ -416,10 +416,11 @@ class TranspiladorPython:
             return f'({left} {py_op} {right})'
 
         elif t == 'unary':
+            # o parser guarda o operando em 'operand' (versões antigas usavam 'value')
             op = node['op']
-            val = self._transpilar_expr(node['value'])
+            val = self._transpilar_expr(node['operand'] if 'operand' in node else node['value'])
             op_map = {'!': 'not ', '-': '-', '+': '+'}
-            return f'{op_map.get(op, op)}{val}'
+            return f'({op_map.get(op, op)}{val})'          # parênteses: (-2) ** 2 e (not a) and b
 
         elif t == 'call':
             func_node = node.get('func', {})
@@ -770,7 +771,7 @@ static advak_num _str_to_num(const char* s) {
             return '0'
         t = node.get('type', '')
 
-        if t == 'number':
+        if t in ('number', 'float'):
             v = node['value']
             return str(int(v)) if isinstance(v, float) and v == int(v) else str(v)
 
@@ -811,9 +812,9 @@ static advak_num _str_to_num(const char* s) {
 
         elif t == 'unary':
             op = node['op']
-            val = self._transpilar_expr_c(node['value'])
+            val = self._transpilar_expr_c(node['operand'] if 'operand' in node else node['value'])
             op_map = {'!': '!', '-': '-', '+': '+'}
-            return f'{op_map.get(op, op)}{val}'
+            return f'({op_map.get(op, op)}{val})'
 
         elif t == 'call':
             func = node.get('func', {})
