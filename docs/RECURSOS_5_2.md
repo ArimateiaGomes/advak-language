@@ -33,9 +33,9 @@ Python) e `advak_formatador.py` (não separa mais `..=`).
 Testes: `testes/intervalos.dk` (comportamento, 13 casos), `testes/test_intervalos.py` (lexer, parser,
 formatador e transpilador).
 
-Observação encontrada no caminho (não é do recurso): o transpilador Python (`advak_nativo.py`) falha com
-`KeyError: 'value'` em qualquer número negativo literal (`seja x = -2`). O formatador também separa `+=`,
-`-=` e `=>` com espaços indevidos. Ficam anotados para corrigir à parte.
+Observação encontrada no caminho (não é do recurso): o transpilador Python falhava com `KeyError: 'value'` em
+qualquer número negativo literal, e o formatador separava `+=`, `-=` e `=>` com espaços indevidos. Os dois
+foram corrigidos depois (veja o CHANGELOG).
 
 ## Compreensão de listas
 

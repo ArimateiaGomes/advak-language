@@ -21,16 +21,16 @@ class Formatador:
         linhas = codigo.split('\n')
         resultado = []
         nivel = 0
-        em_template = False       # dentro de um texto de crase que continua em várias linhas
+        aberto = None             # texto ("..", '..', `..`) ou comentário /* */ que continua na linha seguinte
 
         for linha in linhas:
-            if em_template:
-                # o conteúdo de um texto de várias linhas é do usuário: não se mexe
-                em_template = proteger_literais(linha, True)[2]
+            if aberto:
+                # o conteúdo de um texto/comentário de várias linhas é do usuário: não se mexe
+                aberto = proteger_literais(linha, aberto)[2]
                 resultado.append(linha)
                 continue
             stripped = linha.strip()
-            em_template = proteger_literais(stripped)[2]
+            aberto = proteger_literais(stripped)[2]
 
             # Linha vazia
             if not stripped:
@@ -69,9 +69,12 @@ class Formatador:
         # Textos ("..", '..', `..`) e comentários ficam intactos (ex.: `${x:,.2f}` e "a,b")
         recuo = linha[:len(linha) - len(linha.lstrip())]
         corpo, lits, _ = proteger_literais(linha[len(recuo):])
-        # Garante espaço em torno de = (não em == ou !=)
-        # (o '.' fica de fora para não separar o intervalo ..= em ".. =")
-        corpo = re.sub(r'([^=!<>.])=([^=])', r'\1 = \2', corpo)
+        # Atribuições compostas: x+=1 → x += 1  (+= -= *= /= %= **= ??= &&= ||= &= |= ^= <<= >>=)
+        corpo = re.sub(r'\s*(\*\*=|\?\?=|&&=|\|\|=|<<=|>>=|\+=|-=|\*=|/=|%=|&=|\|=|\^=)\s*', r' \1 ', corpo)
+        # Seta de função: x=>x+1 → x => x+1
+        corpo = re.sub(r'\s*=>\s*', ' => ', corpo)
+        # Atribuição simples: espaço em torno de um '=' que NÃO faz parte de ==, !=, <=, >=, ===, !==, ..=, +=, =>
+        corpo = re.sub(r'(?<![=!<>.+\-*/%&|^?])\s*=(?![=>])\s*', ' = ', corpo)
         # Garante espaço após vírgula
         corpo = re.sub(r',([^\s])', r', \1', corpo)
         # Remove espaço duplo (o recuo no começo da linha é preservado)

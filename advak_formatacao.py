@@ -126,41 +126,54 @@ def separar_formato(conteudo):
     return conteudo, None
 
 
-def proteger_literais(linha, dentro_template=False):
+def _fim_do_literal(s, j, abertura):
+    """Índice logo depois do fechamento do texto/comentário que começou antes de s[j]; -1 se não fechar."""
+    if abertura == '/*':
+        k = s.find('*/', j)
+        return -1 if k == -1 else k + 2
+    n = len(s)
+    while j < n and s[j] != abertura:
+        j += 2 if s[j] == '\\' else 1
+    return -1 if j >= n else j + 1
+
+
+def proteger_literais(linha, dentro=None):
     """
-    Troca textos ("..." '...' `...`) e comentários (// ...) de UMA linha por marcadores \\x00N\\x00, para
-    ferramentas (formatador, verificador) não mexerem no que está dentro deles.
-    Devolve (linha_protegida, literais, template_aberto_no_fim). Com dentro_template=True a linha começa
-    no meio de um texto de crase de várias linhas.
+    Troca textos ("..." '...' `...`), comentários de bloco (/* ... */) e comentários de linha (// ...) de UMA
+    linha por marcadores \\x00N\\x00, para ferramentas (formatador, verificador) não mexerem no que há neles.
+    Devolve (linha_protegida, literais, aberto_no_fim): `aberto_no_fim` é a abertura ('"', "'", '`' ou '/*')
+    de um texto/comentário que continua na linha seguinte (os textos podem ter várias linhas), ou None.
+    `dentro` diz que a linha já começa no meio de um desses (True = crase, por compatibilidade).
     """
+    if dentro is True:
+        dentro = '`'
     saida, lits = [], []
     i, n = 0, len(linha)
-    aberto = False
-    if dentro_template:
-        j = i
-        while j < n and linha[j] != '`':
-            j += 2 if linha[j] == '\\' else 1
-        if j >= n:
-            return '\x000\x00', [linha], True
-        lits.append(linha[:j + 1])
+    aberto = None
+    if dentro:
+        j = _fim_do_literal(linha, 0, dentro)
+        if j == -1:
+            return '\x000\x00', [linha], dentro
+        lits.append(linha[:j])
         saida.append('\x000\x00')
-        i = j + 1
+        i = j
     while i < n:
         c = linha[i]
-        if c in '"\'`':
-            j = i + 1
-            while j < n and linha[j] != c:
-                j += 2 if linha[j] == '\\' else 1
-            fechou = j < n
-            j = min(j + 1, n)
+        abertura = c if c in '"\'`' else ('/*' if linha.startswith('/*', i) else None)
+        if abertura:
+            j = _fim_do_literal(linha, i + len(abertura), abertura)
+            if j == -1:
+                lits.append(linha[i:])
+                saida.append(f'\x00{len(lits) - 1}\x00')
+                aberto = abertura
+                break
             lits.append(linha[i:j])
             saida.append(f'\x00{len(lits) - 1}\x00')
-            aberto = (c == '`' and not fechou)
             i = j
             continue
         if c == '/' and linha[i:i + 2] == '//':
             resto = linha[i + 2:].lstrip()
-            divisao = bool(''.join(saida).strip()) and resto[:1] in tuple('0123456789(-+') and resto[:1] != ''
+            divisao = bool(''.join(saida).strip()) and resto[:1] != '' and resto[:1] in tuple('0123456789(-+')
             if not divisao:                                 # comentário até o fim da linha
                 lits.append(linha[i:])
                 saida.append(f'\x00{len(lits) - 1}\x00')
@@ -168,7 +181,6 @@ def proteger_literais(linha, dentro_template=False):
         saida.append(c)
         i += 1
     return ''.join(saida), lits, aberto
-
 
 def restaurar_literais(linha, lits):
     return re.sub(r'\x00(\d+)\x00', lambda m: lits[int(m.group(1))], linha)
