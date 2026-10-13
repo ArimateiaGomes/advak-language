@@ -502,6 +502,16 @@ class TranspiladorPython:
             else_ = self._transpilar_expr(node['else'])
             return f'({then} if {cond} else {else_})'
 
+        elif t == 'list_comp':
+            partes = [self._transpilar_expr(node['element'])]
+            for c in node['clauses']:
+                if c['kind'] == 'for':
+                    var = f"({', '.join(c['var'])})" if isinstance(c['var'], list) else c['var']
+                    partes.append(f"for {var} in {self._transpilar_expr(c['iter'])}")
+                else:
+                    partes.append(f"if {self._transpilar_expr(c['cond'])}")
+            return '[' + ' '.join(partes) + ']'
+
         elif t == 'range':
             ini = self._transpilar_expr(node['start'])
             fim = self._transpilar_expr(node['end'])

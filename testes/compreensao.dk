@@ -1,0 +1,108 @@
+// Compreensão de listas: [x * 2 para x em lista se x > 0]
+
+testar("transformar", () => {
+    afirmar_igual([x * 2 para x em [1, 2, 3]], [2, 4, 6]);
+    afirmar_igual([n + "!" para n em ["a", "b"]], ["a!", "b!"]);
+    afirmar_igual([x > 2 ? "grande" : "pequeno" para x em [1, 3]], ["pequeno", "grande"]);
+});
+
+testar("filtrar com se", () => {
+    afirmar_igual([x para x em [1, -2, 3, -4, 5] se x > 0], [1, 3, 5]);
+    afirmar_igual([x para x em [1, 2, 3] se x > 10], []);
+});
+
+testar("transformar e filtrar juntos", () => {
+    seja lista = [1, -2, 3, -4, 5];
+    afirmar_igual([x * 2 para x em lista se x > 0], [2, 6, 10]);
+});
+
+testar("sinonimos em ingles: for / in / if", () => {
+    afirmar_igual([x * 2 for x in [1, 2, 3] if x != 2], [2, 6]);
+    afirmar_igual([x for x of [4, 5]], [4, 5]);
+});
+
+testar("combina com intervalos", () => {
+    afirmar_igual([x * x para x em 1..=5], [1, 4, 9, 16, 25]);
+    afirmar_igual([x para x em 1..5], [1, 2, 3, 4]);
+    afirmar_igual([x para x em 0..=20 passo 5 se x != 10], [0, 5, 15, 20]);
+    afirmar_igual([x para x em 3..=1 passo -1], [3, 2, 1]);
+});
+
+testar("varios se filtram em sequencia", () => {
+    afirmar_igual([x para x em 1..=20 se x % 2 == 0 se x % 3 == 0], [6, 12, 18]);
+});
+
+testar("lacos aninhados (esquerda para direita)", () => {
+    afirmar_igual([[x, y] para x em 1..=3 para y em 1..=3 se x < y], [[1, 2], [1, 3], [2, 3]]);
+    afirmar_igual([x + y para x em [10, 20] para y em [1, 2]], [11, 12, 21, 22]);
+});
+
+testar("compreensao dentro de compreensao (matriz)", () => {
+    afirmar_igual([[i * j para j em 1..=3] para i em 1..=3], [[1, 2, 3], [2, 4, 6], [3, 6, 9]]);
+});
+
+testar("percorre textos e mapas (chaves)", () => {
+    afirmar_igual([c para c em "banana" se c != "a"], ["b", "n", "n"]);
+    seja m = {a: 1, b: 2};
+    afirmar_igual([k para k em m], ["a", "b"]);
+    afirmar_igual([m[k] * 10 para k em m], [10, 20]);
+});
+
+testar("desmontar pares: para (a, b) em ...", () => {
+    afirmar_igual([a + b para (a, b) em [[1, 2], [3, 4]]], [3, 7]);
+    afirmar_igual([n para (n, i) em [["x", 1], ["y", 2]] se i > 1], ["y"]);
+});
+
+testar("variaveis e funcoes de fora", () => {
+    seja fator = 3;
+    funcao dobro(n) { retornar n * 2; }
+    afirmar_igual([dobro(n) * fator para n em [1, 2]], [6, 12]);
+});
+
+testar("escopo: a variavel do para nao vaza nem altera a de fora", () => {
+    seja x = 100;
+    seja r = [x para x em [1, 2]];
+    afirmar_igual(r, [1, 2]);
+    afirmar_igual(x, 100);
+    seja erro = "";
+    tentar { seja y = [i para i em [1]]; imprimir(i); } pegar (e) { erro = "" + e; }
+    afirmar_igual(erro.contem("não definida"), verdadeiro);
+});
+
+testar("origem vazia e uso como valor", () => {
+    afirmar_igual([x para x em []], []);
+    seja quadrados = [x * x para x em 1..=4];
+    afirmar_igual(quadrados.tamanho, 4);
+    afirmar_igual(quadrados.contem(9), verdadeiro);
+    funcao soma(l) { seja s = 0; para (v em l) { s = s + v; } retornar s; }
+    afirmar_igual(soma([x para x em 1..=4]), 10);
+});
+
+testar("geradores como origem", () => {
+    função* tres() { produzir 1; produzir 2; produzir 3; }
+    afirmar_igual([x * 10 para x em tres()], [10, 20, 30]);
+});
+
+testar("listas comuns continuam iguais", () => {
+    seja a = [1, 2];
+    seja b = [3];
+    afirmar_igual([...a, ...b], [1, 2, 3]);
+    afirmar_igual([], []);
+    afirmar_igual([1, 2, 3,], [1, 2, 3]);
+    afirmar_igual([a.tamanho > 1 ? "ok" : "no", 5], ["ok", 5]);
+});
+
+testar("erros em portugues", () => {
+    seja m1 = "";
+    tentar { seja r = [x para x em 5]; } pegar (e) { m1 = "" + e; }
+    afirmar_igual(m1.contem("não é possível percorrer"), verdadeiro);
+    afirmar_igual(m1.contem("número"), verdadeiro);
+    seja m2 = "";
+    tentar { seja r = [a para (a, b) em [[1, 2, 3]]]; } pegar (e) { m2 = "" + e; }
+    afirmar_igual(m2.contem("esperava 2 valores"), verdadeiro);
+    seja m3 = "";
+    tentar { seja r = [x para x em nulo]; } pegar (e) { m3 = "" + e; }
+    afirmar_igual(m3.contem("nulo"), verdadeiro);
+});
+
+resumo_testes();

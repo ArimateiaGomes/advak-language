@@ -1446,12 +1446,51 @@ class Parser:
                 self.advance()
                 items.append({'type': 'spread', 'value': self.parse_expression()})
             else:
-                items.append(self.parse_expression())
+                item = self.parse_expression()
+                if not items and self.check('para', 'for'):
+                    return self._parse_compreensao(item)       # [x * 2 para x em lista se x > 0]
+                items.append(item)
             # Allow trailing comma [1, 2, 3,]
             if self.check('COMMA'):
                 self.advance()
         self.consume('RBRACKET')
         return {'type': 'list', 'items': items}
+
+    def _parse_compreensao(self, elemento):
+        """
+        Compreensão de lista (o elemento já foi lido; o próximo token é 'para'/'for'):
+          [x * 2 para x em lista se x > 0]
+          [x + y para x em a para y em b se x < y]
+          [a + b para (a, b) em pares]
+        Sinônimos em inglês: for / in / if.
+        """
+        clausulas = []
+        while True:
+            if self.check('para', 'for'):
+                self.advance()
+                if self.check('LPAREN'):                          # desmontagem: para (a, b) em pares
+                    self.advance()
+                    var = [self.consume('IDENT')['value']]
+                    while self.check('COMMA'):
+                        self.advance()
+                        var.append(self.consume('IDENT')['value'])
+                    self.consume('RPAREN')
+                else:
+                    var = self.consume('IDENT')['value']
+                t = self.peek()
+                if not (t and t['value'] in ('em', 'in', 'of')):
+                    linha = t['line'] if t else '?'
+                    raise SyntaxError(f"[Advak] Linha {linha}: esperado 'em' depois da variável na "
+                                      "compreensão de lista (ex.: [x * 2 para x em lista])")
+                self.advance()
+                clausulas.append({'kind': 'for', 'var': var, 'iter': self.parse_expression()})
+            elif self.check('se', 'if'):
+                self.advance()
+                clausulas.append({'kind': 'if', 'cond': self.parse_expression()})
+            else:
+                break
+        self.consume('RBRACKET')
+        return {'type': 'list_comp', 'element': elemento, 'clauses': clausulas}
 
     def parse_map_literal(self):
         self.consume('LCURLY')

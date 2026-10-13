@@ -4903,6 +4903,11 @@ class AdvakInterpreter:
             l = await self.eval(node['left'], scope)
             return l if l is not None else await self.eval(node['right'], scope)
 
+        if t == 'list_comp':
+            saida = []
+            await self._comp_rec(node, 0, Scope(scope), saida)
+            return saida
+
         if t == 'range':
             # Fora de um laço o intervalo vira uma lista (com teto de tamanho)
             r = await self._eval_intervalo(node, scope)
@@ -6214,6 +6219,58 @@ class AdvakInterpreter:
         if node['inclusive']:
             fim += 1 if passo > 0 else -1
         return range(ini, fim, passo)
+
+    # ── Compreensão de listas: [x * 2 para x em lista se x > 0] ─────────────────
+
+    @staticmethod
+    def _nome_tipo(v):
+        if v is None:
+            return 'nulo'
+        if isinstance(v, bool):
+            return 'booleano'
+        if isinstance(v, (int, float)):
+            return 'número'
+        return type(v).__name__
+
+    async def _comp_rec(self, node, i, escopo, saida):
+        clausulas = node['clauses']
+        if i == len(clausulas):
+            saida.append(await self.eval(node['element'], escopo))
+            if len(saida) > self._MAX_INTERVALO:
+                raise AdvakError(f"Compreensão de lista: o resultado passou de {self._MAX_INTERVALO} itens. "
+                                 "Filtre mais com 'se' ou processe em partes.")
+            return
+        c = clausulas[i]
+        if c['kind'] == 'if':
+            if self._truthy(await self.eval(c['cond'], escopo)):
+                await self._comp_rec(node, i + 1, escopo, saida)
+            return
+        fonte = await self._eval_iteravel(c['iter'], escopo)
+        if isinstance(fonte, dict):
+            fonte = list(fonte.keys())
+        nomes = c['var'] if isinstance(c['var'], list) else None
+
+        async def passo(item):
+            interno = Scope(escopo)
+            if nomes is None:
+                interno.declare(c['var'], item)
+            else:
+                if not isinstance(item, (list, tuple)) or len(item) != len(nomes):
+                    raise AdvakError(f"Compreensão de lista: esperava {len(nomes)} valores em cada item "
+                                     f"(para ({', '.join(nomes)}) em ...), mas recebi {item!r}.")
+                for nome, valor in zip(nomes, item):
+                    interno.declare(nome, valor)
+            await self._comp_rec(node, i + 1, interno, saida)
+
+        if isinstance(fonte, AdvakGenerator):
+            async for item in fonte:
+                await passo(item)
+        elif isinstance(fonte, (list, tuple, str, range, set)):
+            for item in fonte:
+                await passo(item)
+        else:
+            raise AdvakError(f"Compreensão de lista: não é possível percorrer um valor do tipo "
+                             f"{self._nome_tipo(fonte)}. Use uma lista, um texto, um mapa ou um intervalo.")
 
     async def _eval_iteravel(self, expr, scope):
         """Valor sobre o qual o laço `para` itera; intervalos ficam preguiçosos (sem criar lista)."""
