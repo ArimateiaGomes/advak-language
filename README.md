@@ -818,8 +818,9 @@ db.fechar()
 Os drivers são opcionais e só são carregados quando o banco é usado; se faltar um, a Advak mostra o
 `pip install` exato. `advak bancos` lista tudo e mostra o que está instalado.
 
-> **Seja honesto com os testes:** só o **SQLite** foi testado contra um banco de verdade (e o PostgreSQL pelo
-> modo antigo `--db`). Os outros foram testados com drivers simulados. A tabela completa, links de download,
+> **Seja honesto com os testes:** só o **SQLite** e o **PostgreSQL** foram testados contra um banco de verdade
+> (o PostgreSQL pelo modo antigo `--db` e pelo conector novo). Os outros 21 foram testados com drivers simulados
+> (o DuckDB está em teste / instável no Windows). A tabela completa, links de download,
 > strings de conexão e um exemplo de cada banco estão em **[docs/BANCOS_DE_DADOS.md](docs/BANCOS_DE_DADOS.md)**.
 
 ---

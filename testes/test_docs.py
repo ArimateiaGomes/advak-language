@@ -327,7 +327,8 @@ class TesteExemplosDosBancos(unittest.TestCase):
             elif tipo == "duckdb":
                 self.assertIn("instável no Windows", testado)
             elif tipo == "postgres":
-                self.assertIn("Em parte", testado)
+                self.assertIn("**Sim.**", testado)
+                self.assertIn("só para o PostgreSQL", testado.replace("**só**", "só"))
             else:
                 self.assertIn("apenas simulado", testado, nome)
 

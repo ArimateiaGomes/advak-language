@@ -31,8 +31,9 @@ valem onde você os usa.
   `.env` (`ADVAK_<BANCO>_URL`). Drivers opcionais, com mensagem do `pip install` exato quando faltam.
 - Comando `advak bancos`.
 - O modo antigo (`banco.conectar()`, `advak run ... --db`) não mudou.
-- **Testes honestos**: só o SQLite foi testado contra um banco real; os demais têm testes com driver
-  simulado (89 testes). O **DuckDB** está marcado como *em teste / instável no Windows* (travamento ao
+- **Testes honestos**: o SQLite e o PostgreSQL (conector novo, no `testes/bancos_externos.dk`, em um banco
+  descartável) foram testados contra servidor real; CockroachDB e TimescaleDB, que usam o mesmo driver, não. Os
+  outros 21 têm testes com driver simulado (89 testes). O **DuckDB** está marcado como *em teste / instável no Windows* (travamento ao
   usar parâmetros de texto dentro de threads). Veja `docs/BANCOS_DE_DADOS.md`.
 
 ### IA e documentos (opcionais)
@@ -79,7 +80,7 @@ valem onde você os usa.
 
 ### Conhecido / pendente
 
-- Bancos de dados: 21 dos 23 ainda sem teste contra servidor real (SQLite real; PostgreSQL só pelo modo antigo).
+- Bancos de dados: 21 dos 23 ainda sem teste contra servidor real (SQLite e PostgreSQL passaram em teste real).
 - IA: nenhum provedor foi testado contra a API real. OCR: só simulado (falta o Tesseract no computador de testes).
 - Ficaram para uma próxima versão: `async`/`await` com concorrência real, tipo `Resultado` com `?`,
   gerenciador de pacotes e extensão do VS Code.

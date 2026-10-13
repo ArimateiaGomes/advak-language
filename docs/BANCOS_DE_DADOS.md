@@ -5,9 +5,11 @@ você muda só a linha de conexão.
 
 > ## Leia isto primeiro — o que foi testado de verdade
 > * **SQLite**: testado **de verdade** (programa `.dk` real, 6 de 6 testes, e o exemplo deste guia é executado).
-> * **PostgreSQL**: o modo antigo da Advak (`advak run programa.dk --db`, com `banco.criar_banco`, `banco.tabela`...)
->   funciona com um PostgreSQL real — foi verificado rodando `primeiros_passos.dk`. O **conector novo por URL**
->   (`banco.conectar("postgresql://...")`) ainda é **simulado**.
+> * **PostgreSQL**: testado **de verdade**. O conector novo por URL (`banco.conectar("postgresql://...")`) rodou o
+>   `testes/bancos_externos.dk` (CRUD completo, transação e `banco.sql` com `%s` e ``) contra um PostgreSQL
+>   real, em um banco descartável criado e apagado só para o teste (passou, 1 de 1). O modo antigo
+>   (`advak run programa.dk --db`) também foi verificado. **CockroachDB e TimescaleDB** usam o mesmo driver, mas não
+>   foram testados contra servidor deles: continuam **simulados**.
 > * **Outros 20 bancos**: testados apenas com um *driver simulado* (mock): isso confere o SQL e os comandos
 >   que a Advak gera, mas **não prova** que o servidor real aceita tudo.
 > * **DuckDB**: **em teste / instável no Windows** (veja [a seção dele](#duckdb)).
@@ -21,7 +23,7 @@ você muda só a linha de conexão.
 | Banco | Tipo | Driver (`pip install ...`) | Esquema da URL | Teste |
 |---|---|---|---|---|
 | [SQLite](#sqlite) | Relacional | já vem com o Python | `sqlite:///arquivo.db` | **Real** |
-| [PostgreSQL](#postgresql) | Relacional | `psycopg2-binary` | `postgresql://` | Antigo: real. Conector novo: simulado |
+| [PostgreSQL](#postgresql) | Relacional | `psycopg2-binary` | `postgresql://` | **Real** (modo antigo e conector novo) |
 | [MySQL](#mysql) | Relacional | `pymysql` | `mysql://` | Simulado |
 | [MariaDB](#mariadb) | Relacional | `pymysql` | `mariadb://` | Simulado |
 | [SQL Server](#sql-server) | Relacional | `pymssql` | `mssql://` ou `sqlserver://` | Simulado |
@@ -190,8 +192,10 @@ para (c em db.buscar("clientes").ordenar("nome").executar()) {
 }
 db.fechar()
 ```
-**Testado de verdade?** **Em parte.** O modo antigo (`advak run programa.dk --db`) foi executado contra um
-PostgreSQL real. O conector novo por URL usa o mesmo driver, mas só tem teste **simulado**.
+**Testado de verdade?** **Sim.** O modo antigo (`advak run programa.dk --db`) foi executado contra um PostgreSQL
+real, e o conector novo por URL passou no `testes/bancos_externos.dk` contra um PostgreSQL real (banco de teste
+criado e apagado no fim). Isso vale **só para o PostgreSQL**: CockroachDB e TimescaleDB usam o mesmo driver, mas não
+foram testados contra servidor deles.
 
 ### MySQL
 
