@@ -890,8 +890,13 @@ class ConectorPostgres(ConectorSQL):
         extra = {}
         if (p.get('opcoes') or {}).get('sslmode'):
             extra['sslmode'] = p['opcoes']['sslmode']
-        return pg.connect(host=p['host'], port=p['porta'], user=p['usuario'],
-                          password=p['senha'] or '', dbname=p['banco'] or 'postgres', **extra)
+        try:
+            return pg.connect(host=p['host'], port=p['porta'], user=p['usuario'],
+                              password=p['senha'] or '', dbname=p['banco'] or 'postgres', **extra)
+        except UnicodeDecodeError:
+            # PostgreSQL em português + senha errada: a mensagem do servidor não é UTF-8
+            from advak_db import MSG_SENHA_ERRADA
+            raise ErroBanco(MSG_SENHA_ERRADA) from None
 
     def inserir(self, tabela, dados):
         if not dados:

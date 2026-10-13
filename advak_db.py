@@ -81,6 +81,21 @@ def normalizar_sql_params(query, params):
     return query, tuple(params)
 
 
+MSG_SENHA_ERRADA = (
+    "Não foi possível conectar ao PostgreSQL: senha, usuário ou banco incorretos? "
+    "(O servidor respondeu com uma mensagem em português que o Python não conseguiu ler — "
+    "isso quase sempre significa senha errada.) "
+    "Confira ADVAK_DB_USER e ADVAK_DB_PASS no arquivo .env e teste a mesma senha no pgAdmin."
+)
+
+
+def erro_conexao_amigavel(erro):
+    """Texto do erro de conexão; troca o UnicodeDecodeError enigmático de 'senha errada' por uma mensagem clara."""
+    if isinstance(erro, UnicodeDecodeError):
+        return MSG_SENHA_ERRADA
+    return str(erro)
+
+
 class AdvakDB:
     """
     Interface principal do banco de dados para o interpretador Advak.
@@ -150,7 +165,7 @@ class AdvakDB:
         except Exception as e:
             raise RuntimeError(
                 f"\n❌ Não foi possível conectar ao PostgreSQL.\n"
-                f"   Erro: {e}\n\n"
+                f"   Erro: {erro_conexao_amigavel(e)}\n\n"
                 f"   Verifique:\n"
                 f"   1. PostgreSQL está instalado e rodando\n"
                 f"   2. Configure a senha em env_config.env:\n"
@@ -240,11 +255,15 @@ class AdvakDB:
     def conectar(self, dbname=None):
         import psycopg2
         db = dbname or self._cur_db
-        self._conn = psycopg2.connect(
-            host=self.host, port=self.port,
-            user=self.user, password=self.password,
-            dbname=db
-        )
+        try:
+            self._conn = psycopg2.connect(
+                host=self.host, port=self.port,
+                user=self.user, password=self.password,
+                dbname=db
+            )
+        except UnicodeDecodeError:
+            # PostgreSQL em português + senha errada: a mensagem do servidor não é UTF-8
+            raise psycopg2.OperationalError(MSG_SENHA_ERRADA) from None
         self._conn.autocommit = True
         self._cur_db = db
         return f"✅ Conectado ao banco '{db}' em {self.host}:{self.port}"

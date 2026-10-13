@@ -333,12 +333,13 @@ Dois sintomas reais, que significam a mesma coisa:
 → a senha **não foi lida**: o arquivo `.env` não existe, está em outra pasta ou `ADVAK_DB_PASS` está vazio.
 
 ```text
-❌ Erro: 'utf-8' codec can't decode byte 0xe7 in position 78: invalid continuation byte
-💬 Tipo: UnicodeDecodeError
+❌ Erro: Não foi possível conectar ao PostgreSQL: senha, usuário ou banco incorretos? (O servidor respondeu com
+uma mensagem em português que o Python não conseguiu ler — isso quase sempre significa senha errada.) ...
 ```
 → **senha (ou usuário) errada**. Com o PostgreSQL em português, o servidor responde "falha na autenticação"
-com acentos, e o Python não consegue ler a mensagem — por isso aparece esse erro estranho em vez de
-"senha incorreta". Não é problema de acentos nos seus arquivos.
+com acentos, e o Python não consegue ler a mensagem. A Advak reconhece essa situação e mostra o aviso acima.
+(Em versões anteriores à 5.2 aparecia o erro enigmático `'utf-8' codec can't decode byte 0xe7 ...
+UnicodeDecodeError`, que significava a mesma coisa.) Não é problema de acentos nos seus arquivos.
 
 O que fazer:
 

@@ -194,7 +194,8 @@ class BancoWeb:
                 import sys as _sys
                 # BUG 13 FIX: send PG warnings to stderr to avoid polluting stdout
                 _amarel = "\033[93m"; _R = "\033[0m"; _cinza = "\033[90m"
-                print(f"  {_amarel}⚠️  PostgreSQL indisponível: {e}{_R}", file=_sys.stderr)
+                from advak_db import erro_conexao_amigavel
+                print(f"  {_amarel}⚠️  PostgreSQL indisponível: {erro_conexao_amigavel(e)}{_R}", file=_sys.stderr)
                 print(f"  {_cinza}   Configure o arquivo .env:{_R}", file=_sys.stderr)
                 print(f"  {_cinza}   ADVAK_DB_HOST=localhost{_R}", file=_sys.stderr)
                 print(f"  {_cinza}   ADVAK_DB_PORT=5432{_R}", file=_sys.stderr)
