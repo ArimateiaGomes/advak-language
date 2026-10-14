@@ -1,0 +1,13 @@
+// "//" depois de código: divisão inteira só se o resto da linha for uma expressão; senão é comentário
+
+testar("divisao inteira", () => {
+    afirmar_igual(7 // 2, 3);
+    afirmar_igual(7 // (1 + 1), 3);
+});
+
+testar("comentario que comeca com numero", () => {
+    seja a = 2 ** 3;   // 2 elevado a 3 = 8
+    seja b = 8 > 8;    // 8 > 8 ? falso
+    afirmar_igual(a, 8);
+    afirmar_igual(b, falso);
+});

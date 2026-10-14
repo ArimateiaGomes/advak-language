@@ -75,6 +75,15 @@ valem onde você os usa.
 - O formatador de código mudou de comportamento (para melhor): rode `advak formatar --ver arquivo.dk`
   antes de formatar um arquivo antigo.
 - `->` agora é um símbolo da linguagem (tipo de retorno). Em `i-->0` continua sendo o decremento.
+- `//` : divisão inteira ou comentário? Depois de um valor na mesma linha, `//` é **divisão inteira** quando o
+  resto da linha é uma conta completa (sem dois valores seguidos, sem caracteres estranhos, sem terminar em
+  operador) **e** ele está escrito com um espaço (`7 // 2`, `7//2`) ou dentro de parênteses/colchetes
+  (`imprimir(7   // 2)`, `lista[9 // 2]`). Em qualquer outro caso é **comentário**: texto que parece frase
+  (`// 2 elevado a 3`), símbolos soltos (`// 8 > 8 ? falso`, `// +`) e, fora dos parênteses, comentário alinhado
+  com 2 ou mais espaços (ou tab) antes (`seja x = 1   // 3.5`). Em linha própria, `//` é sempre comentário.
+  Antes, `imprimir(2 ** 3)  // 2 elevado a 3` dava "token inesperado '//'" e `seja x = 1  // 3.5` virava, em
+  silêncio, uma divisão. Quem escreve divisão com 2 ou mais espaços fora de parênteses (`7  //  2`) deve usar
+  um espaço só ou parênteses. Os 46 exemplos do repositório geram exatamente os mesmos tokens de antes.
 - `banco.conectar("postgres")` sozinho continua significando "o banco chamado postgres" do modo antigo; para
   o PostgreSQL pelo conector novo, use `postgresql://...` ou `banco.conectar("postgresql")`.
 

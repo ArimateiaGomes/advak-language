@@ -114,6 +114,30 @@ TOKEN_SPECS = [
     ('MISMATCH',       r'.'),
 ]
 
+_PARTES_DE_EXPRESSAO = re.compile(r'\d+(?:\.\d+)?|[^\W\d]\w*|[()+\-*/%]|\S')
+_SIMBOLOS_DE_EXPRESSAO = '()[]{},;+-*/%<>=!'
+_FECHAMENTOS_DE_EXPRESSAO = ')]};,'
+
+
+def _parece_expressao(texto):
+    """True se `texto` pode ser o lado direito de uma divisão: uma expressão (números, nomes, operadores,
+    parênteses) sem dois valores seguidos, sem caracteres estranhos e sem terminar em operador.
+    Um segundo `//` na linha encerra o trecho (o que vem depois é comentário)."""
+    texto = texto.split('//', 1)[0]
+    partes = _PARTES_DE_EXPRESSAO.findall(texto)
+    if not partes:
+        return False
+    anterior_e_valor = False
+    for parte in partes:
+        e_valor = parte[0].isalnum() or parte[0] == '_'
+        if e_valor and anterior_e_valor:
+            return False                      # dois valores seguidos: é uma frase ("2 elevado a 3")
+        if not e_valor and parte not in _SIMBOLOS_DE_EXPRESSAO:
+            return False                      # caractere que não faz parte de contas ("?", "$"...)
+        anterior_e_valor = e_valor
+    return anterior_e_valor or partes[-1] in _FECHAMENTOS_DE_EXPRESSAO
+
+
 class AdvakLexer:
     def __init__(self, source_code):
         # Bloco de Notas do Windows grava BOM UTF-8 no início do arquivo
@@ -249,6 +273,16 @@ class AdvakLexer:
                 rest_check = value[2:].lstrip()
                 first_char = rest_check[0] if rest_check else ''
                 looks_numeric = first_char.isdigit() or first_char in ('(', '-', '+')
+                if looks_numeric and not _parece_expressao(rest_check):
+                    looks_numeric = False
+
+                # Fora de parênteses/colchetes, "valor   // texto" (2 ou mais espaços, ou um tab, antes do //)
+                # é o estilo de comentário alinhado. A divisão se escreve "a // b" (um espaço) ou "a//b".
+                abertos = (sum(1 for k in tokens if k['type'] in ('LPAREN', 'LBRACKET'))
+                           - sum(1 for k in tokens if k['type'] in ('RPAREN', 'RBRACKET')))
+                alinhado = line_prefix.endswith('\t') or line_prefix.endswith('  ')
+                if looks_numeric and abertos <= 0 and alinhado:
+                    looks_numeric = False
 
                 if has_code_before and prev_same_line and expr_type and looks_numeric:
                     # Floor division: tokenize the rest after //
@@ -269,8 +303,9 @@ class AdvakLexer:
                         if k2 == 'COMMENT':
                             # Could be another // (floor div again) or real comment
                             # Check: any non-skip token on this line before → floor div
-                            if tokens and tokens[-1].get('line') == line:
-                                rest2 = v2[2:].strip()
+                            rest2 = v2[2:].strip()
+                            valida2 = _parece_expressao(rest2)
+                            if valida2 and tokens and tokens[-1].get('line') == line:
                                 tokens.append({'type':'OP','value':'//','line':line,'col':col})
                                 col += 2
                                 for m3 in self._combined.finditer(rest2):
