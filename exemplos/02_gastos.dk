@@ -1,0 +1,46 @@
+// Capítulo 2 — Controle de gastos pessoais (salva em arquivo JSON)
+// Rode:  advak exemplos/02_gastos.dk
+
+fixo ARQUIVO = "exemplos/dados/gastos.json"
+
+função carregar() {
+    se (Arquivo.existe(ARQUIVO)) {
+        retornar Arquivo.ler_json(ARQUIVO)
+    }
+    retornar []
+}
+
+função salvar(gastos) {
+    Arquivo.escrever_json(ARQUIVO, gastos)
+}
+
+função total(gastos) {
+    seja soma = 0
+    para (g em gastos) {
+        soma += g.valor
+    }
+    retornar soma
+}
+
+seja gastos = carregar()
+imprimir(`Gastos já salvos: ${gastos.tamanho}`)
+
+seja mais_gastos = verdadeiro
+enquanto (mais_gastos) {
+    seja descricao = entrada("Descrição (vazio para terminar): ")
+    se (descricao == "") {
+        mais_gastos = falso
+    } senão {
+        seja valor = numero(entrada("Valor em R$: "))
+        gastos.adicionar({descricao: descricao, valor: valor})
+    }
+}
+
+salvar(gastos)
+
+imprimir("")
+imprimir("=== Seus gastos ===")
+para (g em gastos) {
+    imprimir(`${g.descricao}: ${moeda(g.valor)}`)
+}
+imprimir(`TOTAL: ${moeda(total(gastos))}`)

@@ -1,0 +1,45 @@
+// Capítulo 8 — Testes unitários para validar regras de negócio
+// Rode:  advak exemplos/08_regras_testes.dk
+
+função desconto(valor, cliente_vip) {
+    se (valor <= 0) {
+        lançar "valor inválido"
+    }
+    se (cliente_vip) {
+        retornar arred(valor * 0.9, 2)
+    }
+    se (valor >= 100) {
+        retornar arred(valor * 0.95, 2)
+    }
+    retornar valor
+}
+
+função classificar_idade(idade) {
+    se (idade < 12) { retornar "criança" }
+    se (idade < 18) { retornar "adolescente" }
+    se (idade < 60) { retornar "adulto" }
+    retornar "idoso"
+}
+
+testar("cliente comum abaixo de 100 não tem desconto", () => {
+    afirmar_igual(desconto(80, falso), 80)
+})
+
+testar("compra a partir de 100 tem 5% de desconto", () => {
+    afirmar_igual(desconto(200, falso), 190)
+})
+
+testar("cliente VIP tem 10% de desconto", () => {
+    afirmar_igual(desconto(50, verdadeiro), 45)
+})
+
+testar("valor zero ou negativo é recusado", () => {
+    afirmar_erro(() => desconto(0, falso))
+})
+
+testar("faixas de idade", () => {
+    afirmar_igual(classificar_idade(5), "criança")
+    afirmar_igual(classificar_idade(15), "adolescente")
+    afirmar_igual(classificar_idade(30), "adulto")
+    afirmar_igual(classificar_idade(70), "idoso")
+})

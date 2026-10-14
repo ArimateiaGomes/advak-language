@@ -1,0 +1,32 @@
+// Capítulo 10 — Relatório de vendas lendo um banco SQL (SQL Server ou Firebird em sistemas de PDV)
+// Rode:  advak exemplos/10_relatorio_vendas_sql.dk
+// Para ler o banco real do PDV, defina no .env (nunca escreva a senha aqui):
+//     ADVAK_RELATORIO_URL=mssql://usuario:senha@servidor:1433/pdv
+//     ADVAK_RELATORIO_URL=firebird://usuario:senha@servidor:3050/C:/pdv/dados.fdb
+// Sem a variável, o exemplo cria um banco SQLite de mentira só para você ver o relatório funcionando.
+
+env.carregar(".env")             // lê o arquivo .env (se existir)
+seja url_banco = env.texto("ADVAK_RELATORIO_URL", "sqlite:///exemplos/dados/pdv.db")
+seja db = banco.conectar(url_banco)
+
+// --- Dados de mentira (só no SQLite de teste; num PDV real a tabela já existe) ---
+se (url_banco.começa_com("sqlite")) {
+    db.tabela("vendas", {id: "autonum", dia: "texto", produto: "texto", quantidade: "inteiro", preco: "decimal"})
+    db.deletar("vendas").executar()
+    db.inserir("vendas", {dia: "2026-10-01", produto: "Caderno", quantidade: 10, preco: 12.5})
+    db.inserir("vendas", {dia: "2026-10-01", produto: "Caneta", quantidade: 50, preco: 2})
+    db.inserir("vendas", {dia: "2026-10-02", produto: "Caderno", quantidade: 5, preco: 12.5})
+    db.inserir("vendas", {dia: "2026-10-02", produto: "Mochila", quantidade: 2, preco: 89.9})
+}
+
+// --- O relatório em si: uma consulta SQL que agrupa e soma ---
+seja linhas = db.sql("SELECT produto, SUM(quantidade) AS qtd, SUM(quantidade * preco) AS total FROM vendas GROUP BY produto ORDER BY total DESC")
+
+imprimir("=== Vendas por produto ===")
+seja geral = 0
+para (l em linhas) {
+    imprimir(`${l.produto}: ${l.qtd} unidades, ${moeda(l.total)}`)
+    geral += l.total
+}
+imprimir(`TOTAL GERAL: ${moeda(geral)}`)
+db.fechar()

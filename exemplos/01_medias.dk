@@ -1,0 +1,37 @@
+// Capítulo 1 — Calculadora de médias escolares
+// Rode:  advak exemplos/01_medias.dk
+
+função media(notas) {
+    seja soma = 0
+    para (n em notas) {
+        soma += n
+    }
+    retornar soma / notas.tamanho
+}
+
+função situacao(m) {
+    se (m >= 7) {
+        retornar "Aprovado"
+    } senão se (m >= 5) {
+        retornar "Recuperação"
+    } senão {
+        retornar "Reprovado"
+    }
+}
+
+imprimir("=== Calculadora de médias ===")
+seja nome = entrada("Nome do aluno: ")
+seja quantas = inteiro(entrada("Quantas notas? "))
+
+seja notas = []
+para (i em 1..=quantas) {
+    seja n = numero(entrada(`Nota ${i}: `))
+    notas.adicionar(n)
+}
+
+seja m = media(notas)
+imprimir("")
+imprimir(`Aluno: ${nome}`)
+imprimir(`Média: ${arred(m, 2)}`)
+imprimir(`Maior nota: ${Mat.max(notas)}  |  Menor nota: ${Mat.min(notas)}`)
+imprimir(`Situação: ${situacao(m)}`)

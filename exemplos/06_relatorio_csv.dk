@@ -1,0 +1,30 @@
+// Capítulo 6 — Relatório que lê um CSV e gera um resumo
+// Rode:  advak exemplos/06_relatorio_csv.dk
+
+seja linhas = Arquivo.ler_linhas("exemplos/dados/vendas.csv")
+seja cabecalho = linhas[0]
+imprimir(`Colunas: ${cabecalho}`)
+
+seja total_por_produto = {}
+seja total_geral = 0
+
+para (i em 1..linhas.tamanho) {
+    seja linha = Texto.aparar(linhas[i])
+    se (linha != "") {
+        seja campos = Texto.dividir(linha, ",")
+        seja produto = campos[1]
+        seja quantidade = numero(campos[2])
+        seja preco = numero(campos[3])
+        seja subtotal = quantidade * preco
+
+        total_por_produto[produto] = (total_por_produto[produto] ?? 0) + subtotal
+        total_geral += subtotal
+    }
+}
+
+imprimir("")
+imprimir("=== Resumo de vendas ===")
+para (produto em total_por_produto.chaves) {
+    imprimir(`${produto}: ${moeda(total_por_produto[produto])}`)
+}
+imprimir(`TOTAL GERAL: ${moeda(total_geral)}`)

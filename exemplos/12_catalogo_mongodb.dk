@@ -1,0 +1,26 @@
+// Capítulo 12 — Catálogo de produtos com MongoDB
+// Rode:  advak exemplos/12_catalogo_mongodb.dk
+// Precisa do MongoDB ligado e no .env:  ADVAK_MONGODB_URL=mongodb://localhost:27017/catalogo
+// e do driver:  pip install pymongo
+
+seja db = banco.conectar("mongodb")
+db.deletar("produtos").onde({}).executar()    // começa do zero
+
+// Cada produto pode ter campos diferentes — essa é a graça do MongoDB
+db.inserir("produtos", {nome: "Caderno", preco: 12.5, categoria: "papelaria"})
+db.inserir("produtos", {nome: "Mochila", preco: 89.9, categoria: "acessorios", cores: ["azul", "preto"]})
+db.inserir("produtos", {nome: "Caneta", preco: 2, categoria: "papelaria"})
+
+imprimir("Papelaria:")
+para (p em db.buscar("produtos").onde("categoria = %s", "papelaria").ordenar("nome").executar()) {
+    imprimir(`  ${p.nome} - ${moeda(p.preco)}`)
+}
+
+imprimir("Acima de R$ 10:")
+para (p em db.buscar("produtos").onde("preco > %s", 10).ordenar("preco").executar()) {
+    imprimir(`  ${p.nome}`)
+}
+
+db.atualizar("produtos", {preco: 14}).onde("nome = %s", "Caderno").executar()
+imprimir(`Total no catálogo: ${db.contar("produtos")}`)
+db.fechar()

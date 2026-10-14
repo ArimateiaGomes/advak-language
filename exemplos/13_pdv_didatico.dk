@@ -1,0 +1,97 @@
+// Capítulo 13 — PDV didático: cadastro, venda, troco e relatório do dia
+// ATENÇÃO: este programa é só para ESTUDAR. NÃO é um PDV fiscal: não emite nota fiscal nem cupom,
+// não fala com a SEFAZ e não substitui um sistema homologado para uso em uma loja de verdade.
+// Rode:  advak exemplos/13_pdv_didatico.dk      (usa SQLite, sem instalar nada)
+
+seja db = banco.conectar("sqlite:///exemplos/dados/pdv_didatico.db")
+db.tabela("produtos", {id: "autonum", nome: "texto obrigatorio", preco: "decimal", estoque: "inteiro padrao 0"})
+db.tabela("vendas", {id: "autonum", dia: "texto", total: "decimal", pago: "decimal", troco: "decimal"})
+db.tabela("itens", {id: "autonum", venda_id: "inteiro", produto_id: "inteiro", quantidade: "inteiro", subtotal: "decimal"})
+
+função cadastrar_produto() {
+    seja nome = entrada("  Nome do produto: ")
+    seja preco = numero(entrada("  Preço: "))
+    seja estoque = inteiro(entrada("  Quantidade em estoque: "))
+    seja p = db.inserir("produtos", {nome: nome, preco: preco, estoque: estoque})
+    imprimir(`  Produto ${p.nome} cadastrado com o código ${p.id}.`)
+}
+
+função listar_produtos() {
+    para (p em db.buscar("produtos").ordenar("id").executar()) {
+        imprimir(`  ${p.id} | ${p.nome} | ${moeda(p.preco)} | estoque: ${p.estoque}`)
+    }
+}
+
+função nova_venda() {
+    seja carrinho = []
+    seja total = 0
+    seja adicionando = verdadeiro
+    enquanto (adicionando) {
+        seja codigo = entrada("  Código do produto (vazio para fechar a venda): ")
+        se (codigo == "") {
+            adicionando = falso
+        } senão {
+            seja p = db.buscar_id("produtos", inteiro(codigo))
+            se (p == nulo ou p.tamanho == 0) {
+                imprimir("  Produto não encontrado.")
+            } senão {
+                seja qtd = inteiro(entrada("  Quantidade: "))
+                se (qtd > p.estoque) {
+                    imprimir(`  Só há ${p.estoque} em estoque.`)
+                } senão {
+                    seja subtotal = qtd * p.preco
+                    carrinho.adicionar({produto: p, quantidade: qtd, subtotal: subtotal})
+                    total += subtotal
+                    imprimir(`  + ${qtd} x ${p.nome} = ${moeda(subtotal)}   (total: ${moeda(total)})`)
+                }
+            }
+        }
+    }
+    se (carrinho.tamanho == 0) {
+        imprimir("  Venda cancelada: carrinho vazio.")
+        retornar
+    }
+    seja pago = numero(entrada(`  Total ${moeda(total)}. Valor recebido: `))
+    enquanto (pago < total) {
+        imprimir("  Valor menor que o total.")
+        pago = numero(entrada("  Valor recebido: "))
+    }
+    seja troco = pago - total
+    seja venda = db.inserir("vendas", {dia: data_hoje(), total: total, pago: pago, troco: troco})
+    para (item em carrinho) {
+        db.inserir("itens", {venda_id: venda.id, produto_id: item.produto.id, quantidade: item.quantidade, subtotal: item.subtotal})
+        db.atualizar("produtos", {estoque: item.produto.estoque - item.quantidade}).onde("id = %s", item.produto.id).executar()
+    }
+    imprimir(`  Venda ${venda.id} registrada. TROCO: ${moeda(troco)}`)
+}
+
+função relatorio_do_dia() {
+    seja hoje = data_hoje()
+    seja vendas = db.buscar("vendas").onde("dia = %s", hoje).executar()
+    seja soma = 0
+    para (v em vendas) {
+        soma += v.total
+    }
+    imprimir(`  Vendas de hoje: ${vendas.tamanho}`)
+    imprimir(`  Total vendido: ${moeda(soma)}`)
+    seja itens = db.sql("SELECT p.nome AS nome, SUM(i.quantidade) AS qtd FROM itens i JOIN produtos p ON p.id = i.produto_id JOIN vendas v ON v.id = i.venda_id WHERE v.dia = %s GROUP BY p.nome ORDER BY qtd DESC", hoje)
+    para (i em itens) {
+        imprimir(`  ${i.nome}: ${i.qtd} unidade(s)`)
+    }
+}
+
+imprimir("=== PDV didático (NÃO é PDV fiscal) ===")
+seja rodando = verdadeiro
+enquanto (rodando) {
+    imprimir("")
+    imprimir("1) Cadastrar produto  2) Produtos  3) Nova venda  4) Relatório do dia  0) Sair")
+    combinar(entrada("Escolha: ")) {
+        caso "1": cadastrar_produto()
+        caso "2": listar_produtos()
+        caso "3": nova_venda()
+        caso "4": relatorio_do_dia()
+        caso "0": rodando = falso
+        padrão:   imprimir("  Opção inválida.")
+    }
+}
+db.fechar()

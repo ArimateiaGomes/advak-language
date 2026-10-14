@@ -1,0 +1,41 @@
+// Capítulo 11 — Cache de consultas com Redis
+// Rode:  advak exemplos/11_cache_redis.dk
+// Precisa do Redis ligado e no .env:  ADVAK_REDIS_URL=redis://localhost:6379/0
+// e do driver:  pip install redis
+
+seja cache = banco.conectar("redis")
+seja db = banco.conectar("sqlite:///exemplos/dados/cache_demo.db")
+db.tabela("produtos", {id: "autonum", nome: "texto", preco: "decimal"})
+se (db.contar("produtos") == 0) {
+    db.inserir("produtos", {nome: "Caderno", preco: 12.5})
+    db.inserir("produtos", {nome: "Mochila", preco: 89.9})
+}
+
+// Busca os produtos: primeiro olha no cache; só vai ao banco se não achar
+função listar_produtos() {
+    seja guardado = cache.obter_json("produtos")
+    se (guardado != nulo) {
+        imprimir("  (veio do cache)")
+        retornar guardado
+    }
+    imprimir("  (veio do banco)")
+    seja lista = db.buscar("produtos").ordenar("nome").executar()
+    cache.definir("produtos", lista, 30)      // fica guardado por 30 segundos
+    retornar lista
+}
+
+cache.excluir("produtos")                     // começa sem cache
+para (vez em 1..=3) {
+    imprimir(`Consulta ${vez}:`)
+    seja produtos = listar_produtos()
+    imprimir(`  ${produtos.tamanho} produtos`)
+}
+
+// Contador de visitas
+cache.definir("visitas", 0)
+cache.incrementar("visitas")
+cache.incrementar("visitas")
+imprimir(`Visitas: ${cache.obter("visitas")}`)
+
+cache.fechar()
+db.fechar()

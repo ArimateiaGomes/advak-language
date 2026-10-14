@@ -1,0 +1,31 @@
+// Capítulo 9 — O mesmo cadastro, trocando só a string de conexão
+// Rode:  advak exemplos/09_trocar_banco.dk
+// Para usar outro banco, defina ADVAK_CADASTRO_URL no .env, por exemplo:
+//     ADVAK_CADASTRO_URL=mysql://usuario:senha@localhost:3306/loja
+//     ADVAK_CADASTRO_URL=mssql://usuario:senha@localhost:1433/loja
+// Sem a variável, usa o SQLite (um arquivo, sem instalar nada).
+
+env.carregar(".env")             // lê o arquivo .env (se existir)
+seja url_banco = env.texto("ADVAK_CADASTRO_URL", "sqlite:///exemplos/dados/trocar.db")
+seja db = banco.conectar(url_banco)
+
+db.tabela("pessoas", {id: "autonum", nome: "texto obrigatorio", cidade: "texto"})
+db.deletar("pessoas").executar()          // começa sempre do zero, para o exemplo ser repetível
+
+db.inserir("pessoas", {nome: "Ana", cidade: "Picos"})
+db.inserir("pessoas", {nome: "Bruno", cidade: "Teresina"})
+db.inserir("pessoas", {nome: "Carla", cidade: "Picos"})
+
+imprimir("Todas as pessoas:")
+para (p em db.buscar("pessoas").ordenar("nome").executar()) {
+    imprimir(`  ${p.id} - ${p.nome} (${p.cidade})`)
+}
+
+imprimir("Só de Picos:")
+para (p em db.buscar("pessoas").onde("cidade = %s", "Picos").ordenar("nome").executar()) {
+    imprimir(`  ${p.nome}`)
+}
+
+db.atualizar("pessoas", {cidade: "Floriano"}).onde("nome = %s", "Bruno").executar()
+imprimir(`Total: ${db.contar("pessoas")}`)
+db.fechar()

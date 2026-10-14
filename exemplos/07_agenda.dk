@@ -1,0 +1,33 @@
+// Capítulo 7 — Agenda de contatos com busca
+// Rode:  advak exemplos/07_agenda.dk
+
+seja contatos = [
+    {nome: "Ana Souza",    telefone: "(89) 99999-1111", cidade: "Picos"},
+    {nome: "Bruno Lima",   telefone: "(89) 98888-2222", cidade: "Teresina"},
+    {nome: "Carla Souza",  telefone: "(86) 97777-3333", cidade: "Teresina"},
+    {nome: "Diego Alves",  telefone: "(89) 96666-4444", cidade: "Picos"}
+]
+
+função buscar(lista, termo) {
+    seja t = Texto.minusculo(termo)
+    retornar lista.filtrar((c) => Texto.minusculo(c.nome).contem(t) ou Texto.minusculo(c.cidade).contem(t))
+}
+
+função mostrar(lista) {
+    se (lista.tamanho == 0) {
+        imprimir("  Nenhum contato encontrado.")
+    }
+    para (c em lista) {
+        imprimir(`  ${c.nome} - ${c.telefone} (${c.cidade})`)
+    }
+}
+
+imprimir("=== Agenda ===")
+enquanto (verdadeiro) {
+    seja termo = entrada("Buscar por nome ou cidade (ou 'sair'): ")
+    se (termo == "sair") {
+        quebrar
+    }
+    mostrar(buscar(contatos, termo))
+}
+imprimir("Até logo!")

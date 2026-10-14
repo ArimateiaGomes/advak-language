@@ -1,0 +1,59 @@
+// Capítulo 3 — Cadastro de clientes com banco de dados (CRUD completo)
+// Por padrão usa o SQLite (um arquivo, sem instalar nada).
+// Para usar o PostgreSQL, troque SÓ a linha da conexão:
+//     seja db = banco.conectar("postgresql://postgres:SUASENHA@localhost:5432/clientes")
+// Rode:  advak exemplos/03_clientes_banco.dk
+
+seja db = banco.conectar("sqlite:///exemplos/dados/clientes.db")
+
+// Cria a tabela se ela ainda não existir
+db.tabela("clientes", {id: "autonum", nome: "texto obrigatorio", cidade: "texto", telefone: "texto"})
+
+função listar() {
+    seja todos = db.buscar("clientes").ordenar("nome").executar()
+    se (todos.tamanho == 0) {
+        imprimir("  (nenhum cliente cadastrado)")
+    }
+    para (c em todos) {
+        imprimir(`  ${c.id} | ${c.nome} | ${c.cidade} | ${c.telefone}`)
+    }
+}
+
+função cadastrar() {
+    seja nome = entrada("  Nome: ")
+    seja cidade = entrada("  Cidade: ")
+    seja telefone = entrada("  Telefone: ")
+    seja novo = db.inserir("clientes", {nome: nome, cidade: cidade, telefone: telefone})
+    imprimir(`  Cliente ${novo.nome} cadastrado com o número ${novo.id}.`)
+}
+
+função alterar() {
+    seja id = inteiro(entrada("  Número do cliente: "))
+    seja telefone = entrada("  Novo telefone: ")
+    seja n = db.atualizar("clientes", {telefone: telefone}).onde("id = %s", id).executar()
+    imprimir(`  ${n} cliente(s) alterado(s).`)
+}
+
+função apagar() {
+    seja id = inteiro(entrada("  Número do cliente: "))
+    seja n = db.deletar("clientes").onde("id = %s", id).executar()
+    imprimir(`  ${n} cliente(s) apagado(s).`)
+}
+
+imprimir("=== Cadastro de clientes ===")
+seja rodando = verdadeiro
+enquanto (rodando) {
+    imprimir("")
+    imprimir("1) Listar  2) Cadastrar  3) Alterar telefone  4) Apagar  0) Sair")
+    seja opcao = entrada("Escolha: ")
+    combinar(opcao) {
+        caso "1": listar()
+        caso "2": cadastrar()
+        caso "3": alterar()
+        caso "4": apagar()
+        caso "0": rodando = falso
+        padrão:   imprimir("  Opção inválida.")
+    }
+}
+imprimir(`Total de clientes: ${db.contar("clientes")}`)
+db.fechar()

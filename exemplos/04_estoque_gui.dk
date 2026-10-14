@@ -1,0 +1,82 @@
+// Capítulo 4 — Controle de estoque com interface gráfica
+// Rode:  advak exemplos/04_estoque_gui.dk
+// Usa SQLite (um arquivo, sem instalar nada).
+
+seja db = banco.conectar("sqlite:///exemplos/dados/estoque.db")
+db.tabela("produtos", {id: "autonum", nome: "texto obrigatorio", quantidade: "inteiro padrao 0", preco: "decimal padrao 0"})
+
+seja jan = gui.janela("Controle de Estoque", 720, 520)
+jan.centralizar()
+
+gui.label(jan, "Controle de Estoque", negrito=verdadeiro)
+
+// Tabela com os produtos
+seja tabela = gui.tabela(jan, ["ID", "Produto", "Quantidade", "Preço"], altura=10)
+
+// Campos para cadastrar
+seja campo_nome  = gui.campo(jan, "Nome do produto", largura=30)
+seja campo_qtd   = gui.campo(jan, "Quantidade", largura=10)
+seja campo_preco = gui.campo(jan, "Preço (ex: 12.5)", largura=10)
+seja resumo      = gui.label(jan, "")
+
+função atualizar_tela() {
+    seja todos = db.buscar("produtos").ordenar("nome").executar()
+    tabela.limpar()
+    seja valor_total = 0
+    para (p em todos) {
+        tabela.adicionar([p.id, p.nome, p.quantidade, moeda(p.preco)])
+        valor_total += p.quantidade * p.preco
+    }
+    resumo.texto(`${todos.tamanho} produtos | valor em estoque: ${moeda(valor_total)}`)
+}
+
+função cadastrar() {
+    se (campo_nome.valor() == "") {
+        gui.erro("O nome é obrigatório!")
+        retornar
+    }
+    tentar {
+        db.inserir("produtos", {nome: campo_nome.valor(), quantidade: inteiro(campo_qtd.valor()), preco: numero(campo_preco.valor())})
+        campo_nome.limpar()
+        campo_qtd.limpar()
+        campo_preco.limpar()
+        atualizar_tela()
+    } capturar (e) {
+        gui.erro("Quantidade e preço precisam ser números.")
+    }
+}
+
+função dar_baixa() {
+    seja escolhido = tabela.selecionado()
+    se (escolhido == nulo) {
+        gui.aviso("Selecione um produto na tabela.")
+        retornar
+    }
+    seja qtd = inteiro(escolhido["Quantidade"])
+    se (qtd <= 0) {
+        gui.aviso("Este produto já está sem estoque.")
+        retornar
+    }
+    db.atualizar("produtos", {quantidade: qtd - 1}).onde("id = %s", inteiro(escolhido["ID"])).executar()
+    atualizar_tela()
+}
+
+função excluir() {
+    seja escolhido = tabela.selecionado()
+    se (escolhido == nulo) {
+        gui.aviso("Selecione um produto na tabela.")
+        retornar
+    }
+    se (gui.confirmar(`Excluir "${escolhido["Produto"]}"?`)) {
+        db.deletar("produtos").onde("id = %s", inteiro(escolhido["ID"])).executar()
+        atualizar_tela()
+    }
+}
+
+seja botoes = gui.frame_horizontal(jan)
+gui.botao(botoes, "Cadastrar", (x) => { cadastrar() }, estilo="sucesso")
+gui.botao(botoes, "Dar baixa (-1)", (x) => { dar_baixa() })
+gui.botao(botoes, "Excluir", (x) => { excluir() }, estilo="perigo")
+
+atualizar_tela()
+gui.iniciar()

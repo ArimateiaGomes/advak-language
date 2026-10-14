@@ -1,0 +1,52 @@
+// Capítulo 5 — API REST de tarefas com servidor web
+// Rode:  advak exemplos/05_api_tarefas.dk     (e abra http://localhost:8080 no navegador)
+// Para parar o servidor: Ctrl+C
+
+seja db = banco.conectar("sqlite:///exemplos/dados/tarefas.db")
+db.tabela("tarefas", {id: "autonum", titulo: "texto obrigatorio", feita: "booleano padrao falso"})
+
+// Página inicial: explica como usar a API
+servidor.obter("/", (req) => {
+    retornar html("<h1>API de tarefas</h1><p>Use <b>/api/tarefas</b></p>")
+})
+
+// GET /api/tarefas  -> lista todas
+servidor.obter("/api/tarefas", (req) => {
+    retornar resposta_json(db.buscar("tarefas").ordenar("id").executar())
+})
+
+// GET /api/tarefas/3  -> uma tarefa
+servidor.obter("/api/tarefas/:id", (req) => {
+    seja t = db.buscar_id("tarefas", inteiro(req.parametros.id))
+    se (t == nulo ou t.tamanho == 0) {      // não achou: volta nulo ou um mapa vazio
+        retornar resposta_json({erro: "tarefa não encontrada"}, 404)
+    }
+    retornar resposta_json(t)
+})
+
+// POST /api/tarefas  com {"titulo": "..."} -> cria
+servidor.publicar("/api/tarefas", (req) => {
+    se (req.dados == nulo ou !req.dados.titulo) {
+        retornar resposta_json({erro: "informe o titulo"}, 400)
+    }
+    seja nova = db.inserir("tarefas", {titulo: req.dados.titulo, feita: falso})
+    retornar resposta_json(nova, 201)
+})
+
+// PUT /api/tarefas/3  com {"feita": true} -> marca como feita
+servidor.atualizar("/api/tarefas/:id", (req) => {
+    seja n = db.atualizar("tarefas", {feita: req.dados.feita}).onde("id = %s", inteiro(req.parametros.id)).executar()
+    se (n == 0) {
+        retornar resposta_json({erro: "tarefa não encontrada"}, 404)
+    }
+    retornar resposta_json({ok: verdadeiro})
+})
+
+// DELETE /api/tarefas/3  -> apaga
+servidor.deletar("/api/tarefas/:id", (req) => {
+    db.deletar("tarefas").onde("id = %s", inteiro(req.parametros.id)).executar()
+    retornar resposta_json({ok: verdadeiro})
+})
+
+imprimir("Servidor em http://localhost:8080  (Ctrl+C para parar)")
+servidor.iniciar(8080, falso)
