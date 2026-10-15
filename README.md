@@ -1127,6 +1127,29 @@ Um bom roteiro para quem quer estudar como uma linguagem de programação é con
 
 ---
 
+## Roadmap
+
+### Recursos para sistemas de varejo, fiscais e não fiscais
+
+A meta é que a linguagem tenha os recursos para quem programa nela criar qualquer sistema, fiscal ou não. **A Advak não é um sistema fiscal:** ela fornece as peças, e a conformidade com a legislação (homologação, certificado, regras da SEFAZ) continua sendo responsabilidade de quem desenvolve o sistema. **Hoje, nenhum destes recursos está pronto ou verificado para uso fiscal:**
+
+- Números decimais exatos para dinheiro e impostos, sem erro de centavos.
+- XML: ler, montar e validar (XSD).
+- Assinatura digital e certificado (arquivo .pfx), com hash e criptografia.
+- Cliente HTTP/SOAP com certificado de cliente (TLS).
+- QR Code e código de barras; geração de PDF; impressão em impressora térmica.
+- Hardware: porta serial/USB, leitor, balança e gaveta.
+- Concorrência real (async/await) e sockets de rede.
+
+O PDV do [guia prático](docs/GUIA_PRATICO.md#capítulo-13--pdv-didático) é didático e **não é PDV fiscal**.
+
+### Limitações conhecidas da linguagem
+
+- Um comentário escrito logo depois de uma divisão inteira (`seja y = 7 // 2   // metade`) é lido como outra divisão.
+- Dentro de parênteses (inclusive em funções escritas como argumento, como as rotas do servidor e os botões da janela), um comentário `//` que pareça uma conta, como `// 201 = criado`, é lido como divisão inteira. Comentários com frases normais não são afetados.
+
+---
+
 ## Licença
 
 Este projeto está sob a licença **MIT**. Você pode usar, estudar, modificar e distribuir a Advak Language livremente, inclusive em projetos comerciais, desde que mantenha o aviso de direitos autorais e a licença. Veja o arquivo [LICENSE](LICENSE).
