@@ -1,0 +1,12 @@
+classe Retangulo {
+    construtor(largura, altura) {
+        isso.largura = largura
+        isso.altura = altura
+    }
+    area() {
+        retornar isso.largura * isso.altura
+    }
+}
+
+seja r = novo Retangulo(4, 5)
+imprimir("Área:", r.area())

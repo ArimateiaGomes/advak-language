@@ -1,0 +1,12 @@
+classe Animal {
+    construtor(nome) {
+        isso.nome = nome
+    }
+}
+classe Cachorro herda Animal {
+    construtor(nome, raca) {
+        isso.raca = raca                  // faltou super(nome)
+    }
+}
+seja rex = novo Cachorro("Rex", "pug")
+imprimir(rex.nome)

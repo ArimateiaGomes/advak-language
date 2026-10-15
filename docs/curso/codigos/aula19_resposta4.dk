@@ -1,0 +1,4 @@
+importar { valido } de "aula19_regras.dk"
+
+imprimir(valido(10))
+imprimir(valido(50))

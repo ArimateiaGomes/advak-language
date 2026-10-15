@@ -1,0 +1,3 @@
+seja frase = entrada("Frase: ")
+seja palavras = frase.aparar().dividir(" ")
+imprimir(`A frase tem ${palavras.tamanho} palavras.`)

@@ -1,0 +1,5 @@
+imprimir("(carregando o módulo barulhento)")
+
+exportar função oi() {
+    retornar "oi!"
+}

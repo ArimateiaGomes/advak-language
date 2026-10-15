@@ -1,0 +1,26 @@
+classe Livro {
+    construtor(titulo) {
+        isso.titulo = titulo
+        isso.emprestado = falso
+    }
+    emprestar() {
+        se (isso.emprestado) {
+            lançar "livro já emprestado"
+        }
+        isso.emprestado = verdadeiro
+    }
+    devolver() {
+        isso.emprestado = falso
+    }
+}
+
+seja livro = novo Livro("Dom Casmurro")
+livro.emprestar()
+tentar {
+    livro.emprestar()
+} capturar (e) {
+    imprimir("Erro:", e)
+}
+livro.devolver()
+livro.emprestar()
+imprimir("Emprestado agora?", livro.emprestado)

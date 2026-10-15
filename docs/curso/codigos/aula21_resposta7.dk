@@ -1,0 +1,13 @@
+seja arquivo = "aula21_resposta7.db"
+se (Arquivo.existe(arquivo)) {
+    Arquivo.apagar(arquivo)
+}
+seja db = banco.conectar("sqlite:///aula21_resposta7.db")
+db.tabela("alunos", {id: "autonum", nome: "texto obrigatorio", nota: "numero"})
+
+seja nome = entrada("Nome: ")
+seja nota = numero(entrada("Nota: "))
+seja gravado = db.inserir("alunos", {nome: nome, nota: nota})
+imprimir(`Gravei ${gravado.nome} com o id ${gravado.id}`)
+db.fechar()
+Arquivo.apagar(arquivo)

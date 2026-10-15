@@ -1,0 +1,7 @@
+seja turma = ["Ana", "Bia", "Caio"]
+seja nome = entrada("Nome: ")
+se (turma.contem(nome)) {
+    imprimir(nome, "está na lista.")
+} senão {
+    imprimir(nome, "não está na lista.")
+}

@@ -1,0 +1,6 @@
+seja digitado = entrada("Digite um número: ")
+se (e_numero(digitado)) {
+    imprimir("O dobro é", numero(digitado) * 2)
+} senão {
+    imprimir("Isso não é um número!")
+}

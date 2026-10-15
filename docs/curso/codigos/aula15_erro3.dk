@@ -1,0 +1,6 @@
+tentar {
+    lançar "parou aqui"
+    imprimir("pulado")
+} capturar (e) {
+    imprimir("capturei:", e)
+}

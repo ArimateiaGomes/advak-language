@@ -1,0 +1,3 @@
+// Meu primeiro arquivo .dk
+imprimir("Olá! Este programa está salvo em um arquivo.")
+imprimir("Posso rodar de novo quantas vezes quiser.")

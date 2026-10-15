@@ -1,0 +1,4 @@
+seja produto = "Caderno"
+seja preco = 12.5
+imprimir(produto)
+imprimir(preco)

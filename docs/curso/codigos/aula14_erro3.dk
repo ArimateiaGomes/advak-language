@@ -1,0 +1,5 @@
+seja nome = "ana"
+nome.maiusculo()                 // calcula, mas ninguém guarda o resultado
+imprimir(nome)
+nome = nome.maiusculo()          // agora sim: guarda o novo texto
+imprimir(nome)

@@ -1,0 +1,6 @@
+função saudar(nome, saudacao = "Olá") {     // "Olá" é o padrão
+    retornar saudacao + ", " + nome + "!"
+}
+
+imprimir(saudar("Ana"))                     // usa o padrão
+imprimir(saudar("Bia", "Bom dia"))          // troca o padrão

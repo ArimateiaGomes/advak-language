@@ -1,0 +1,6 @@
+seja a = 1
+seja b = 2
+seja auxiliar = a      // guarda o valor de a antes de perdê-lo
+a = b
+b = auxiliar
+imprimir("a =", a, " b =", b)

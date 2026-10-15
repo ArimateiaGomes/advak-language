@@ -1,0 +1,4 @@
+para (seja i = 0; i < 3; i++) {
+    imprimir(i)
+}
+imprimir("Terminou em", i)

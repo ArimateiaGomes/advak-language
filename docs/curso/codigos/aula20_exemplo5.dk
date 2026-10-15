@@ -1,0 +1,15 @@
+importar { dobro, area_circulo } de "aula19_matematica.dk"
+
+testar("dobro", () => {
+    afirmar_igual(dobro(21), 42)
+})
+
+testar("área do círculo de raio 1 é PI", () => {
+    afirmar_igual(area_circulo(1), 3.14159)
+})
+
+testar("área com raio 0", () => {
+    afirmar_igual(area_circulo(0), 0)
+})
+
+resumo_testes()

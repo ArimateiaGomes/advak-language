@@ -1,0 +1,7 @@
+seja idade = numero(entrada("Qual é a sua idade? "))
+se (idade >= 18) {
+    imprimir("Você é maior de idade.")
+} senão {
+    imprimir("Você é menor de idade.")
+}
+imprimir("Fim do programa.")

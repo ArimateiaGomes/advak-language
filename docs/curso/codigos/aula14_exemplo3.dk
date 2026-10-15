@@ -1,0 +1,8 @@
+seja linha = "Ana,17,Recife"
+seja partes = linha.dividir(",")       // corta em cada vírgula
+imprimir(partes)
+imprimir(partes[0], "mora em", partes[2])
+
+seja palavras = "o rato roeu".dividir(" ")
+imprimir(palavras.tamanho, "palavras")
+imprimir(palavras.unir("-"))           // junta com hífen

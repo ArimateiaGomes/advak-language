@@ -1,0 +1,6 @@
+exportar função situacao(media) {
+    se (media >= 7) {
+        retornar "aprovado"
+    }
+    retornar "reprovado"
+}

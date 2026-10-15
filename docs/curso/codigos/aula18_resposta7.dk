@@ -1,0 +1,12 @@
+classe Animal { }
+classe Cachorro herda Animal { }
+classe Gato herda Animal { }
+
+seja bichos = [novo Cachorro(), novo Gato(), novo Cachorro(), novo Gato(), novo Gato()]
+seja gatos = 0
+para (b em bichos) {
+    se (b instanceof Gato) {
+        gatos = gatos + 1
+    }
+}
+imprimir("Gatos:", gatos)

@@ -1,0 +1,6 @@
+seja nome = "Ana"          // cria a variável "nome" e guarda o texto Ana
+seja idade = 17            // cria a variável "idade" e guarda o número 17
+imprimir(nome)             // escreve o valor guardado: Ana
+imprimir(idade)            // escreve 17
+idade = idade + 1          // muda o valor guardado (sem "seja", pois a variável já existe)
+imprimir("Ano que vem:", idade)

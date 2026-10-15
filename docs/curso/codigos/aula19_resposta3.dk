@@ -1,0 +1,3 @@
+importar { gritar } de "aula19_textos.dk"
+
+imprimir(gritar("cuidado"))

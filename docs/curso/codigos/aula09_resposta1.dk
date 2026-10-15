@@ -1,0 +1,3 @@
+para (seja i = 1; i <= 10; i++) {
+    imprimir(i)
+}

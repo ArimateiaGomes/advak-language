@@ -1,0 +1,10 @@
+seja aluno = {nome: "Ana", idade: 17}
+aluno.idade = 18                 // muda um campo que já existe
+aluno.cidade = "Recife"          // cria um campo novo
+aluno["nota"] = 9.5              // também funciona com colchetes
+imprimir(aluno)
+aluno.remover("nota")            // apaga o campo "nota"
+imprimir(aluno)
+imprimir(aluno.tem("idade"))     // o campo existe?
+imprimir(aluno.tem("nota"))
+imprimir(aluno.cor)              // campo que não existe: vale nulo (nada)

@@ -1,0 +1,19 @@
+seja alunos = [
+    {id: 1, nome: "Ana", nota: 9},
+    {id: 2, nome: "Bruno", nota: 6.5}
+]
+
+servidor.obter("/alunos", (req) => {
+    retornar resposta_json(alunos)
+})
+
+servidor.obter("/alunos/:id", (req) => {
+    seja id = inteiro(req.parametros.id)
+    seja achados = alunos.filtrar((a) => a.id == id)
+    se (achados.tamanho == 0) {
+        retornar resposta_json({erro: "aluno não encontrado"}, 404)
+    }
+    retornar resposta_json(achados[0])
+})
+
+servidor.iniciar(8803, falso)

@@ -1,0 +1,18 @@
+função ler_idade(digitado) {
+    se (!e_numero(digitado)) {
+        lançar "digite só números"
+    }
+    seja idade = inteiro(digitado)
+    se (idade < 0 ou idade > 120) {
+        lançar "idade fora do normal"
+    }
+    retornar idade
+}
+
+seja resposta = entrada("Sua idade: ")
+tentar {
+    seja idade = ler_idade(resposta)
+    imprimir(`Daqui a 10 anos você terá ${idade + 10} anos.`)
+} capturar (e) {
+    imprimir("Não deu certo:", e)
+}

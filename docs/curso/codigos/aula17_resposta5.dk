@@ -1,0 +1,17 @@
+classe Produto {
+    construtor(nome, preco, quantidade) {
+        isso.nome = nome
+        isso.preco = preco
+        isso.quantidade = quantidade
+    }
+    valor_total() {
+        retornar isso.preco * isso.quantidade
+    }
+}
+
+seja itens = [novo Produto("Caderno", 20, 3), novo Produto("Caneta", 3, 10), novo Produto("Mochila", 120, 1)]
+seja soma = 0
+para (p em itens) {
+    soma = soma + p.valor_total()
+}
+imprimir("Soma dos valores:", soma)

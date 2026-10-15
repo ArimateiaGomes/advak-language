@@ -1,0 +1,3 @@
+exportar função gritar(texto) {
+    retornar texto.maiusculo() + "!"
+}

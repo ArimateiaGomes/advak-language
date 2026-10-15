@@ -1,0 +1,11 @@
+seja numeros = []
+para (i em 1..=5) {
+    numeros.adicionar(numero(entrada("Número: ")))
+}
+seja media = numeros.media()
+imprimir("Média:", media)
+para (n em numeros) {
+    se (n > media) {
+        imprimir(n, "é maior que a média")
+    }
+}

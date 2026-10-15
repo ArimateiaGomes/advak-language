@@ -1,0 +1,26 @@
+seja jan = gui.janela("Lista de compras", 420, 300)
+
+gui.label(jan, "Lista de compras", negrito=verdadeiro)
+seja tabela = gui.tabela(jan, ["Item", "Quantidade"], altura=5)
+
+tabela.adicionar(["Arroz", 2])
+tabela.adicionar(["Feijão", 1])
+tabela.adicionar(["Café", 3])
+
+imprimir("Selecionado no começo:", tabela.selecionado())
+
+// --- Só para o exemplo: a pessoa clica na 2ª linha ---
+gui.apos(300, () => {
+    seja linhas = lista(tabela.get_children())
+    tabela.selection_set(linhas[1])
+})
+gui.apos(800, () => {
+    seja escolhido = tabela.selecionado()
+    imprimir("Selecionado depois do clique:", escolhido)
+    imprimir("Item:", escolhido["Item"], "| Quantidade:", escolhido["Quantidade"])
+    tabela.limpar()
+    imprimir("Linhas depois de limpar:", lista(tabela.get_children()).tamanho)
+    gui.parar()
+})
+
+gui.iniciar()

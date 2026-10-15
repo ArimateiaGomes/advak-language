@@ -1,0 +1,13 @@
+classe Contador {
+    construtor() {
+        isso.valor = 0
+    }
+    somar(n) {
+        isso.valor = isso.valor + n
+        retornar isso
+    }
+}
+
+seja c = novo Contador()
+c.somar(1).somar(10).somar(100)
+imprimir(c.valor)

@@ -1,0 +1,2 @@
+seja nascimento = inteiro(entrada("Ano de nascimento: "))
+imprimir("Idade aproximada:", 2026 - nascimento)

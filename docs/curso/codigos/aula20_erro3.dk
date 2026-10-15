@@ -1,0 +1,3 @@
+testar("ordem trocada", () => {
+    afirmar_igual(10, 2 + 2)             // o "real" é o primeiro; aqui está invertido
+})

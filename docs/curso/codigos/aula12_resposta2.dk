@@ -1,0 +1,4 @@
+função dobro(n) {
+    retornar n * 2
+}
+imprimir(dobro(21))

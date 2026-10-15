@@ -1,0 +1,5 @@
+seja a = 5
+seja b = 3
+seja c = 8
+imprimir(c > a + b)            // 8 > 8 ? falso
+imprimir(a > b ou b > c)       // 5 > 3 é verdadeiro, então basta uma

@@ -1,0 +1,20 @@
+seja produtos = [
+    {id: 1, nome: "Caderno", preco: 20},
+    {id: 2, nome: "Caneta", preco: 3}
+]
+
+servidor.deletar("/produtos/:id", (req) => {
+    seja id = inteiro(req.parametros.id)
+    seja antes = produtos.tamanho
+    produtos = produtos.filtrar((p) => p.id != id)
+    se (produtos.tamanho == antes) {
+        retornar resposta_json({erro: "produto não encontrado"}, 404)
+    }
+    retornar resposta_json({ok: verdadeiro})
+})
+
+servidor.obter("/produtos", (req) => {
+    retornar resposta_json(produtos)
+})
+
+servidor.iniciar(8827, falso)

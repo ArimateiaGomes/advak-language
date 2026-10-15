@@ -1,0 +1,5 @@
+seja i = 1
+enquanto (i <= 10) {
+    imprimir(i)
+    i = i + 1
+}

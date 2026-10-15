@@ -1,0 +1,6 @@
+servidor.obter("/media", (req) => {
+    seja a = numero(req.consulta.a)
+    seja b = numero(req.consulta.b)
+    retornar resposta_json({media: (a + b) / 2})
+})
+servidor.iniciar(8823, falso)

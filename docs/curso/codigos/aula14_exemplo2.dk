@@ -1,0 +1,9 @@
+seja frase = "  Aprender a programar é divertido  "
+imprimir(frase.aparar())                       // tira os espaços das pontas
+seja limpa = frase.aparar()
+imprimir(limpa.maiusculo())                    // TUDO EM MAIÚSCULAS
+imprimir(limpa.minusculo())                    // tudo em minúsculas
+imprimir(limpa.substituir("divertido", "útil"))  // troca um pedaço por outro
+imprimir(limpa.contem("programar"))            // tem esse pedaço? verdadeiro/falso
+imprimir(limpa.começa("Aprender"))             // começa com...?
+imprimir(limpa.termina("."))                   // termina com...?

@@ -1,0 +1,8 @@
+Arquivo.escrever("aula16_ruim.json", "{nome: 'Ana'}")
+tentar {
+    seja dados = Arquivo.ler_json("aula16_ruim.json")
+    imprimir(dados)
+} capturar (e) {
+    imprimir("JSON inválido:", e)
+}
+Arquivo.apagar("aula16_ruim.json")

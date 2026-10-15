@@ -1,0 +1,11 @@
+imprimir("1-Pão  2-Suco  3-Bolo")
+seja opcao = numero(entrada("Opção: "))
+seja qtd = numero(entrada("Quantidade: "))
+seja preco = 0
+combinar(opcao) {
+    caso 1: preco = 5
+    caso 2: preco = 7
+    caso 3: preco = 9
+    padrão: imprimir("Opção inválida")
+}
+imprimir("Total: R$", preco * qtd)

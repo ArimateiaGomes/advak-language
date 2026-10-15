@@ -1,0 +1,4 @@
+seja frutas = ["maçã", "banana", "uva"]
+para (fruta em frutas) {              // a cada volta, "fruta" guarda um item da lista
+    imprimir("Eu gosto de", fruta)
+}

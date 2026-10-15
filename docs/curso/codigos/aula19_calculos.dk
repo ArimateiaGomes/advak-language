@@ -1,0 +1,7 @@
+exportar função media(lista) {
+    seja soma = 0
+    para (n em lista) {
+        soma = soma + n
+    }
+    retornar soma / lista.tamanho
+}

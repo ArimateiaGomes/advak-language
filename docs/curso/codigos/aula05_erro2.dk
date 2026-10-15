@@ -1,0 +1,3 @@
+seja total = 10
+seja pessoas = 0
+imprimir(total / pessoas)

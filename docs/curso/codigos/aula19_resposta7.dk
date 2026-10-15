@@ -1,0 +1,3 @@
+importar { derivada } de "aula19_b.dk"
+
+imprimir(derivada())

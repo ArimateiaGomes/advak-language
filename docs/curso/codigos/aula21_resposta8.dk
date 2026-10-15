@@ -1,0 +1,17 @@
+seja arquivo = "aula21_resposta8.db"
+se (Arquivo.existe(arquivo)) {
+    Arquivo.apagar(arquivo)
+}
+seja db = banco.conectar("sqlite:///aula21_resposta8.db")
+db.tabela("produtos", {id: "autonum", nome: "texto obrigatorio", preco: "numero", estoque: "inteiro"})
+db.inserir("produtos", {nome: "Caderno", preco: 20, estoque: 10})
+db.inserir("produtos", {nome: "Caneta", preco: 3, estoque: 100})
+db.inserir("produtos", {nome: "Mochila", preco: 120, estoque: 2})
+
+seja total = 0
+para (p em db.buscar("produtos").executar()) {
+    total = total + p.preco * p.estoque
+}
+imprimir("Valor total do estoque: R$", total)
+db.fechar()
+Arquivo.apagar(arquivo)

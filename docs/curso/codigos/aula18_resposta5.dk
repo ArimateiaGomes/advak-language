@@ -1,0 +1,28 @@
+classe Conta {
+    construtor(saldo) {
+        isso.saldo = saldo
+    }
+    sacar(v) {
+        se (v > isso.saldo) {
+            lançar "saldo insuficiente"
+        }
+        isso.saldo = isso.saldo - v
+    }
+}
+classe ContaEspecial herda Conta {
+    sacar(v) {
+        se (v > isso.saldo + 100) {
+            lançar "limite excedido"
+        }
+        isso.saldo = isso.saldo - v
+    }
+}
+
+seja c = novo ContaEspecial(50)
+c.sacar(120)
+imprimir("Saldo:", c.saldo)
+tentar {
+    c.sacar(100)
+} capturar (e) {
+    imprimir("Erro:", e)
+}

@@ -1,0 +1,5 @@
+seja i = 2
+enquanto (i <= 20) {
+    imprimir(i)
+    i = i + 2                         // pula de 2 em 2
+}

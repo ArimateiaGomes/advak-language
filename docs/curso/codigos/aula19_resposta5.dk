@@ -1,0 +1,3 @@
+importar { dobro como duplicar } de "aula19_matematica.dk"
+
+imprimir(duplicar(7))

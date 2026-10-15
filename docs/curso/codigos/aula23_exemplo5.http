@@ -1,0 +1,4 @@
+PUT /tarefas/1 {"feita": true}
+DELETE /tarefas/2
+GET /tarefas
+PUT /tarefas/99 {"feita": true}

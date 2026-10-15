@@ -1,0 +1,5 @@
+seja pedidos = [12.5, 40, 7, 99.9, 25]
+seja total_grandes = pedidos
+    .filtrar((v) => v >= 20)            // só os pedidos de 20 ou mais
+    .reduzir((a, v) => a + v, 0)        // e soma esses
+imprimir("Total dos pedidos grandes:", total_grandes)

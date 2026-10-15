@@ -1,0 +1,11 @@
+servidor.obter("/ola/:nome", (req) => {
+    retornar resposta_json({mensagem: `Olá, ${req.parametros.nome}!`})
+})
+
+servidor.obter("/soma", (req) => {
+    seja a = numero(req.consulta.a)
+    seja b = numero(req.consulta.b)
+    retornar resposta_json({a: a, b: b, soma: a + b})
+})
+
+servidor.iniciar(8802, falso)

@@ -1,0 +1,7 @@
+função apresentar() {
+    imprimir("Meu nome é Ana.")
+    imprimir("Eu estudo programação.")
+    imprimir("Meu sonho é criar um aplicativo.")
+}
+apresentar()
+apresentar()

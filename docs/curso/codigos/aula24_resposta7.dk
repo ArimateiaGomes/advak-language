@@ -1,0 +1,15 @@
+importar { abrir, cadastrar, da_cidade } de "aula24_repositorio.dk"
+
+seja arquivo = "aula24_resposta7.db"
+se (Arquivo.existe(arquivo)) {
+    Arquivo.apagar(arquivo)
+}
+seja db = abrir(arquivo)
+cadastrar(db, "Ana", "81999990000", "Recife")
+cadastrar(db, "Bruno", "84988887777", "Natal")
+
+servidor.obter("/cidade/:nome", (req) => {
+    retornar resposta_json(da_cidade(db, req.parametros.nome))
+})
+
+servidor.iniciar(8842, falso)

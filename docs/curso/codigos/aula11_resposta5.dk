@@ -1,0 +1,10 @@
+seja produtos = [
+    {nome: "Caderno", preco: 12.5},
+    {nome: "Caneta", preco: 3},
+    {nome: "Mochila", preco: 80}
+]
+seja total = 0
+para (p em produtos) {
+    total = total + p.preco
+}
+imprimir("Total:", total)

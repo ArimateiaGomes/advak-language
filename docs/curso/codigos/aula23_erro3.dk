@@ -1,0 +1,7 @@
+servidor.publicar("/cadastro", (req) => {
+    se (req.dados == nulo) {
+        retornar resposta_json({erro: "envie os dados em JSON"}, 400)
+    }
+    retornar resposta_json({recebido: req.dados}, 201)
+})
+servidor.iniciar(8813, falso)

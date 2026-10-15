@@ -1,0 +1,11 @@
+seja jan = gui.janela("Teste", 300, 150)
+seja campo = gui.campo(jan, "Digite um número", largura=20)
+
+gui.apos(300, () => {
+    imprimir("Campo vazio devolve:", "[" + campo.valor() + "]")
+    campo.definir("5")
+    imprimir("5 + 5 sem converter:", campo.valor() + campo.valor())
+    imprimir("5 + 5 convertendo:", numero(campo.valor()) + numero(campo.valor()))
+    gui.parar()
+})
+gui.iniciar()

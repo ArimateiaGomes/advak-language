@@ -1,0 +1,33 @@
+// Camada de dados: tudo o que fala com o banco fica aqui.
+
+exportar função abrir(arquivo) {
+    seja db = banco.conectar(`sqlite:///${arquivo}`)
+    db.tabela("contatos", {id: "autonum", nome: "texto obrigatorio", telefone: "texto obrigatorio", cidade: "texto"})
+    retornar db
+}
+
+exportar função validar(nome, telefone) {
+    se (nome.aparar() == "") {
+        lançar "o nome é obrigatório"
+    }
+    se (!e_numero(telefone) ou telefone.tamanho < 8) {
+        lançar "telefone deve ter só números e pelo menos 8 dígitos"
+    }
+}
+
+exportar função cadastrar(db, nome, telefone, cidade) {
+    validar(nome, telefone)
+    retornar db.inserir("contatos", {nome: nome.aparar(), telefone: telefone, cidade: cidade})
+}
+
+exportar função listar(db) {
+    retornar db.buscar("contatos").ordenar("nome").executar()
+}
+
+exportar função excluir(db, id) {
+    retornar db.deletar("contatos").onde("id = %s", id).executar()
+}
+
+exportar função da_cidade(db, cidade) {
+    retornar db.buscar("contatos").onde("cidade = %s", cidade).ordenar("nome").executar()
+}

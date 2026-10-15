@@ -1,0 +1,22 @@
+classe Aluno {
+    construtor(nome) {
+        isso.nome = nome
+        isso.notas = []
+    }
+    adicionar_nota(n) {
+        isso.notas.adicionar(n)
+    }
+    media() {
+        seja soma = 0
+        para (n em isso.notas) {
+            soma = soma + n
+        }
+        retornar soma / isso.notas.tamanho
+    }
+}
+
+seja a = novo Aluno("Ana")
+a.adicionar_nota(7)
+a.adicionar_nota(8)
+a.adicionar_nota(9)
+imprimir(`Média de ${a.nome}:`, a.media())

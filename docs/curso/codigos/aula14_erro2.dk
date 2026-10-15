@@ -1,0 +1,2 @@
+imprimir("Idade: " + 17)
+imprimir("Soma: " + 2 + 3)

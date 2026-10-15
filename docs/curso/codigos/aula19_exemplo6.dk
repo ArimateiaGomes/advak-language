@@ -1,0 +1,5 @@
+imprimir("início")
+importar { oi } de "aula19_barulhento.dk"
+imprimir(oi())
+importar { oi } de "aula19_barulhento.dk"       // segunda vez: não carrega de novo
+imprimir(oi())

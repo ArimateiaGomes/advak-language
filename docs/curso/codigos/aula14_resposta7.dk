@@ -1,0 +1,6 @@
+seja palavra = entrada("Palavra: ").minusculo()
+se (palavra == palavra.inverter()) {
+    imprimir(palavra, "é um palíndromo")
+} senão {
+    imprimir(palavra, "não é um palíndromo")
+}

@@ -1,0 +1,6 @@
+seja frutas = ["maçã", "banana", "uva"]   // lista com 3 itens
+imprimir(frutas)                          // mostra a lista inteira
+imprimir(frutas[0])                       // o primeiro item: a contagem começa no ZERO
+imprimir(frutas[2])                       // o terceiro item
+imprimir(frutas[-1])                      // índice negativo conta do fim: o último
+imprimir(frutas.tamanho)                  // quantos itens a lista tem

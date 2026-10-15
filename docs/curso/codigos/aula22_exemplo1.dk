@@ -1,0 +1,13 @@
+seja jan = gui.janela("Minha primeira janela", 420, 220)     // título, largura, altura
+jan.centralizar()                                            // põe a janela no meio da tela
+
+gui.label(jan, "Olá, mundo gráfico!", negrito=verdadeiro)
+gui.label(jan, "Esta janela fecha sozinha em 1 segundo.")
+
+gui.apos(1000, () => {                                        // (só para o exemplo)
+    gui.parar()                                               // fecha a janela
+})
+
+imprimir("Abrindo a janela...")
+gui.iniciar()                                                 // abre e espera
+imprimir("A janela foi fechada, o programa continua.")

@@ -1,0 +1,14 @@
+função dividir(a, b) {
+    se (b == 0) {
+        lançar "divisão por zero"
+    }
+    retornar a / b
+}
+
+seja a = numero(entrada("Primeiro número: "))
+seja b = numero(entrada("Segundo número: "))
+tentar {
+    imprimir("Resultado:", dividir(a, b))
+} capturar (e) {
+    imprimir("Não dá para dividir por zero.")
+}

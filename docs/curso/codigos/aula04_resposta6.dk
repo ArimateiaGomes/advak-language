@@ -1,0 +1,3 @@
+seja nome = entrada("Nome: ")
+seja nascimento = inteiro(entrada("Ano de nascimento: "))
+imprimir(`${nome} tem cerca de ${2026 - nascimento} anos.`)

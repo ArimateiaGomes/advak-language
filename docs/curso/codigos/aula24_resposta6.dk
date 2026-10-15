@@ -1,0 +1,13 @@
+importar { abrir, cadastrar } de "aula24_repositorio.dk"
+
+seja arquivo = "aula24_resposta6.db"
+se (Arquivo.existe(arquivo)) {
+    Arquivo.apagar(arquivo)
+}
+seja db = abrir(arquivo)
+seja ana = cadastrar(db, "Ana", "81999990000", "Recife")
+
+db.atualizar("contatos", {telefone: "81888880000"}).onde("id = %s", ana.id).executar()
+imprimir(db.buscar("contatos").onde("id = %s", ana.id).primeiro())
+db.fechar()
+Arquivo.apagar(arquivo)

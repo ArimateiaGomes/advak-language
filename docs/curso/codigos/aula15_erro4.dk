@@ -1,0 +1,8 @@
+função confusa() {
+    tentar {
+        retornar 1
+    } capturar (e) {
+        retornar 2
+    }
+}
+imprimir(confusa())

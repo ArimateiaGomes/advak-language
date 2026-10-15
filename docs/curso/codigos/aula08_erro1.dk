@@ -1,0 +1,4 @@
+enquanto (contador < 3) {
+    imprimir(contador)
+    contador = contador + 1
+}

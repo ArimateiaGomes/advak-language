@@ -1,0 +1,3 @@
+seja colegas = ["Ana", "Bia", "Caio", "Davi", "Eva"]
+imprimir("Primeiro:", colegas[0])
+imprimir("Último:", colegas[-1])

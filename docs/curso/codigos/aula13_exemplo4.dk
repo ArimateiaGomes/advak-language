@@ -1,0 +1,5 @@
+seja numeros = [1, 2, 3, 4]
+seja soma = numeros.reduzir((acumulado, n) => acumulado + n, 0)     // começa em 0
+imprimir(soma)
+seja produto = numeros.reduzir((acumulado, n) => acumulado * n, 1)  // começa em 1
+imprimir(produto)

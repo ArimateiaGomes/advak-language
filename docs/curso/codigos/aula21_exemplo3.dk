@@ -1,0 +1,35 @@
+seja arquivo = "aula21_exemplo3.db"
+se (Arquivo.existe(arquivo)) {
+    Arquivo.apagar(arquivo)
+}
+seja db = banco.conectar("sqlite:///aula21_exemplo3.db")
+db.tabela("produtos", {id: "autonum", nome: "texto obrigatorio", preco: "numero", estoque: "inteiro"})
+db.inserir("produtos", {nome: "Caderno", preco: 20.5, estoque: 10})
+db.inserir("produtos", {nome: "Caneta", preco: 3, estoque: 100})
+db.inserir("produtos", {nome: "Mochila", preco: 120, estoque: 0})
+
+imprimir("--- todos, em ordem de nome ---")
+para (p em db.buscar("produtos").ordenar("nome").executar()) {
+    imprimir(`${p.id} | ${p.nome} | R$ ${p.preco} | estoque ${p.estoque}`)
+}
+
+imprimir("--- preço maior que 10 ---")
+para (p em db.buscar("produtos").onde("preco > %s", 10).executar()) {
+    imprimir(p.nome)
+}
+
+imprimir("--- os 2 mais caros ---")
+para (p em db.buscar("produtos").ordenar("preco", "desc").limite(2).executar()) {
+    imprimir(p.nome, p.preco)
+}
+
+imprimir("--- só o primeiro que bate ---")
+imprimir(db.buscar("produtos").onde("nome = %s", "Caneta").primeiro())
+imprimir(db.buscar("produtos").onde("nome = %s", "Inexistente").primeiro())
+
+imprimir("--- sem estoque ---")
+seja sem_estoque = db.buscar("produtos").onde("estoque = %s", 0).executar()
+imprimir(sem_estoque.tamanho, "produto(s):", sem_estoque[0].nome)
+
+db.fechar()
+Arquivo.apagar(arquivo)

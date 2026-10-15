@@ -1,0 +1,5 @@
+seja nomes = []
+para (i em 1..=3) {
+    nomes.adicionar(entrada("Nome: "))
+}
+imprimir(nomes)

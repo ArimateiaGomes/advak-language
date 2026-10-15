@@ -1,0 +1,3 @@
+exportar função base() {
+    retornar 10
+}

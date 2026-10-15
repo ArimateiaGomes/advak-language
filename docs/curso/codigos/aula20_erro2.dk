@@ -1,0 +1,10 @@
+função dividir(a, b) {
+    se (b == 0) {
+        lançar "divisão por zero"
+    }
+    retornar a / b
+}
+
+testar("dividir por zero dá erro", () => {
+    afirmar_erro(dividir(1, 0))
+})

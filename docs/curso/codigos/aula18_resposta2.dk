@@ -1,0 +1,18 @@
+classe Veiculo {
+    construtor(modelo) {
+        isso.modelo = modelo
+    }
+    descricao() {
+        imprimir(`Veículo: ${isso.modelo}`)
+    }
+}
+classe Carro herda Veiculo {
+    descricao() {
+        imprimir(`Carro: ${isso.modelo}`)
+    }
+}
+
+seja v = novo Veiculo("Bicicleta")
+seja c = novo Carro("Fusca")
+v.descricao()
+c.descricao()

@@ -1,0 +1,20 @@
+seja total = 0
+
+servidor.obter("/contador", (req) => {
+    retornar resposta_json({valor: total})
+})
+
+servidor.publicar("/contador/somar", (req) => {
+    se (req.dados == nulo ou !e_numero(texto(req.dados.valor))) {
+        retornar resposta_json({erro: "valor deve ser um número"}, 400)
+    }
+    total = total + numero(req.dados.valor)
+    retornar resposta_json({valor: total})
+})
+
+servidor.publicar("/contador/zerar", (req) => {
+    total = 0
+    retornar resposta_json({valor: total})
+})
+
+servidor.iniciar(8828, falso)

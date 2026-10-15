@@ -1,0 +1,6 @@
+seja ano = inteiro(entrada("Ano: "))
+se ((ano % 4 == 0 e ano % 100 != 0) ou ano % 400 == 0) {
+    imprimir("Bissexto")
+} senão {
+    imprimir("Não é bissexto")
+}

@@ -1,0 +1,5 @@
+seja aluno = {nome: "Ana", idade: 17, turma: "3A"}   // três campos
+imprimir(aluno)                  // o mapa inteiro
+imprimir(aluno.nome)             // lê o campo com ponto
+imprimir(aluno["idade"])         // ou com colchetes e o nome entre aspas
+imprimir(aluno.turma)

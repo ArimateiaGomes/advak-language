@@ -1,0 +1,6 @@
+função saudar() {                      // define a função (ainda não executa nada)
+    imprimir("Olá! Seja bem-vindo(a).")
+}
+
+saudar()                               // chama a função: agora o bloco executa
+saudar()                               // pode chamar quantas vezes quiser

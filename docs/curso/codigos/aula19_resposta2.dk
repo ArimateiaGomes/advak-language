@@ -1,0 +1,3 @@
+importar { fahrenheit_para_celsius } de "aula19_temperatura.dk"
+
+imprimir("212 °F =", fahrenheit_para_celsius(212), "°C")

@@ -1,0 +1,35 @@
+classe Conta {
+    construtor(titular, saldo) {
+        isso.titular = titular
+        isso.saldo = saldo
+    }
+
+    depositar(valor) {
+        se (valor <= 0) {
+            lançar "valor inválido"
+        }
+        isso.saldo = isso.saldo + valor
+    }
+
+    sacar(valor) {
+        se (valor > isso.saldo) {
+            lançar "saldo insuficiente"
+        }
+        isso.saldo = isso.saldo - valor
+    }
+}
+
+seja conta = novo Conta("Ana", 100)
+conta.depositar(50)
+conta.sacar(30)
+imprimir("Saldo:", conta.saldo)
+
+tentar {
+    conta.sacar(1000)
+} capturar (e) {
+    imprimir("Não foi possível:", e)
+}
+imprimir("Saldo continua:", conta.saldo)
+
+seja outra = novo Conta("Bia", 5)               // outro objeto, outro saldo
+imprimir(conta.saldo, outra.saldo)

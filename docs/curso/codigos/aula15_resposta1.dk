@@ -1,0 +1,18 @@
+função raiz_positiva(n) {
+    se (n < 0) {
+        lançar "número negativo"
+    }
+    retornar n ** 0.5
+}
+
+tentar {
+    imprimir(raiz_positiva(16))
+} capturar (e) {
+    imprimir("Erro:", e)
+}
+
+tentar {
+    imprimir(raiz_positiva(-4))
+} capturar (e) {
+    imprimir("Erro:", e)
+}

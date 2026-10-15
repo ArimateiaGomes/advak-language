@@ -1,0 +1,9 @@
+servidor.obter("/", (req) => {
+    retornar html("<h1>Olá, mundo web!</h1><p>Este é o meu primeiro servidor.</p>")
+})
+
+servidor.obter("/ola", (req) => {
+    retornar resposta_json({mensagem: "Olá, mundo!"})
+})
+
+servidor.iniciar(8801, falso)             // porta 8801; o falso = não abrir o navegador sozinho

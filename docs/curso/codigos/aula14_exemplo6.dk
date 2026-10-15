@@ -1,0 +1,6 @@
+seja preco = 1234.5
+imprimir(`Preço: ${preco:moeda}`)               // R$ 1.234,50
+imprimir(`Desconto: ${0.15:porcentagem}`)       // 15%
+imprimir(`Pi com 2 casas: ${3.14159:.2f}`)      // 3,14
+imprimir(`Pedido nº ${7:03d}`)                  // 007
+imprimir(`Data: ${"2024-12-25":dd/mm/aaaa}`)    // 25/12/2024

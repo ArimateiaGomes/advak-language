@@ -1,0 +1,5 @@
+GET /contatos
+POST /contatos {"nome": "Ana", "telefone": "81999990000", "cidade": "Recife"}
+POST /contatos {"nome": "", "telefone": "81999990000"}
+POST /contatos {"nome": "Bia", "telefone": "12"}
+GET /contatos

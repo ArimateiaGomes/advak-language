@@ -1,0 +1,4 @@
+servidor.obter("/ola", (req) => {
+    retornar resposta_json({mensagem: "oi"})
+})
+servidor.iniciar(8811, falso)

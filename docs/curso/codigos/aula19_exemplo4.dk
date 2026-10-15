@@ -1,0 +1,4 @@
+importar { dobro como duplicar, area_circulo como area } de "aula19_matematica.dk"
+
+imprimir(duplicar(21))
+imprimir(area(1))

@@ -1,0 +1,6 @@
+tentar {
+    imprimir(numero("abc"))
+    imprimir(10 / 0)
+} capturar (e) {
+    imprimir("nunca aparece:", e)
+}

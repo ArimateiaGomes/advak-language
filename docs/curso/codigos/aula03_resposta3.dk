@@ -1,0 +1,3 @@
+fixo PI = 3.14159
+seja raio = 5
+imprimir("Área:", PI * raio * raio)

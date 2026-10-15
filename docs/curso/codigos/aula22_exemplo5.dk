@@ -1,0 +1,38 @@
+seja jan = gui.janela("Contador", 360, 200)
+
+seja total = 0
+seja mostrador = gui.label(jan, "Valor: 0", negrito=verdadeiro, tamanho=16)
+
+função mostrar() {
+    mostrador.texto(`Valor: ${total}`)
+}
+
+seja faixa = gui.frame_horizontal(jan)
+seja mais = gui.botao(faixa, "+1", (x) => {
+    total = total + 1
+    mostrar()
+})
+seja menos = gui.botao(faixa, "-1", (x) => {
+    total = total - 1
+    mostrar()
+}, estilo="perigo")
+seja zerar = gui.botao(faixa, "Zerar", (x) => {
+    total = 0
+    mostrar()
+}, estilo="secundario")
+
+// --- Só para o exemplo: seis cliques ---
+gui.apos(300, () => { mais.invoke() })
+gui.apos(500, () => { mais.invoke() })
+gui.apos(700, () => { mais.invoke() })
+gui.apos(900, () => { menos.invoke() })
+gui.apos(1100, () => {
+    imprimir("Depois de +1 +1 +1 -1:", mostrador.cget("text"))
+    zerar.invoke()
+})
+gui.apos(1400, () => {
+    imprimir("Depois de Zerar:", mostrador.cget("text"))
+    gui.parar()
+})
+
+gui.iniciar()

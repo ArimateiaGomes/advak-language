@@ -1,0 +1,10 @@
+seja opcao = 2
+combinar(opcao) {
+    caso 1:
+        imprimir("Abrindo o cadastro...")
+    caso 2:
+        imprimir("Abrindo o relatório...")
+        imprimir("Aguarde um instante.")
+    padrão:
+        imprimir("Opção inválida")
+}

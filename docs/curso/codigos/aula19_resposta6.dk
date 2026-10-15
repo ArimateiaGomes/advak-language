@@ -1,0 +1,6 @@
+importar { Contador } de "aula19_contador.dk"
+
+seja c = novo Contador()
+c.somar(5)
+c.somar(7)
+imprimir(c.valor)

@@ -1,0 +1,2 @@
+seja numeros = [5, 10, 15]
+imprimir(numeros.reduzir((a, n) => a + n, 0))

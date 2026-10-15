@@ -1,0 +1,6 @@
+seja n = numero(entrada("Digite um número: "))
+se (n > 0) {
+    imprimir("Positivo")
+} senão {
+    imprimir("Não positivo")
+}

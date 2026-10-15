@@ -1,0 +1,20 @@
+função dividir(a, b) {
+    se (b == 0) {
+        lançar "não dá para dividir por zero"
+    }
+    retornar a / b
+}
+
+testar("8 dividido por 2 é 4", () => {
+    afirmar_igual(dividir(8, 2), 4)
+})
+
+testar("dividir por zero dá erro", () => {
+    afirmar_erro(() => dividir(5, 0))
+})
+
+testar("este teste falha de propósito", () => {
+    afirmar_igual(dividir(9, 3), 4)
+})
+
+resumo_testes()                          // mostra quantos passaram

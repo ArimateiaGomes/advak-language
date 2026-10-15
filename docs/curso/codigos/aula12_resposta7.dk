@@ -1,0 +1,8 @@
+função fatorial(n) {
+    seja resultado = 1
+    para (i em 2..=n) {
+        resultado = resultado * i
+    }
+    retornar resultado
+}
+imprimir(fatorial(6))

@@ -1,0 +1,6 @@
+seja n = numero(entrada("Tabuada de qual número? "))
+seja i = 1
+enquanto (i <= 10) {
+    imprimir(n, "x", i, "=", n * i)
+    i = i + 1
+}

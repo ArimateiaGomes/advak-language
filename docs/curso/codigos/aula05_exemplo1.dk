@@ -1,0 +1,7 @@
+imprimir(7 + 2)        // soma
+imprimir(7 / 2)        // divisão normal: 3.5
+imprimir(7 // 2)       // divisão inteira: quantas vezes o 2 cabe no 7 (3)
+imprimir(7 % 2)        // resto: sobra 1 (útil para saber se um número é par)
+imprimir(2 ** 3)       // 2 elevado a 3 = 2 * 2 * 2
+imprimir(2 + 3 * 4)    // a multiplicação vem primeiro: 2 + 12
+imprimir((2 + 3) * 4)  // parênteses mandam: 5 * 4

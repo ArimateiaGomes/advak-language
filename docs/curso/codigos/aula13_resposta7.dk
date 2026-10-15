@@ -1,0 +1,4 @@
+seja dobro = (x) => x * 2
+seja somar10 = (x) => x + 10
+seja quadrado = (x) => x ** 2
+imprimir(5 |> dobro |> somar10 |> quadrado)    // ((5*2)+10)² = 400

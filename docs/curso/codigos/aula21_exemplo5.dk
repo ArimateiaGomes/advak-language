@@ -1,0 +1,21 @@
+seja arquivo = "aula21_exemplo5.db"
+se (Arquivo.existe(arquivo)) {
+    Arquivo.apagar(arquivo)
+}
+
+seja db = banco.conectar("sqlite:///aula21_exemplo5.db")
+db.tabela("clientes", {id: "autonum", nome: "texto obrigatorio", cidade: "texto"})
+db.inserir("clientes", {nome: "Ana", cidade: "Recife"})
+db.inserir("clientes", {nome: "Bruno", cidade: "Natal"})
+imprimir("Antes de fechar:", db.contar("clientes"))
+db.fechar()
+
+// Como se fosse "outro dia": abre de novo
+seja db2 = banco.conectar("sqlite:///aula21_exemplo5.db")
+db2.tabela("clientes", {id: "autonum", nome: "texto obrigatorio", cidade: "texto"})     // já existe: nada é perdido
+imprimir("Depois de abrir de novo:", db2.contar("clientes"))
+para (c em db2.buscar("clientes").ordenar("nome").executar()) {
+    imprimir(`${c.nome} mora em ${c.cidade}`)
+}
+db2.fechar()
+Arquivo.apagar(arquivo)

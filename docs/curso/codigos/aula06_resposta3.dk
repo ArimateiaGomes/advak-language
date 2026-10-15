@@ -1,0 +1,8 @@
+seja nota = numero(entrada("Nota: "))
+se (nota >= 7) {
+    imprimir("Aprovado")
+} senão se (nota >= 5) {
+    imprimir("Recuperação")
+} senão {
+    imprimir("Reprovado")
+}

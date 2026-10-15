@@ -1,0 +1,3 @@
+imprimir("Ana Souza")
+imprimir("Picos")
+imprimir(17)

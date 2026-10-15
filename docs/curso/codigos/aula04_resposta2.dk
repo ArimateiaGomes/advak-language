@@ -1,0 +1,3 @@
+seja a = numero(entrada("Primeiro número: "))
+seja b = numero(entrada("Segundo número: "))
+imprimir("Soma:", a + b)

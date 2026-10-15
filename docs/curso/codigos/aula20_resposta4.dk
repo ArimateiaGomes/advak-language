@@ -1,0 +1,19 @@
+função inverter(texto) {
+    seja resultado = ""
+    para (letra em texto) {
+        resultado = letra + resultado
+    }
+    retornar resultado
+}
+
+testar("abc", () => {
+    afirmar_igual(inverter("abc"), "cba")
+})
+testar("vazio", () => {
+    afirmar_igual(inverter(""), "")
+})
+testar("uma letra", () => {
+    afirmar_igual(inverter("a"), "a")
+})
+
+resumo_testes()

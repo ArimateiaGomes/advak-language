@@ -1,0 +1,6 @@
+seja aluno = {nome: "Ana", idade: 17, turma: "3A"}
+imprimir(aluno.chaves)
+imprimir(aluno.valores)
+para (campo em aluno.chaves) {              // uma volta para cada campo
+    imprimir(campo, "=", aluno[campo])      // com colchetes, "campo" é uma variável
+}

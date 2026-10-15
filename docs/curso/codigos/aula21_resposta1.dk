@@ -1,0 +1,12 @@
+seja arquivo = "aula21_resposta1.db"
+se (Arquivo.existe(arquivo)) {
+    Arquivo.apagar(arquivo)
+}
+seja db = banco.conectar("sqlite:///aula21_resposta1.db")
+db.tabela("alunos", {id: "autonum", nome: "texto obrigatorio", nota: "numero"})
+db.inserir("alunos", {nome: "Carlos", nota: 6.5})
+db.inserir("alunos", {nome: "Ana", nota: 9})
+db.inserir("alunos", {nome: "Beatriz", nota: 7})
+imprimir("Alunos:", db.contar("alunos"))
+db.fechar()
+Arquivo.apagar(arquivo)

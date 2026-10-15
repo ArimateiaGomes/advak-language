@@ -1,0 +1,13 @@
+seja pasta = "aula16_pasta"
+Arquivo.criar_pasta(pasta)
+imprimir("É pasta?", Arquivo.info(pasta).e_pasta)
+
+seja caminho = Arquivo.juntar(pasta, "relatorio.txt")   // monta pasta + arquivo
+Arquivo.escrever(caminho, "olá")
+
+imprimir("Arquivos na pasta:", Arquivo.listar(pasta))
+imprimir("Extensão:", Arquivo.extensao(caminho))
+imprimir("Sem extensão:", Arquivo.sem_extensao("foto.png"))
+imprimir("Tamanho em bytes:", Arquivo.info(caminho).tamanho)
+
+Arquivo.apagar(caminho)

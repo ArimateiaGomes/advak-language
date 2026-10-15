@@ -1,0 +1,5 @@
+seja palavra = "Advak"
+imprimir(palavra.tamanho)        // quantos caracteres: 5
+imprimir(palavra[0])             // o primeiro caractere: A
+imprimir(palavra[-1])            // o último: k
+imprimir(palavra.fatia(1, 4))    // do índice 1 até o 3 (o 4 não entra): dva

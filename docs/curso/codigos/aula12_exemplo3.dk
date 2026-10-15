@@ -1,0 +1,7 @@
+função somar(a, b) {
+    retornar a + b                     // devolve o resultado
+}
+
+seja total = somar(3, 4)               // o resultado é guardado em "total"
+imprimir(total)
+imprimir(somar(10, 5) * 2)             // pode ser usado direto em uma conta

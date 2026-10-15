@@ -1,0 +1,5 @@
+fixo PI = 3.14159          // constante: por convenção, o nome fica em MAIÚSCULAS
+fixo ESCOLA = "Escola Modelo"
+seja raio = 2
+imprimir("Área do círculo:", PI * raio * raio)
+imprimir(ESCOLA)

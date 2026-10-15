@@ -1,0 +1,7 @@
+seja idade = numero(entrada("Idade: "))
+combinar(verdadeiro) {
+    caso idade <= 11: imprimir("Criança")
+    caso idade <= 17: imprimir("Adolescente")
+    caso idade <= 59: imprimir("Adulto")
+    padrão: imprimir("Idoso")
+}

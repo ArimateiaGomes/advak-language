@@ -1,0 +1,21 @@
+importar { abrir, cadastrar, listar } de "aula24_repositorio.dk"
+
+seja arquivo = "aula24_resposta2.db"
+se (Arquivo.existe(arquivo)) {
+    Arquivo.apagar(arquivo)
+}
+seja db = abrir(arquivo)
+cadastrar(db, "Ana", "81999990000", "Recife")
+cadastrar(db, "Bruno", "84988887777", "Natal")
+cadastrar(db, "Carla", "81977776666", "Recife")
+
+seja contagem = {}
+para (c em listar(db)) {
+    se (contagem[c.cidade] == nulo) {
+        contagem[c.cidade] = 0
+    }
+    contagem[c.cidade] = contagem[c.cidade] + 1
+}
+imprimir(contagem)
+db.fechar()
+Arquivo.apagar(arquivo)

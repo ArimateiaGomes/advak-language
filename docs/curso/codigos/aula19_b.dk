@@ -1,0 +1,5 @@
+importar { base } de "aula19_a.dk"
+
+exportar função derivada() {
+    retornar base() * 2
+}

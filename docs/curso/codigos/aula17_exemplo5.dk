@@ -1,0 +1,21 @@
+classe Produto {
+    construtor(nome, preco) {
+        isso.nome = nome
+        isso.preco = preco
+    }
+    com_desconto(percentual) {
+        retornar isso.preco * (1 - percentual / 100)
+    }
+}
+
+seja estoque = [novo Produto("Caderno", 20), novo Produto("Caneta", 3), novo Produto("Mochila", 120)]
+
+seja total = 0
+para (p em estoque) {
+    imprimir(`${p.nome}: R$ ${p.preco} (com 10% de desconto: R$ ${p.com_desconto(10)})`)
+    total = total + p.preco
+}
+imprimir("Total sem desconto:", total)
+
+seja caros = estoque.filtrar((p) => p.preco > 10)      // aula 13 funciona com objetos
+imprimir("Caros:", caros.mapear((p) => p.nome))

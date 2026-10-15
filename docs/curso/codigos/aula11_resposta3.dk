@@ -1,0 +1,4 @@
+seja ficha = {nome: "Ana", idade: 17, cidade: "Recife"}
+para (campo em ficha.chaves) {
+    imprimir(campo, "=", ficha[campo])
+}

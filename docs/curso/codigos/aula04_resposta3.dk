@@ -1,0 +1,3 @@
+seja preco = numero(entrada("Preço do produto: "))
+seja quantidade = inteiro(entrada("Quantidade: "))
+imprimir("Total:", preco * quantidade)

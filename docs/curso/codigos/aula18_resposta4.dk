@@ -1,0 +1,26 @@
+classe Forma {
+    area() {
+        retornar 0
+    }
+}
+classe Quadrado herda Forma {
+    construtor(lado) {
+        isso.lado = lado
+    }
+    area() {
+        retornar isso.lado * isso.lado
+    }
+}
+classe Circulo herda Forma {
+    construtor(raio) {
+        isso.raio = raio
+    }
+    area() {
+        retornar 3.14 * isso.raio * isso.raio
+    }
+}
+
+seja formas = [novo Quadrado(4), novo Circulo(2), novo Forma()]
+para (f em formas) {
+    imprimir("Área:", f.area())
+}

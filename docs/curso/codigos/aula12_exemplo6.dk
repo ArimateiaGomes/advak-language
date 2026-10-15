@@ -1,0 +1,6 @@
+função calcular() {
+    seja segredo = 42                  // variável local
+    retornar segredo
+}
+
+imprimir(calcular())                   // a função devolve o valor: isso funciona

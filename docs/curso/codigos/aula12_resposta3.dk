@@ -1,0 +1,4 @@
+função area_retangulo(base, altura) {
+    retornar base * altura
+}
+imprimir("Área:", area_retangulo(5, 3))

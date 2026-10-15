@@ -1,0 +1,4 @@
+servidor.obter("/saudacao/:nome", (req) => {
+    retornar html(`<h1>Bem-vindo, ${req.parametros.nome}!</h1>`)
+})
+servidor.iniciar(8824, falso)

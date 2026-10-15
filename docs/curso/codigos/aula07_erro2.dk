@@ -1,0 +1,4 @@
+seja x = 2
+combinar(x) {
+    caso 1, 2: imprimir("pequeno")
+}

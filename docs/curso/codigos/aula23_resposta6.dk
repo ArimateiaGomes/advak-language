@@ -1,0 +1,18 @@
+seja produtos = []
+seja proximo = 1
+
+servidor.publicar("/produtos", (req) => {
+    se (req.dados == nulo ou !req.dados.nome ou !req.dados.preco) {
+        retornar resposta_json({erro: "informe nome e preco"}, 400)
+    }
+    seja novo = {id: proximo, nome: req.dados.nome, preco: req.dados.preco}
+    proximo = proximo + 1
+    produtos.adicionar(novo)
+    retornar resposta_json(novo, 201)
+})
+
+servidor.obter("/produtos", (req) => {
+    retornar resposta_json(produtos)
+})
+
+servidor.iniciar(8826, falso)

@@ -1,0 +1,2 @@
+seja numeros = [1, 2, 3]
+imprimir(numeros.mapear((n) => n * n))

@@ -1,0 +1,13 @@
+função media(a, b) {
+    retornar a + b / 2                  // defeito: faltaram os parênteses
+}
+
+testar("média de 4 e 6 é 5", () => {
+    afirmar_igual(media(4, 6), 5)
+})
+
+testar("média de 10 e 10 é 10", () => {
+    afirmar_igual(media(10, 10), 10)
+})
+
+resumo_testes()

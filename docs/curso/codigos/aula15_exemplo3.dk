@@ -1,0 +1,14 @@
+tentar {
+    imprimir("Abrindo o caixa")
+    lançar "faltou troco"
+} capturar (e) {
+    imprimir("Aviso:", e)
+} finalmente {
+    imprimir("Fechando o caixa (sempre acontece)")
+}
+
+tentar {
+    imprimir("Segundo dia: tudo certo")
+} finalmente {
+    imprimir("Fechando o caixa de novo")
+}

@@ -1,0 +1,20 @@
+seja arquivo = "aula21_exemplo4.db"
+se (Arquivo.existe(arquivo)) {
+    Arquivo.apagar(arquivo)
+}
+seja db = banco.conectar("sqlite:///aula21_exemplo4.db")
+db.tabela("produtos", {id: "autonum", nome: "texto obrigatorio", preco: "numero", estoque: "inteiro"})
+db.inserir("produtos", {nome: "Caderno", preco: 20.5, estoque: 10})
+db.inserir("produtos", {nome: "Caneta", preco: 3, estoque: 100})
+db.inserir("produtos", {nome: "Mochila", preco: 120, estoque: 0})
+
+seja mudou = db.atualizar("produtos", {estoque: 5}).onde("nome = %s", "Mochila").executar()
+imprimir("Registros alterados:", mudou)
+imprimir("Estoque da mochila agora:", db.buscar("produtos").onde("nome = %s", "Mochila").primeiro().estoque)
+
+seja apagou = db.deletar("produtos").onde("nome = %s", "Caneta").executar()
+imprimir("Registros apagados:", apagou)
+imprimir("Restaram:", db.contar("produtos"))
+
+db.fechar()
+Arquivo.apagar(arquivo)

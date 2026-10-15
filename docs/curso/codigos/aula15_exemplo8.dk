@@ -1,0 +1,22 @@
+função ler_nota(digitado) {
+    se (!e_numero(digitado)) {
+        lançar "isso não é um número"
+    }
+    seja nota = numero(digitado)
+    se (nota < 0 ou nota > 10) {
+        lançar "a nota deve ficar entre 0 e 10"
+    }
+    retornar nota
+}
+
+seja pronto = falso
+enquanto (!pronto) {
+    seja resposta = entrada("Nota (0 a 10): ")
+    tentar {
+        seja nota = ler_nota(resposta)
+        imprimir("Nota registrada:", nota)
+        pronto = verdadeiro              // deu certo: a condição do enquanto deixa de valer
+    } capturar (e) {
+        imprimir("Tente de novo, porque", e)
+    }
+}

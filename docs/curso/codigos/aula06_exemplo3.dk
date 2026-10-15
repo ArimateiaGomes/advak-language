@@ -1,0 +1,7 @@
+seja idade = numero(entrada("Idade: "))
+seja tem_ingresso = verdadeiro
+se (idade >= 14 e tem_ingresso) {
+    imprimir("Pode entrar no show.")
+} senão {
+    imprimir("Não pode entrar.")
+}

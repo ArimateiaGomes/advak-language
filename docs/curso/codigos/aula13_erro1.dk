@@ -1,0 +1,2 @@
+seja dobro = x => x * 2
+imprimir(dobro(5))

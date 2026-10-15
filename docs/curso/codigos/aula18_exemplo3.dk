@@ -1,0 +1,31 @@
+classe Funcionario {
+    construtor(nome, salario) {
+        isso.nome = nome
+        isso.salario = salario
+    }
+    bonus() {
+        retornar isso.salario * 0.1       // regra geral: 10%
+    }
+}
+
+classe Gerente herda Funcionario {
+    bonus() {
+        retornar isso.salario * 0.3       // gerente: 30%
+    }
+}
+
+classe Estagiario herda Funcionario {
+    bonus() {
+        retornar 0                        // estagiário: sem bônus
+    }
+}
+
+seja equipe = [
+    novo Funcionario("Ana", 3000),
+    novo Gerente("Bruno", 8000),
+    novo Estagiario("Carla", 1500)
+]
+
+para (pessoa em equipe) {
+    imprimir(`${pessoa.nome}: bônus de R$ ${pessoa.bonus()}`)     // mesmo comando, resultados diferentes
+}

@@ -1,0 +1,5 @@
+importar { abrir, cadastrar } de "aula24_repositorio.dk"
+
+seja db = abrir("aula24_erro1.db")
+cadastrar(db, "", "81999990000", "Recife")
+db.fechar()

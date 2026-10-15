@@ -1,0 +1,7 @@
+seja n = numero(entrada("Número de 1 a 3: "))
+combinar(n) {
+    caso 1: imprimir("um")
+    caso 2: imprimir("dois")
+    caso 3: imprimir("três")
+    padrão: imprimir("fora do intervalo")
+}

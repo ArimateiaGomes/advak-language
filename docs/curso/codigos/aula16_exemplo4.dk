@@ -1,0 +1,24 @@
+seja arquivo = "aula16_agenda.json"
+
+função carregar() {
+    se (Arquivo.existe(arquivo)) {
+        retornar Arquivo.ler_json(arquivo)
+    }
+    retornar []                           // primeira vez: agenda vazia
+}
+
+seja agenda = carregar()
+imprimir("Contatos salvos:", agenda.tamanho)
+
+agenda.adicionar({"nome": "Bia", "telefone": "9999-1111"})
+agenda.adicionar({"nome": "Caio", "telefone": "9999-2222"})
+Arquivo.escrever_json(arquivo, agenda)
+
+// Simulando "outro dia": carregamos de novo do arquivo
+seja de_novo = carregar()
+imprimir("Contatos depois de salvar:", de_novo.tamanho)
+para (c em de_novo) {
+    imprimir(`${c.nome}: ${c.telefone}`)
+}
+
+Arquivo.apagar(arquivo)

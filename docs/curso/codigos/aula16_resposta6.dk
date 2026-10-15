@@ -1,0 +1,11 @@
+função carregar_lista(arquivo) {
+    se (Arquivo.existe(arquivo)) {
+        retornar Arquivo.ler_json(arquivo)
+    }
+    retornar []
+}
+
+imprimir(carregar_lista("aula16_nao_existe.json"))
+Arquivo.escrever_json("aula16_lista.json", [1, 2, 3])
+imprimir(carregar_lista("aula16_lista.json"))
+Arquivo.apagar("aula16_lista.json")

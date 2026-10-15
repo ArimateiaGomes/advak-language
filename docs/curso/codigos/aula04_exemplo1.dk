@@ -1,0 +1,2 @@
+seja nome = entrada("Qual é o seu nome? ")   // mostra a pergunta e espera você digitar e apertar Enter
+imprimir("Olá, " + nome + "!")                // + junta textos

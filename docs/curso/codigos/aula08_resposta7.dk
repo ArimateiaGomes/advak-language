@@ -1,0 +1,13 @@
+seja segredo = 7
+seja tentativas = 1
+seja chute = inteiro(entrada("Seu chute: "))
+enquanto (chute != segredo) {
+    se (chute > segredo) {
+        imprimir("Menor!")
+    } senão {
+        imprimir("Maior!")
+    }
+    chute = inteiro(entrada("Seu chute: "))
+    tentativas = tentativas + 1
+}
+imprimir("Acertou em", tentativas, "tentativas!")

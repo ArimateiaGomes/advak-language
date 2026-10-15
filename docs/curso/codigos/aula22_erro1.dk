@@ -1,0 +1,3 @@
+seja jan = gui.janela("Esqueci", 300, 150)
+gui.label(jan, "Você não vai me ver")
+imprimir("O programa chegou ao fim.")

@@ -1,0 +1,16 @@
+seja jan = gui.janela("Cliques", 300, 180)
+seja total = 0
+seja mostrador = gui.label(jan, "Cliques: 0")
+seja botao = gui.botao(jan, "Clique aqui", (x) => {
+    total = total + 1
+    mostrador.texto(`Cliques: ${total}`)
+})
+
+gui.apos(300, () => { botao.invoke() })
+gui.apos(500, () => { botao.invoke() })
+gui.apos(700, () => { botao.invoke() })
+gui.apos(1000, () => {
+    imprimir(mostrador.cget("text"))
+    gui.parar()
+})
+gui.iniciar()

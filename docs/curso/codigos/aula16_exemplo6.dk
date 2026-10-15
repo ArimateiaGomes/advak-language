@@ -1,0 +1,13 @@
+tentar {
+    seja texto = Arquivo.ler("aula16_nao_existe.txt")
+    imprimir(texto)
+} capturar (e) {
+    imprimir("Não consegui ler:", e)
+}
+
+// Outra opção: perguntar antes
+se (Arquivo.existe("aula16_nao_existe.txt")) {
+    imprimir("existe")
+} senão {
+    imprimir("O arquivo ainda não foi criado.")
+}

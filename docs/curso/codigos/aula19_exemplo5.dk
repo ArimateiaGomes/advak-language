@@ -1,0 +1,3 @@
+importar { preco_promocional } de "aula19_precos.dk"
+
+imprimir(preco_promocional(200))

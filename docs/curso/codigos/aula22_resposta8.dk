@@ -1,0 +1,30 @@
+seja jan = gui.janela("Login", 320, 260)
+gui.label(jan, "Usuário:")
+seja campo_usuario = gui.campo(jan, "", largura=20)
+gui.label(jan, "Senha:")
+seja campo_senha = gui.campo(jan, "", largura=20, senha=verdadeiro)
+seja aviso = gui.label(jan, "")
+
+seja botao = gui.botao(jan, "Entrar", (x) => {
+    se (campo_usuario.valor() == "admin" e campo_senha.valor() == "1234") {
+        aviso.texto("Bem-vindo!")
+    } senão {
+        aviso.texto("Dados incorretos.")
+    }
+})
+
+gui.apos(300, () => {
+    campo_usuario.definir("admin")
+    campo_senha.definir("0000")
+    botao.invoke()
+})
+gui.apos(700, () => {
+    imprimir("Tentativa errada:", aviso.cget("text"))
+    campo_senha.definir("1234")
+    botao.invoke()
+})
+gui.apos(1100, () => {
+    imprimir("Tentativa certa:", aviso.cget("text"))
+    gui.parar()
+})
+gui.iniciar()

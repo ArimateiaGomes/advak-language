@@ -1,0 +1,23 @@
+seja jan = gui.janela("Tarefas", 360, 320)
+seja campo = gui.campo(jan, "Nova tarefa", largura=30)
+seja tabela = gui.tabela(jan, ["Tarefa"], altura=6)
+seja botao = gui.botao(jan, "Adicionar", (x) => {
+    se (campo.valor() != "") {
+        tabela.adicionar([campo.valor()])
+        campo.limpar()
+    }
+})
+
+gui.apos(300, () => {
+    campo.definir("Estudar Advak")
+    botao.invoke()
+})
+gui.apos(600, () => {
+    campo.definir("Fazer exercícios")
+    botao.invoke()
+})
+gui.apos(900, () => {
+    imprimir("Tarefas na tabela:", lista(tabela.get_children()).tamanho)
+    gui.parar()
+})
+gui.iniciar()

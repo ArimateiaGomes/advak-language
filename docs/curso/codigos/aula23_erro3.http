@@ -1,0 +1,2 @@
+POST /cadastro isso não é json
+POST /cadastro {"nome": "Ana"}

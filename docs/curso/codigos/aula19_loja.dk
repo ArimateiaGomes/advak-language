@@ -1,0 +1,15 @@
+exportar fixo MOEDA = "R$"
+
+exportar função com_desconto(preco, percentual) {
+    retornar preco * (1 - percentual / 100)
+}
+
+exportar classe Produto {
+    construtor(nome, preco) {
+        isso.nome = nome
+        isso.preco = preco
+    }
+    etiqueta() {
+        retornar `${isso.nome}: ${MOEDA} ${isso.preco}`
+    }
+}

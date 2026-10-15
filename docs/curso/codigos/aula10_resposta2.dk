@@ -1,0 +1,2 @@
+seja numeros = [10, 20, 30, 40]
+imprimir("A lista tem", numeros.tamanho, "itens")

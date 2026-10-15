@@ -1,0 +1,5 @@
+seja jan = gui.janela("Boas-vindas", 320, 160)
+gui.label(jan, "Ana Souza", negrito=verdadeiro, tamanho=16)
+gui.apos(1000, () => { gui.parar() })
+gui.iniciar()
+imprimir("Janela fechada.")

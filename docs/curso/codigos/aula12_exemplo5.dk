@@ -1,0 +1,12 @@
+função situacao(nota) {
+    se (nota >= 7) {
+        retornar "Aprovado"
+    } senão se (nota >= 5) {
+        retornar "Recuperação"
+    }
+    retornar "Reprovado"               // só chega aqui se nenhum "se" acima retornou
+}
+
+para (n em [9, 6, 3]) {
+    imprimir(n, "->", situacao(n))
+}

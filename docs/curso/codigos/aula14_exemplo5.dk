@@ -1,0 +1,3 @@
+seja nome = "Ana"
+imprimir("Olá, ${nome}")      // aspas: NÃO troca
+imprimir(`Olá, ${nome}`)      // crase: troca

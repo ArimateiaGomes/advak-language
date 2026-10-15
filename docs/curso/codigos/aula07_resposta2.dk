@@ -1,0 +1,6 @@
+seja mes = numero(entrada("Mês (1 a 12): "))
+combinar(verdadeiro) {
+    caso mes == 2: imprimir("28 dias")
+    caso mes == 4 ou mes == 6 ou mes == 9 ou mes == 11: imprimir("30 dias")
+    padrão: imprimir("31 dias")
+}

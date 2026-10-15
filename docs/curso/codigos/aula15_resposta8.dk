@@ -1,0 +1,18 @@
+função sacar(saldo, valor) {
+    se (valor <= 0) {
+        lançar "valor inválido"
+    }
+    se (valor > saldo) {
+        lançar "saldo insuficiente"
+    }
+    retornar saldo - valor
+}
+
+seja saldo = 100
+seja valor = numero(entrada("Quanto quer sacar? "))
+tentar {
+    saldo = sacar(saldo, valor)
+    imprimir("Saque feito. Novo saldo:", saldo)
+} capturar (e) {
+    imprimir("Não foi possível sacar:", e)
+}

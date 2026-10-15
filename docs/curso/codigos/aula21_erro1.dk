@@ -1,0 +1,13 @@
+seja arquivo = "aula21_erro1.db"
+se (Arquivo.existe(arquivo)) {
+    Arquivo.apagar(arquivo)
+}
+seja db = banco.conectar("sqlite:///aula21_erro1.db")
+db.tabela("produtos", {id: "autonum", nome: "texto obrigatorio", preco: "numero"})
+tentar {
+    db.inserir("produtos", {preco: 5})
+} capturar (e) {
+    imprimir("Não gravou:", e)
+}
+db.fechar()
+Arquivo.apagar(arquivo)

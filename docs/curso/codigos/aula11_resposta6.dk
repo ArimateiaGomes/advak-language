@@ -1,0 +1,12 @@
+seja produtos = [
+    {nome: "Caderno", preco: 12.5},
+    {nome: "Caneta", preco: 3},
+    {nome: "Mochila", preco: 80}
+]
+seja mais_caro = produtos[0]
+para (p em produtos) {
+    se (p.preco > mais_caro.preco) {
+        mais_caro = p
+    }
+}
+imprimir("Mais caro:", mais_caro.nome)

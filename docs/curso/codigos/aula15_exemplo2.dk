@@ -1,0 +1,14 @@
+função dividir(a, b) {
+    se (b == 0) {
+        lançar "não dá para dividir por zero"
+    }
+    retornar a / b
+}
+
+tentar {
+    imprimir(dividir(6, 3))
+    imprimir(dividir(1, 0))           // aqui dá erro
+    imprimir("não chega aqui")
+} capturar (erro) {
+    imprimir("Erro:", erro)
+}

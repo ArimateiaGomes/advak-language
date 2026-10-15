@@ -1,0 +1,3 @@
+seja lista = [1, 2, 3]
+imprimir(lista.mapear((x) => x * 2))
+imprimir(moeda(1500))

@@ -1,0 +1,9 @@
+seja numeros = [4, 9, 2, 7]
+seja maior = numeros[0]               // começa supondo que o primeiro é o maior
+para (n em numeros) {
+    imprimir(n)
+    se (n > maior) {
+        maior = n
+    }
+}
+imprimir("O maior é", maior)

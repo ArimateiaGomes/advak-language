@@ -1,0 +1,5 @@
+seja nome = "Ana"
+seja idade = 17
+imprimir("Nome: " + nome + ", idade: " + texto(idade))                  // jeito antigo
+imprimir(`Nome: ${nome}, idade: ${idade}`)                              // com template
+imprimir(`Ano que vem ${nome} terá ${idade + 1} anos.`)                 // dá para fazer contas dentro

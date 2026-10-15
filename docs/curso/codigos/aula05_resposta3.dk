@@ -1,0 +1,2 @@
+imprimir(10 % 2 == 0)   // verdadeiro: 10 é par
+imprimir(7 % 2 == 0)    // falso: 7 é ímpar

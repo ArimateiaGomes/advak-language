@@ -1,0 +1,3 @@
+para (i em 1..=10) {
+    imprimir("7 x", i, "=", 7 * i)
+}

@@ -1,0 +1,5 @@
+importar { PI, dobro, area_circulo } de "aula19_matematica.dk"
+
+imprimir("PI vale", PI)
+imprimir("O dobro de 4 é", dobro(4))
+imprimir("Área de um círculo de raio 2:", area_circulo(2))

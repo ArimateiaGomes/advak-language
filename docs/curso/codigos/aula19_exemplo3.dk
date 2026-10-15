@@ -1,0 +1,5 @@
+importar { Produto, com_desconto, MOEDA } de "aula19_loja.dk"
+
+seja caderno = novo Produto("Caderno", 20)
+imprimir(caderno.etiqueta())
+imprimir("Com 25% de desconto:", MOEDA, com_desconto(caderno.preco, 25))

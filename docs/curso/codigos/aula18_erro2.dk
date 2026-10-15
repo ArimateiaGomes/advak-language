@@ -1,0 +1,8 @@
+classe Animal { }
+classe Cachorro herda Animal {
+    latir() {
+        imprimir("au au")
+    }
+}
+seja a = novo Animal()
+a.latir()

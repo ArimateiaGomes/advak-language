@@ -1,0 +1,3 @@
+GET /produtos
+GET /produtos/2
+GET /produtos/7

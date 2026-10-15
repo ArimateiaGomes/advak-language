@@ -1,0 +1,2 @@
+// Quantas horas existem em um ano de 365 dias?
+imprimir("Horas em um ano:", 365 * 24)

@@ -1,0 +1,9 @@
+seja op = entrada("Operação (+, -, *): ")
+seja a = 8
+seja b = 2
+combinar(op) {
+    caso "+": imprimir(a + b)
+    caso "-": imprimir(a - b)
+    caso "*": imprimir(a * b)
+    padrão: imprimir("Operação desconhecida")
+}

@@ -1,0 +1,6 @@
+seja n = inteiro(entrada("Digite um número: "))
+se (n % 2 == 0) {
+    imprimir("Par")
+} senão {
+    imprimir("Ímpar")
+}

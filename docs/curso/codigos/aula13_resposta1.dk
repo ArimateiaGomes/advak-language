@@ -1,0 +1,2 @@
+seja triplo = (x) => x * 3
+imprimir(triplo(7))

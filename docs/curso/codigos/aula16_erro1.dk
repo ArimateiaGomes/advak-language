@@ -1,0 +1,1 @@
+imprimir(Arquivo.ler("aula16_fantasma.txt"))

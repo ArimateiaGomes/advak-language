@@ -1,0 +1,7 @@
+seja idade = numero(entrada("Qual é a sua idade? "))
+se (idade >= 18) {                       // a condição vai entre parênteses
+    imprimir("Você é maior de idade.")   // só roda se a condição for verdadeira
+} senão {
+    imprimir("Você é menor de idade.")   // só roda se for falsa
+}
+imprimir("Fim do programa.")              // fora das chaves: roda sempre

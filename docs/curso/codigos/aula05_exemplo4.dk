@@ -1,0 +1,12 @@
+seja idade = 16
+seja tem_autorizacao = verdadeiro
+
+// pode entrar no evento se tiver 16 ou mais E autorização
+imprimir(idade >= 16 e tem_autorizacao)
+
+// ganha desconto se for jovem OU idoso
+seja jovem = idade < 18
+seja idoso = idade >= 60
+imprimir(jovem ou idoso)
+
+imprimir(nao jovem)        // o contrário de "jovem"

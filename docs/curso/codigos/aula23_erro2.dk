@@ -1,0 +1,8 @@
+servidor.obter("/quebrado", (req) => {
+    seja lista = [1, 2, 3]
+    retornar resposta_json({valor: lista[10]})        // posição que não existe
+})
+servidor.obter("/saudavel", (req) => {
+    retornar resposta_json({ok: verdadeiro})
+})
+servidor.iniciar(8812, falso)

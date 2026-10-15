@@ -1,0 +1,5 @@
+seja texto = entrada("Texto: ")
+seja n = inteiro(entrada("Quantas vezes? "))
+para (i em 0..n) {
+    imprimir(texto)
+}

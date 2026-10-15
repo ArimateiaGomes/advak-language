@@ -1,0 +1,8 @@
+classe Pessoa {
+    construtor(nome, idade) {
+        isso.nome = nome
+        isso.idade = idade
+    }
+}
+seja p = novo Pessoa("Ana")
+imprimir(p.nome, p.idade)

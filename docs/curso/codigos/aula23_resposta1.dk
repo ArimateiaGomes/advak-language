@@ -1,0 +1,4 @@
+servidor.obter("/hora-do-curso", (req) => {
+    retornar resposta_json({curso: "Advak", aula: 23})
+})
+servidor.iniciar(8821, falso)

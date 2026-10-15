@@ -1,0 +1,15 @@
+seja jan = gui.janela("Teste", 300, 150)
+seja saida = gui.label(jan, "ainda não calculou")
+seja botao = gui.botao(jan, "Calcular", (x) => {
+    imprimir("1) o botão começou a rodar")
+    seja valor = 22.857.arredondar(1)              // defeito: esse comando não existe
+    imprimir("2) esta linha nunca aparece")
+    saida.texto(`IMC ${valor}`)
+})
+
+gui.apos(300, () => { botao.invoke() })
+gui.apos(900, () => {
+    imprimir("Texto da janela depois do clique:", saida.cget("text"))
+    gui.parar()
+})
+gui.iniciar()

@@ -1,0 +1,3 @@
+seja nota = 7.5
+seja frequencia = 80
+imprimir(nota >= 7 e frequencia >= 75)

@@ -1,0 +1,2 @@
+seja idade: inteiro = 17        // "idade" só aceita números inteiros
+imprimir(idade)

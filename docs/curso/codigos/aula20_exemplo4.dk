@@ -1,0 +1,44 @@
+função eh_par(n) {
+    retornar n % 2 == 0
+}
+
+função dividir(a, b) {
+    se (b == 0) {
+        lançar "divisão por zero"
+    }
+    retornar a / b
+}
+
+testar("verdadeiro e falso", () => {
+    afirmar_verdadeiro(eh_par(10))
+    afirmar_falso(eh_par(7))
+})
+
+testar("diferente", () => {
+    afirmar_diferente(eh_par(2), eh_par(3))
+})
+
+testar("lista e texto", () => {
+    afirmar_igual([1, 2, 3], [1, 2, 3])
+    afirmar_contem([10, 20, 30], 20)
+    afirmar_contem("banana", "nan")
+})
+
+testar("nulo", () => {
+    seja vazio = nulo
+    afirmar_nulo(vazio)
+})
+
+testar("dividir por zero tem que dar erro", () => {
+    afirmar_erro(() => dividir(1, 0))
+})
+
+testar("dividir normal não dá erro", () => {
+    afirmar_igual(dividir(9, 3), 3)
+})
+
+testar("afirmar com mensagem própria", () => {
+    afirmar(eh_par(4), "4 deveria ser par")
+})
+
+resumo_testes()

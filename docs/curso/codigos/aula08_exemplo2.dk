@@ -1,0 +1,7 @@
+seja soma = 0                         // acumulador começa em zero
+seja n = 1
+enquanto (n <= 5) {
+    soma = soma + n                   // soma 1, depois 2, depois 3...
+    n = n + 1
+}
+imprimir("A soma de 1 a 5 é", soma)

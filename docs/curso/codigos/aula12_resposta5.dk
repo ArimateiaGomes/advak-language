@@ -1,0 +1,7 @@
+função maior(a, b) {
+    se (a > b) {
+        retornar a
+    }
+    retornar b
+}
+imprimir(maior(8, 12))

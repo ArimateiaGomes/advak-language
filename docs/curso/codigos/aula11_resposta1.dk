@@ -1,0 +1,4 @@
+seja livro = {titulo: "Dom Casmurro", autor: "Machado de Assis", paginas: 256}
+imprimir("Título:", livro.titulo)
+imprimir("Autor:", livro.autor)
+imprimir("Páginas:", livro.paginas)

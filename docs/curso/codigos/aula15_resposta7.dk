@@ -1,0 +1,20 @@
+função dividir(a, b) {
+    se (b == 0) {
+        lançar "divisão por zero"
+    }
+    retornar a / b
+}
+
+função tentar_dividir(a, b) {
+    seja resultado = 0
+    tentar {
+        resultado = dividir(a, b)
+    } capturar (e) {
+        imprimir("Aviso:", e)
+        resultado = 0
+    }
+    retornar resultado
+}
+
+imprimir(tentar_dividir(8, 2))
+imprimir(tentar_dividir(8, 0))

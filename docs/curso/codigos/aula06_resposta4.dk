@@ -1,0 +1,6 @@
+seja idade = inteiro(entrada("Idade: "))
+se (idade < 12 ou idade >= 60) {
+    imprimir("Ingresso: R$ 10")
+} senão {
+    imprimir("Ingresso: R$ 20")
+}

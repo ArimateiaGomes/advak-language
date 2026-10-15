@@ -1,0 +1,12 @@
+para (n em 2..=30) {
+    seja primo = verdadeiro
+    para (d em 2..n) {                // testa se algum d entre 2 e n-1 divide n
+        se (n % d == 0) {
+            primo = falso
+            quebrar
+        }
+    }
+    se (primo) {
+        imprimir(n)
+    }
+}

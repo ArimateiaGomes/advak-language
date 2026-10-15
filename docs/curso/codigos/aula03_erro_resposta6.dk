@@ -1,0 +1,4 @@
+seja nome: texto = "Ana"
+imprimir(nome)
+nome = 123
+imprimir(nome)

@@ -1,0 +1,2 @@
+seja frase = entrada("Frase: ")
+imprimir(frase.substituir("a", "o"))

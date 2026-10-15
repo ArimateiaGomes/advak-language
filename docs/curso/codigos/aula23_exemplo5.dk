@@ -1,0 +1,26 @@
+seja tarefas = [
+    {id: 1, titulo: "Estudar", feita: falso},
+    {id: 2, titulo: "Descansar", feita: falso}
+]
+
+servidor.obter("/tarefas", (req) => {
+    retornar resposta_json(tarefas)
+})
+
+servidor.atualizar("/tarefas/:id", (req) => {
+    seja id = inteiro(req.parametros.id)
+    seja achadas = tarefas.filtrar((t) => t.id == id)
+    se (achadas.tamanho == 0) {
+        retornar resposta_json({erro: "tarefa não encontrada"}, 404)
+    }
+    achadas[0].feita = req.dados.feita
+    retornar resposta_json(achadas[0])
+})
+
+servidor.deletar("/tarefas/:id", (req) => {
+    seja id = inteiro(req.parametros.id)
+    tarefas = tarefas.filtrar((t) => t.id != id)
+    retornar resposta_json({ok: verdadeiro})
+})
+
+servidor.iniciar(8805, falso)

@@ -1,0 +1,4 @@
+função dobro(x) {
+    retornar x * 2
+}
+imprimir(dobr(5))

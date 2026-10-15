@@ -1,0 +1,2 @@
+seja preco = numero("abc")
+imprimir("Total de 3 itens:", preco * 3)

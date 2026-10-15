@@ -1,0 +1,6 @@
+// Algoritmo: fazer um bolo simples
+imprimir("1) Coloque a farinha na tigela")
+imprimir("2) Junte os ovos e o açúcar")
+imprimir("3) Misture bem")
+imprimir("4) Asse por 40 minutos")
+imprimir("Pronto! O bolo está feito.")

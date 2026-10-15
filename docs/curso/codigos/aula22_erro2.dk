@@ -1,0 +1,11 @@
+função cumprimentar() {
+    imprimir("Função executada!")
+}
+
+seja jan = gui.janela("Teste", 300, 150)
+imprimir("Antes de criar o botão")
+gui.botao(jan, "Clique", cumprimentar())          // errado: já executou
+imprimir("Depois de criar o botão (ninguém clicou!)")
+
+gui.apos(500, () => { gui.parar() })
+gui.iniciar()

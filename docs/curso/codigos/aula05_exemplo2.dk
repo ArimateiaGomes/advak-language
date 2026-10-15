@@ -1,0 +1,7 @@
+seja pontos = 10
+pontos += 5       // o mesmo que: pontos = pontos + 5
+pontos -= 3       // pontos = pontos - 3
+pontos *= 2       // pontos = pontos * 2
+imprimir(pontos)
+pontos++          // soma 1
+imprimir(pontos)

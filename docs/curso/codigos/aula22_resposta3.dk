@@ -1,0 +1,28 @@
+seja jan = gui.janela("Conversor", 340, 220)
+gui.label(jan, "Graus Celsius:")
+seja campo = gui.campo(jan, "ex: 100", largura=15)
+seja saida = gui.label(jan, "")
+seja botao = gui.botao(jan, "Converter", (x) => {
+    seja texto_digitado = campo.valor()
+    se (!e_numero(texto_digitado)) {
+        saida.texto("Digite um número.")
+        retornar
+    }
+    seja c = numero(texto_digitado)
+    saida.texto(`${c} °C = ${c * 9 / 5 + 32} °F`)
+})
+
+gui.apos(300, () => {
+    campo.definir("abc")
+    botao.invoke()
+})
+gui.apos(700, () => {
+    imprimir("Com texto:", saida.cget("text"))
+    campo.definir("100")
+    botao.invoke()
+})
+gui.apos(1100, () => {
+    imprimir("Com número:", saida.cget("text"))
+    gui.parar()
+})
+gui.iniciar()

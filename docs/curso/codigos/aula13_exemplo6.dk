@@ -1,0 +1,7 @@
+seja dobro = (x) => x * 2
+seja somar10 = (x) => x + 10
+imprimir(3 |> dobro |> somar10)         // (3 * 2) + 10
+
+seja so_pares = (lista) => lista.filtrar((n) => n % 2 == 0)
+seja soma_total = (lista) => lista.reduzir((a, n) => a + n, 0)
+imprimir([1, 2, 3, 4, 5, 6] |> so_pares |> soma_total)   // 2 + 4 + 6

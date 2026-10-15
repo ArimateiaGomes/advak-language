@@ -1,0 +1,4 @@
+seja precos = [100, 250, 80, 40]
+seja final = precos.mapear((p) => p > 90 ? p * 0.9 : p)    // desconto só nos maiores que 90
+imprimir(final)
+imprimir("Total:", final.reduzir((a, p) => a + p, 0))

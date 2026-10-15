@@ -1,0 +1,7 @@
+Arquivo.escrever("aula16_num.txt", "10\n20\n30\n")
+seja soma = 0
+para (linha em Arquivo.ler_linhas("aula16_num.txt")) {
+    soma = soma + numero(linha)
+}
+imprimir("Soma:", soma)
+Arquivo.apagar("aula16_num.txt")

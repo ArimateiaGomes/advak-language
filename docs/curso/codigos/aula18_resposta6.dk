@@ -1,0 +1,18 @@
+classe Funcionario {
+    construtor(nome, salario) {
+        isso.nome = nome
+        isso.salario = salario
+    }
+}
+classe Vendedor herda Funcionario {
+    construtor(nome, salario, comissao) {
+        super(nome, salario)
+        isso.comissao = comissao
+    }
+    ganho_total(vendas) {
+        retornar isso.salario + vendas * isso.comissao / 100
+    }
+}
+
+seja v = novo Vendedor("Davi", 2000, 5)
+imprimir(`${v.nome} ganhou R$ ${v.ganho_total(10000)}`)

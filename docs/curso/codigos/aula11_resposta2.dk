@@ -1,0 +1,4 @@
+seja carro = {modelo: "Fusca", ano: 1970}
+carro.ano = 1972
+carro.cor = "azul"
+imprimir(carro)

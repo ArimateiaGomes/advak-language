@@ -1,0 +1,3 @@
+// Meu primeiro programa
+// Tudo depois de duas barras (//) é comentário: o computador ignora, é só uma nota para você.
+imprimir("Olá, mundo!")   // escreve o texto entre aspas na tela

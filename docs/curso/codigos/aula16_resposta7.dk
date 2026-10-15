@@ -1,0 +1,5 @@
+tentar {
+    Arquivo.ler("aula16_sumiu.txt")
+} capturar (e) {
+    imprimir("Arquivo não encontrado.")
+}

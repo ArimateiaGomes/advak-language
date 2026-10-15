@@ -1,0 +1,5 @@
+seja pessoa = {"nome": "Ana", "idade": 17, "cidade": "Recife"}
+Arquivo.escrever_json("aula16_pessoa.json", pessoa)
+seja lida = Arquivo.ler_json("aula16_pessoa.json")
+imprimir(`${lida.nome} mora em ${lida.cidade}`)
+Arquivo.apagar("aula16_pessoa.json")

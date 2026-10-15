@@ -1,0 +1,5 @@
+seja data = entrada("Data (dia/mes/ano): ")
+seja partes = data.dividir("/")
+imprimir("Dia:", partes[0])
+imprimir("Mês:", partes[1])
+imprimir("Ano:", partes[2])

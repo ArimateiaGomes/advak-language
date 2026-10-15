@@ -1,0 +1,9 @@
+seja a = numero(entrada("Primeiro número: "))
+seja b = numero(entrada("Segundo número: "))
+se (a > b) {
+    imprimir("O maior é", a)
+} senão se (b > a) {
+    imprimir("O maior é", b)
+} senão {
+    imprimir("São iguais")
+}

@@ -1,0 +1,5 @@
+importar { com_desconto } de "aula19_loja.dk"
+
+exportar função preco_promocional(preco) {
+    retornar com_desconto(preco, 10)
+}

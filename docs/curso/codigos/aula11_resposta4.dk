@@ -1,0 +1,4 @@
+seja nome = entrada("Nome: ")
+seja idade = numero(entrada("Idade: "))
+seja pessoa = {nome: nome, idade: idade}
+imprimir(pessoa)

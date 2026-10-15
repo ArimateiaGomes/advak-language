@@ -1,0 +1,27 @@
+importar { abrir, cadastrar, listar, excluir } de "aula24_repositorio.dk"
+
+seja arquivo = "aula24_api.db"
+se (Arquivo.existe(arquivo)) {
+    Arquivo.apagar(arquivo)
+}
+seja db = abrir(arquivo)
+
+servidor.obter("/contatos", (req) => {
+    retornar resposta_json(listar(db))
+})
+
+servidor.publicar("/contatos", (req) => {
+    se (req.dados == nulo) {
+        retornar resposta_json({erro: "envie os dados em JSON"}, 400)
+    }
+    seja resposta = nulo                                           // guardamos a resposta e devolvemos fora do tentar
+    tentar {
+        seja novo = cadastrar(db, req.dados.nome ?? "", texto(req.dados.telefone ?? ""), req.dados.cidade ?? "")
+        resposta = resposta_json(novo, 201)
+    } capturar (e) {
+        resposta = resposta_json({erro: e}, 400)
+    }
+    retornar resposta
+})
+
+servidor.iniciar(8841, falso)

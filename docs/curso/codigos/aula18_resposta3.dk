@@ -1,0 +1,14 @@
+classe Pessoa {
+    construtor(nome) {
+        isso.nome = nome
+    }
+}
+classe Aluno herda Pessoa {
+    construtor(nome, turma) {
+        super(nome)
+        isso.turma = turma
+    }
+}
+
+seja a = novo Aluno("Ana", "3º A")
+imprimir(a.nome, a.turma)

@@ -1,0 +1,4 @@
+função somar(a, b) {
+    seja resultado = a + b
+}
+imprimir(somar(2, 3))

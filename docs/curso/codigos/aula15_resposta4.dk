@@ -1,0 +1,14 @@
+função dividir(a, b) {
+    se (b == 0) {
+        lançar "divisão por zero"
+    }
+    retornar a / b
+}
+
+tentar {
+    imprimir(dividir(10, 0))
+} capturar (e) {
+    imprimir("Erro:", e)
+} finalmente {
+    imprimir("Obrigado por usar o programa!")
+}

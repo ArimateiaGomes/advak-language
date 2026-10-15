@@ -1,0 +1,8 @@
+seja original = [3, 7, 3, 9, 7, 3]
+seja sem_repetidos = []
+para (n em original) {
+    se (nao sem_repetidos.contem(n)) {   // só adiciona se ainda não está lá
+        sem_repetidos.adicionar(n)
+    }
+}
+imprimir(sem_repetidos)

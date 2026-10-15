@@ -1,0 +1,20 @@
+importar { abrir, cadastrar } de "aula24_repositorio.dk"
+
+seja arquivo = "aula24_resposta4.db"
+se (Arquivo.existe(arquivo)) {
+    Arquivo.apagar(arquivo)
+}
+seja db = abrir(arquivo)
+cadastrar(db, "Ana Souza", "81999990000", "Recife")
+cadastrar(db, "Bruno Lima", "84988887777", "Natal")
+cadastrar(db, "Mariana Souza", "81977776666", "Recife")
+
+função buscar_nome(banco_aberto, trecho) {
+    retornar banco_aberto.buscar("contatos").onde("nome LIKE %s", "%" + trecho + "%").ordenar("nome").executar()
+}
+
+para (c em buscar_nome(db, "Souza")) {
+    imprimir(c.nome)
+}
+db.fechar()
+Arquivo.apagar(arquivo)

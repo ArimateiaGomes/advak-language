@@ -1,0 +1,15 @@
+seja arquivo = "aula16_visitas.txt"
+
+função visitar() {
+    seja n = 0
+    se (Arquivo.existe(arquivo)) {
+        n = inteiro(Arquivo.ler(arquivo))
+    }
+    n = n + 1
+    Arquivo.escrever(arquivo, texto(n))
+    imprimir(`Visita número ${n}`)
+}
+
+visitar()
+visitar()
+Arquivo.apagar(arquivo)

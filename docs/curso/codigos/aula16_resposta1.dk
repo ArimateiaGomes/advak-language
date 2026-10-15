@@ -1,0 +1,4 @@
+seja nome = "aula16_frutas.txt"
+Arquivo.escrever(nome, "maçã\nbanana\nuva\n")
+imprimir(Arquivo.ler(nome))
+Arquivo.apagar(nome)

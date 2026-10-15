@@ -1,0 +1,32 @@
+// Primeiro os testes...
+testar("1 fica 1", () => {
+    afirmar_igual(fizzbuzz(1), 1)
+})
+testar("3 é Fizz", () => {
+    afirmar_igual(fizzbuzz(3), "Fizz")
+})
+testar("5 é Buzz", () => {
+    afirmar_igual(fizzbuzz(5), "Buzz")
+})
+testar("15 é FizzBuzz", () => {
+    afirmar_igual(fizzbuzz(15), "FizzBuzz")
+})
+testar("7 fica 7", () => {
+    afirmar_igual(fizzbuzz(7), 7)
+})
+
+// ...depois a função
+função fizzbuzz(n) {
+    se (n % 15 == 0) {
+        retornar "FizzBuzz"
+    }
+    se (n % 3 == 0) {
+        retornar "Fizz"
+    }
+    se (n % 5 == 0) {
+        retornar "Buzz"
+    }
+    retornar n
+}
+
+resumo_testes()

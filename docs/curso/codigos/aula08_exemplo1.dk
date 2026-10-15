@@ -1,0 +1,6 @@
+seja contador = 1                     // começa em 1
+enquanto (contador <= 3) {            // enquanto contador for menor ou igual a 3
+    imprimir("Volta número", contador)
+    contador = contador + 1           // MUITO importante: muda o valor, senão o laço nunca termina
+}
+imprimir("Acabou!")

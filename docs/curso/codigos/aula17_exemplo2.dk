@@ -1,0 +1,22 @@
+classe Pessoa {
+    construtor(nome, idade) {
+        isso.nome = nome
+        isso.idade = idade
+    }
+
+    fazer_aniversario() {
+        isso.idade = isso.idade + 1
+    }
+
+    descricao() {
+        retornar `${isso.nome} (${isso.idade})`     // métodos também devolvem valores
+    }
+}
+
+seja p = novo Pessoa("Ana", 17)
+imprimir(p.descricao())
+p.fazer_aniversario()
+imprimir(p.descricao())
+p.idade = 30                                          // mudança direta
+imprimir(p.idade)
+imprimir(tipo(p))

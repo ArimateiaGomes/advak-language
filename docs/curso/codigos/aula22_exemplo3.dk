@@ -1,0 +1,50 @@
+seja jan = gui.janela("Calculadora de IMC", 380, 300)
+
+gui.label(jan, "Calculadora de IMC", negrito=verdadeiro)
+gui.label(jan, "Peso (kg):")
+seja campo_peso = gui.campo(jan, "ex: 70", largura=15)
+gui.label(jan, "Altura (m):")
+seja campo_altura = gui.campo(jan, "ex: 1.75", largura=15)
+seja resultado = gui.label(jan, "")
+
+função calcular() {
+    seja peso_texto = campo_peso.valor()
+    seja altura_texto = campo_altura.valor()
+    se (!e_numero(peso_texto) ou !e_numero(altura_texto)) {      // valida antes de converter
+        resultado.texto("Digite só números.")
+        retornar
+    }
+    seja peso = numero(peso_texto)
+    seja altura = numero(altura_texto)
+    se (altura <= 0) {
+        resultado.texto("A altura deve ser maior que zero.")
+        retornar
+    }
+    seja imc = peso / (altura * altura)
+    resultado.texto(`Seu IMC é ${arred(imc, 1)}`)
+}
+
+seja botao = gui.botao(jan, "Calcular", (x) => { calcular() }, estilo="sucesso")
+
+// --- Só para o exemplo: três tentativas ---
+gui.apos(300, () => {
+    campo_peso.definir("abc")
+    campo_altura.definir("1.75")
+    botao.invoke()
+})
+gui.apos(700, () => {
+    imprimir("1ª tentativa:", resultado.cget("text"))
+    campo_peso.definir("70")
+    botao.invoke()
+})
+gui.apos(1100, () => {
+    imprimir("2ª tentativa:", resultado.cget("text"))
+    campo_altura.definir("0")
+    botao.invoke()
+})
+gui.apos(1500, () => {
+    imprimir("3ª tentativa:", resultado.cget("text"))
+    gui.parar()
+})
+
+gui.iniciar()

@@ -1,0 +1,18 @@
+função multiplos_de_3(ate) {
+    seja lista = []
+    para (n em 1..ate + 1) {
+        se (n % 3 == 0) {
+            lista.adicionar(n)
+        }
+    }
+    retornar lista
+}
+
+testar("até 10", () => {
+    seja m = multiplos_de_3(10)
+    afirmar_contem(m, 3)
+    afirmar_contem(m, 9)
+    afirmar_igual(m.tamanho, 3)
+})
+
+resumo_testes()

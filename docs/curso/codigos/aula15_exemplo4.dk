@@ -1,0 +1,26 @@
+seja lista = [10, 20, 30]
+
+tentar {
+    imprimir(lista[10])               // posição que não existe
+} capturar (e) {
+    imprimir("1:", e)
+}
+
+tentar {
+    imprimir(naoexiste)               // variável que ninguém criou
+} capturar (e) {
+    imprimir("2:", e)
+}
+
+tentar {
+    imprimir("a" - 1)                 // não se subtrai de um texto
+} capturar (e) {
+    imprimir("3:", e)
+}
+
+seja pessoa = nulo
+tentar {
+    imprimir(pessoa.nome)             // nulo não tem "nome"
+} capturar (e) {
+    imprimir("4:", e)
+}

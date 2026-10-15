@@ -1,0 +1,10 @@
+seja palavras = ["sol", "lua", "sol", "mar", "sol", "lua"]
+seja contagem = {}
+para (p em palavras) {
+    se (contagem.tem(p)) {
+        contagem[p] = contagem[p] + 1     // já apareceu: soma 1
+    } senão {
+        contagem[p] = 1                   // primeira vez
+    }
+}
+imprimir(contagem)

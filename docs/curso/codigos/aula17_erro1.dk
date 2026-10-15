@@ -1,0 +1,10 @@
+classe Pessoa {
+    construtor(nome) {
+        nome = nome                      // errado: não guardou em lugar nenhum do objeto
+    }
+    mostrar() {
+        imprimir(isso.nome)
+    }
+}
+seja p = novo Pessoa("Ana")
+p.mostrar()

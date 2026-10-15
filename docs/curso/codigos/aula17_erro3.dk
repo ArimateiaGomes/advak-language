@@ -1,0 +1,7 @@
+classe Gato {
+    miar() {
+        imprimir("miau")
+    }
+}
+seja g = novo Gato()
+g.latir()

@@ -1,0 +1,16 @@
+importar { abrir, cadastrar, listar } de "aula24_repositorio.dk"
+
+seja arquivo = "aula24_resposta1.db"
+se (Arquivo.existe(arquivo)) {
+    Arquivo.apagar(arquivo)
+}
+seja db = abrir(arquivo)
+cadastrar(db, "Ana", "81999990000", "Recife")
+cadastrar(db, "Bruno", "84988887777", "Natal")
+cadastrar(db, "Carla", "81977776666", "Recife")
+
+para (c em listar(db)) {
+    imprimir(`${c.nome} - ${c.telefone} (${c.cidade})`)
+}
+db.fechar()
+Arquivo.apagar(arquivo)

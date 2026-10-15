@@ -1,0 +1,15 @@
+função dobro(x) {
+    retornar x * 2
+}
+
+testar("dobro de 3 é 6", () => {
+    afirmar_igual(dobro(3), 6)
+})
+
+testar("dobro de zero é zero", () => {
+    afirmar_igual(dobro(0), 0)
+})
+
+testar("dobro de negativo", () => {
+    afirmar_igual(dobro(-5), -10)
+})

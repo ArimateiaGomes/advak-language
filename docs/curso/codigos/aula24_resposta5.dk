@@ -1,0 +1,21 @@
+importar { abrir, cadastrar, listar } de "aula24_repositorio.dk"
+
+seja arquivo = "aula24_resposta5.db"
+se (Arquivo.existe(arquivo)) {
+    Arquivo.apagar(arquivo)
+}
+seja db = abrir(arquivo)
+
+testar("telefone com 7 dígitos é recusado", () => {
+    afirmar_erro(() => cadastrar(db, "Ana", "1234567", "Recife"))
+    afirmar_igual(listar(db).tamanho, 0)
+})
+
+testar("telefone com 8 dígitos é aceito", () => {
+    cadastrar(db, "Ana", "12345678", "Recife")
+    afirmar_igual(listar(db).tamanho, 1)
+})
+
+resumo_testes()
+db.fechar()
+Arquivo.apagar(arquivo)

@@ -1,0 +1,13 @@
+seja nome = "aula16_recado.txt"
+imprimir("Existe antes?", Arquivo.existe(nome))
+
+Arquivo.escrever(nome, "Comprar pão\n")          // \n = pular linha
+Arquivo.acrescentar(nome, "Comprar leite\n")     // vai para o fim
+Arquivo.acrescentar(nome, "Estudar Advak\n")
+
+imprimir("Existe depois?", Arquivo.existe(nome))
+imprimir("Conteúdo:")
+imprimir(Arquivo.ler(nome))
+
+Arquivo.apagar(nome)                             // limpa a bagunça
+imprimir("Existe no fim?", Arquivo.existe(nome))

@@ -1,0 +1,9 @@
+para (n em 1..=10) {
+    se (n % 2 == 0) {
+        continuar                     // pula os pares
+    }
+    se (n > 7) {
+        quebrar                       // para tudo quando passar de 7
+    }
+    imprimir(n)
+}

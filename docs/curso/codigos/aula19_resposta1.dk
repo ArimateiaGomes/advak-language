@@ -1,0 +1,3 @@
+importar { celsius_para_fahrenheit } de "aula19_temperatura.dk"
+
+imprimir("100 °C =", celsius_para_fahrenheit(100), "°F")

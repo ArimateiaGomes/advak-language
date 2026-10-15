@@ -1,0 +1,43 @@
+importar { abrir, cadastrar, listar, da_cidade } de "aula24_repositorio.dk"
+
+seja arquivo = "aula24_resposta8.db"
+se (Arquivo.existe(arquivo)) {
+    Arquivo.apagar(arquivo)
+}
+seja db = abrir(arquivo)
+cadastrar(db, "Ana", "81999990000", "Recife")
+cadastrar(db, "Bruno", "84988887777", "Natal")
+cadastrar(db, "Carla", "81977776666", "Recife")
+
+seja jan = gui.janela("Agenda", 520, 400)
+seja tabela = gui.tabela(jan, ["ID", "Nome", "Telefone", "Cidade"], altura=8)
+
+função mostrar(contatos) {
+    tabela.limpar()
+    para (c em contatos) {
+        tabela.adicionar([c.id, c.nome, c.telefone, c.cidade])
+    }
+}
+
+seja faixa = gui.frame_horizontal(jan)
+seja botao_recife = gui.botao(faixa, "Só Recife", (x) => { mostrar(da_cidade(db, "Recife")) })
+seja botao_todos = gui.botao(faixa, "Todos", (x) => { mostrar(listar(db)) }, estilo="secundario")
+
+mostrar(listar(db))
+
+gui.apos(1500, () => {
+    imprimir("Linhas no começo:", lista(tabela.get_children()).tamanho)
+    botao_recife.invoke()
+})
+gui.apos(3000, () => {
+    imprimir("Depois de 'Só Recife':", lista(tabela.get_children()).tamanho)
+    botao_todos.invoke()
+})
+gui.apos(4500, () => {
+    imprimir("Depois de 'Todos':", lista(tabela.get_children()).tamanho)
+    gui.parar()
+})
+
+gui.iniciar()
+db.fechar()
+Arquivo.apagar(arquivo)

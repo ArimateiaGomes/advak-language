@@ -1,0 +1,9 @@
+seja nomes = ["Ana", "Bia"]
+nomes.adicionar("Caio")        // coloca no final
+nomes.inserir(0, "Zé")         // coloca na posição 0, empurrando os outros
+imprimir(nomes)
+nomes[1] = "Ana Maria"         // troca o item da posição 1
+imprimir(nomes)
+nomes.remover(0)               // remove o item da POSIÇÃO 0
+imprimir(nomes)
+imprimir(nomes.tamanho)

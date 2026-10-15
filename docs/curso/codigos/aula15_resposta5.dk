@@ -1,0 +1,7 @@
+seja itens = ["pão", "leite", "café", "açúcar", "sal"]
+seja posicao = inteiro(entrada("Posição (0 a 4): "))
+tentar {
+    imprimir("Item:", itens[posicao])
+} capturar (e) {
+    imprimir("Posição inválida.")
+}

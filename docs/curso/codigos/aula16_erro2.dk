@@ -1,0 +1,5 @@
+seja nome = "aula16_diario.txt"
+Arquivo.escrever(nome, "Segunda: estudei\n")
+Arquivo.escrever(nome, "Terça: estudei mais\n")      // substituiu a linha anterior!
+imprimir(Arquivo.ler(nome))
+Arquivo.apagar(nome)

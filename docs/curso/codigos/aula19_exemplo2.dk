@@ -1,0 +1,9 @@
+importar { dobro } de "aula19_matematica.dk"
+
+imprimir(dobro(10))
+
+tentar {
+    imprimir(segredo())                  // não foi importada
+} capturar (e) {
+    imprimir("Não deu:", e)
+}

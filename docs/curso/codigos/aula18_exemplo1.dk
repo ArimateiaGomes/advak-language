@@ -1,0 +1,31 @@
+classe Animal {
+    construtor(nome) {
+        isso.nome = nome
+    }
+    falar() {
+        imprimir(`${isso.nome} faz um som`)
+    }
+    apresentar() {
+        imprimir(`Sou ${isso.nome}`)
+    }
+}
+
+classe Cachorro herda Animal {            // Cachorro recebe tudo de Animal
+    falar() {                             // e troca o método falar
+        imprimir(`${isso.nome} diz: au au`)
+    }
+}
+
+classe Gato herda Animal {
+    falar() {
+        imprimir(`${isso.nome} diz: miau`)
+    }
+}
+
+seja rex = novo Cachorro("Rex")
+seja mimi = novo Gato("Mimi")
+
+rex.falar()                               // versão do Cachorro
+mimi.falar()                              // versão do Gato
+rex.apresentar()                          // herdado: o Cachorro não escreveu esse método
+mimi.apresentar()

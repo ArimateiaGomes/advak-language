@@ -1,0 +1,7 @@
+imprimir(tipo(17))              // número (inteiro ou decimal)
+imprimir(tipo(3.5))             // número com vírgula: também é "numero"
+imprimir(tipo("Ana"))           // texto, sempre entre aspas
+imprimir(tipo(verdadeiro))      // booleano: só pode ser verdadeiro ou falso
+imprimir(tipo([1, 2, 3]))       // lista: vários valores em ordem
+imprimir(tipo({nome: "Ana"}))   // objeto (mapa): valores com nome
+imprimir(tipo(nulo))            // nulo: "nada", "vazio"

@@ -1,0 +1,56 @@
+importar { abrir, cadastrar, listar, excluir, da_cidade, validar } de "aula24_repositorio.dk"
+
+seja arquivo = "aula24_testes.db"
+se (Arquivo.existe(arquivo)) {
+    Arquivo.apagar(arquivo)
+}
+seja db = abrir(arquivo)
+
+testar("cadastrar grava e devolve o contato com id", () => {
+    seja c = cadastrar(db, "Ana", "81999990000", "Recife")
+    afirmar_igual(c.nome, "Ana")
+    afirmar_igual(c.id, 1)
+})
+
+testar("nome com espaços sobrando é limpo", () => {
+    seja c = cadastrar(db, "   Bruno   ", "84988887777", "Natal")
+    afirmar_igual(c.nome, "Bruno")
+})
+
+testar("listar traz em ordem de nome", () => {
+    cadastrar(db, "Carla", "81977776666", "Recife")
+    seja nomes = listar(db).mapear((c) => c.nome)
+    afirmar_igual(nomes, ["Ana", "Bruno", "Carla"])
+})
+
+testar("filtrar por cidade", () => {
+    afirmar_igual(da_cidade(db, "Recife").tamanho, 2)
+    afirmar_igual(da_cidade(db, "Natal").tamanho, 1)
+    afirmar_igual(da_cidade(db, "Paris").tamanho, 0)
+})
+
+testar("nome vazio é recusado", () => {
+    afirmar_erro(() => validar("", "81999990000"))
+    afirmar_erro(() => validar("   ", "81999990000"))
+})
+
+testar("telefone inválido é recusado", () => {
+    afirmar_erro(() => validar("Dani", "abc"))
+    afirmar_erro(() => validar("Dani", "1234"))
+})
+
+testar("contato inválido não chega ao banco", () => {
+    seja antes = listar(db).tamanho
+    afirmar_erro(() => cadastrar(db, "", "81999990000", "Recife"))
+    afirmar_igual(listar(db).tamanho, antes)
+})
+
+testar("excluir apaga só o contato pedido", () => {
+    afirmar_igual(excluir(db, 2), 1)
+    afirmar_igual(listar(db).tamanho, 2)
+    afirmar_igual(excluir(db, 999), 0)
+})
+
+resumo_testes()
+db.fechar()
+Arquivo.apagar(arquivo)

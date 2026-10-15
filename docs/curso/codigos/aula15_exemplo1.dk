@@ -1,0 +1,9 @@
+imprimir("Antes")
+tentar {
+    imprimir("Dentro do tentar")
+    lançar "algo deu errado"          // cria um erro; o resto do bloco é pulado
+    imprimir("Esta linha nunca aparece")
+} capturar (e) {
+    imprimir("Plano B:", e)           // e guarda a mensagem
+}
+imprimir("Depois: o programa continuou")

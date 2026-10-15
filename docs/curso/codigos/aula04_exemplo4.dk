@@ -1,0 +1,3 @@
+seja nome = entrada("Nome: ")
+seja idade = inteiro(entrada("Idade: "))
+imprimir(`${nome} tem ${idade} anos e terá ${idade + 1} no ano que vem.`)

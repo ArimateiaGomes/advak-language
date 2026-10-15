@@ -1,0 +1,26 @@
+função situacao(media) {
+    se (media >= 7) {
+        retornar "aprovado"
+    }
+    se (media >= 5) {
+        retornar "recuperação"
+    }
+    retornar "reprovado"
+}
+
+testar("7 aprova", () => {
+    afirmar_igual(situacao(7), "aprovado")
+})
+testar("10 aprova", () => {
+    afirmar_igual(situacao(10), "aprovado")
+})
+testar("entre 5 e 7 é recuperação", () => {
+    afirmar_igual(situacao(6.9), "recuperação")
+    afirmar_igual(situacao(5), "recuperação")
+})
+testar("abaixo de 5 reprova", () => {
+    afirmar_igual(situacao(4.9), "reprovado")
+    afirmar_igual(situacao(0), "reprovado")
+})
+
+resumo_testes()

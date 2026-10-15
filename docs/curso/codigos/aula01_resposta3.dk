@@ -1,0 +1,4 @@
+imprimir("1) Ferva a água")
+imprimir("2) Coloque o pó no filtro")
+imprimir("3) Despeje a água quente devagar")
+imprimir("4) Adoce a gosto e sirva")

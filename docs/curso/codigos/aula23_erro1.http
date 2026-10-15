@@ -1,0 +1,3 @@
+GET /oi
+POST /ola {}
+GET /ola

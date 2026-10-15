@@ -1,0 +1,8 @@
+seja n = inteiro(entrada("Fatorial de: "))
+seja resultado = 1
+seja i = n
+enquanto (i > 1) {
+    resultado = resultado * i
+    i = i - 1
+}
+imprimir(n, "! =", resultado)

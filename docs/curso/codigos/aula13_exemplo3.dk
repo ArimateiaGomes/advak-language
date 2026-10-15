@@ -1,0 +1,6 @@
+seja precos = [10, 20, 30]
+seja com_desconto = precos.mapear((p) => p * 0.9)     // 10% de desconto
+imprimir(com_desconto)
+
+seja nomes = ["ana", "bia"]
+imprimir(nomes.mapear((n) => n.maiusculo()))

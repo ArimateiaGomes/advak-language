@@ -1,0 +1,7 @@
+seja notas = [7, 3, 9, 5]
+imprimir(notas.contem(9))        // verdadeiro: o 9 está na lista
+imprimir(notas.contem(10))       // falso
+imprimir(notas.indice_de(9))     // em que posição está o 9? posição 2
+notas.ordenar()                  // coloca em ordem crescente (muda a própria lista)
+imprimir(notas)
+imprimir(notas.min(), notas.max(), notas.soma(), notas.media())

@@ -1,0 +1,15 @@
+função eh_maior_de_idade(idade) {
+    retornar idade >= 18
+}
+
+testar("17 anos", () => {
+    afirmar_falso(eh_maior_de_idade(17))
+})
+testar("18 anos", () => {
+    afirmar_verdadeiro(eh_maior_de_idade(18))
+})
+testar("19 anos", () => {
+    afirmar_verdadeiro(eh_maior_de_idade(19))
+})
+
+resumo_testes()

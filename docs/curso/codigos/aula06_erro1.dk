@@ -1,0 +1,3 @@
+seja x = 10
+se (x > 5) {
+    imprimir("maior")

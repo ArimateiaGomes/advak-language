@@ -1,0 +1,16 @@
+seja jan = gui.janela("Pessoas", 340, 240)
+seja tabela = gui.tabela(jan, ["Nome", "Idade"], altura=4)
+tabela.adicionar(["Ana", 17])
+tabela.adicionar(["Bruno", 22])
+tabela.adicionar(["Carla", 30])
+
+gui.apos(300, () => {
+    seja linhas = lista(tabela.get_children())
+    tabela.selection_set(linhas[2])
+})
+gui.apos(800, () => {
+    seja p = tabela.selecionado()
+    imprimir(`Selecionada: ${p["Nome"]}, ${p["Idade"]} anos`)
+    gui.parar()
+})
+gui.iniciar()

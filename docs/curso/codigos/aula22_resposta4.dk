@@ -1,0 +1,18 @@
+seja jan = gui.janela("Somar", 340, 240)
+seja campo_a = gui.campo(jan, "a", largura=10)
+seja campo_b = gui.campo(jan, "b", largura=10)
+seja saida = gui.label(jan, "")
+seja botao = gui.botao(jan, "Somar", (x) => {
+    saida.texto(`Soma: ${numero(campo_a.valor()) + numero(campo_b.valor())}`)
+})
+
+gui.apos(300, () => {
+    campo_a.definir("12")
+    campo_b.definir("30")
+    botao.invoke()
+})
+gui.apos(800, () => {
+    imprimir(saida.cget("text"))
+    gui.parar()
+})
+gui.iniciar()

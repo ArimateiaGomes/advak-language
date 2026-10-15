@@ -1,0 +1,3 @@
+seja saldo = 100
+saldo = saldo + 50
+imprimir("Novo saldo:", saldo)

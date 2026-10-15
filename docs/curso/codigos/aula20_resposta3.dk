@@ -1,0 +1,18 @@
+função maior(a, b) {
+    se (a >= b) {
+        retornar a
+    }
+    retornar b
+}
+
+testar("a maior", () => {
+    afirmar_igual(maior(5, 2), 5)
+})
+testar("b maior", () => {
+    afirmar_igual(maior(2, 5), 5)
+})
+testar("iguais", () => {
+    afirmar_igual(maior(4, 4), 4)
+})
+
+resumo_testes()

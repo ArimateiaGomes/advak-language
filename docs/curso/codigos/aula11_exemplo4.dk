@@ -1,0 +1,9 @@
+seja turma = [
+    {nome: "Ana", nota: 8},
+    {nome: "Bia", nota: 5.5},
+    {nome: "Caio", nota: 9}
+]
+para (aluno em turma) {
+    imprimir(aluno.nome, "tirou", aluno.nota)
+}
+imprimir("Primeiro da lista:", turma[0].nome)

@@ -1,0 +1,3 @@
+GET /alunos
+GET /alunos/2
+GET /alunos/99

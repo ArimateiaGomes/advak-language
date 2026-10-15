@@ -1,0 +1,24 @@
+classe Lampada {
+    construtor() {
+        isso.ligada = falso
+    }
+    ligar() {
+        isso.ligada = verdadeiro
+    }
+    desligar() {
+        isso.ligada = falso
+    }
+    estado() {
+        se (isso.ligada) {
+            retornar "ligada"
+        }
+        retornar "desligada"
+    }
+}
+
+seja l = novo Lampada()
+imprimir(l.estado())
+l.ligar()
+imprimir(l.estado())
+l.desligar()
+imprimir(l.estado())

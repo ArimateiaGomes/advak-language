@@ -1,0 +1,16 @@
+seja jan = gui.janela("Repetir", 340, 200)
+seja campo = gui.campo(jan, "Escreva algo", largura=25)
+seja saida = gui.label(jan, "")
+seja botao = gui.botao(jan, "Repetir", (x) => {
+    saida.texto(campo.valor().maiusculo())
+})
+
+gui.apos(300, () => {
+    campo.definir("gosto de programar")
+    botao.invoke()
+})
+gui.apos(800, () => {
+    imprimir("Janela mostra:", saida.cget("text"))
+    gui.parar()
+})
+gui.iniciar()

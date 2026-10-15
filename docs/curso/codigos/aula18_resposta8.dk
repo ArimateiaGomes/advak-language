@@ -1,0 +1,19 @@
+classe Animal {
+    tipo_do_bicho() {
+        retornar "animal"
+    }
+}
+classe Mamifero herda Animal {
+    tipo_do_bicho() {
+        retornar super.tipo_do_bicho() + " > mamífero"
+    }
+}
+classe Cachorro herda Mamifero {
+    tipo_do_bicho() {
+        retornar super.tipo_do_bicho() + " > cachorro"
+    }
+}
+
+imprimir(novo Animal().tipo_do_bicho())
+imprimir(novo Mamifero().tipo_do_bicho())
+imprimir(novo Cachorro().tipo_do_bicho())

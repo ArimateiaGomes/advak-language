@@ -1,0 +1,26 @@
+classe Animal {
+    construtor(nome) {
+        isso.nome = nome
+    }
+    apresentar() {
+        imprimir(`Sou ${isso.nome}`)
+    }
+}
+
+classe Cachorro herda Animal {
+    construtor(nome, raca) {
+        super(nome)
+        isso.raca = raca
+    }
+    falar() {
+        imprimir(`${isso.nome} diz: au au`)
+    }
+}
+
+classe Filhote herda Cachorro { }         // não escreve nada: herda tudo
+
+seja bolt = novo Filhote("Bolt", "pug")
+bolt.falar()                              // vem de Cachorro
+bolt.apresentar()                         // vem de Animal
+imprimir(bolt.raca)
+imprimir(bolt instanceof Animal)

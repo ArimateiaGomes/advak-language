@@ -1,0 +1,2 @@
+seja palavra = entrada("Palavra: ")
+imprimir(`A palavra tem ${palavra.tamanho} letras.`)

@@ -1,0 +1,93 @@
+importar { abrir, cadastrar, listar, excluir } de "aula24_repositorio.dk"
+
+seja arquivo = "aula24_app.db"
+se (Arquivo.existe(arquivo)) {
+    Arquivo.apagar(arquivo)
+}
+seja db = abrir(arquivo)
+
+seja jan = gui.janela("Agenda de contatos", 560, 520)
+jan.centralizar()
+gui.label(jan, "Agenda de contatos", negrito=verdadeiro, tamanho=16)
+
+seja campo_nome = gui.campo(jan, "Nome", largura=30)
+seja campo_telefone = gui.campo(jan, "Telefone (só números)", largura=30)
+seja campo_cidade = gui.campo(jan, "Cidade", largura=30)
+seja status = gui.label(jan, "Pronto.")
+seja tabela = gui.tabela(jan, ["ID", "Nome", "Telefone", "Cidade"], altura=8)
+
+função atualizar_tela() {
+    tabela.limpar()
+    seja contatos = listar(db)
+    para (c em contatos) {
+        tabela.adicionar([c.id, c.nome, c.telefone, c.cidade])
+    }
+    status.texto(`${contatos.tamanho} contato(s) na agenda.`)
+}
+
+função ao_cadastrar() {
+    tentar {
+        cadastrar(db, campo_nome.valor(), campo_telefone.valor(), campo_cidade.valor())
+        campo_nome.limpar()
+        campo_telefone.limpar()
+        campo_cidade.limpar()
+        atualizar_tela()
+    } capturar (e) {
+        status.texto(`Não foi possível cadastrar: ${e}`)
+    }
+}
+
+função ao_excluir() {
+    seja escolhido = tabela.selecionado()
+    se (escolhido == nulo) {
+        status.texto("Selecione um contato na tabela.")
+        retornar
+    }
+    excluir(db, inteiro(escolhido["ID"]))
+    atualizar_tela()
+}
+
+seja faixa = gui.frame_horizontal(jan)
+seja botao_cadastrar = gui.botao(faixa, "Cadastrar", (x) => { ao_cadastrar() }, estilo="sucesso")
+seja botao_excluir = gui.botao(faixa, "Excluir selecionado", (x) => { ao_excluir() }, estilo="perigo")
+
+atualizar_tela()
+
+// --- Só para o exemplo: uma pessoa usando a janela, um passo a cada 1,5 segundo ---
+gui.apos(1500, () => {
+    campo_nome.definir("Ana Souza")
+    campo_telefone.definir("81999990000")
+    campo_cidade.definir("Recife")
+    botao_cadastrar.invoke()
+})
+gui.apos(3000, () => {
+    imprimir("1) Cadastrou a Ana:", status.cget("text"))
+    campo_nome.definir("Bruno")
+    campo_telefone.definir("123")
+    botao_cadastrar.invoke()
+})
+gui.apos(4500, () => {
+    imprimir("2) Telefone curto demais:", status.cget("text"))
+    campo_telefone.definir("84988887777")
+    campo_cidade.definir("Natal")
+    botao_cadastrar.invoke()
+})
+gui.apos(6000, () => {
+    imprimir("3) Cadastrou o Bruno:", status.cget("text"))
+    botao_excluir.invoke()
+})
+gui.apos(7500, () => {
+    imprimir("4) Excluir sem escolher:", status.cget("text"))
+    tabela.selection_set(lista(tabela.get_children())[0])
+    botao_excluir.invoke()
+})
+gui.apos(9000, () => {
+    imprimir("5) Excluiu a primeira linha:", status.cget("text"))
+    imprimir("Ficou no banco:", listar(db))
+    gui.parar()
+})
+
+gui.iniciar()
+db.fechar()
+Arquivo.apagar(arquivo)
+imprimir("Programa encerrado.")

@@ -1,0 +1,7 @@
+seja nome = "aula16_diario4.txt"
+Arquivo.escrever(nome, "")
+Arquivo.acrescentar(nome, "Dia 1\n")
+Arquivo.acrescentar(nome, "Dia 2\n")
+Arquivo.acrescentar(nome, "Dia 3\n")
+imprimir("Linhas:", Arquivo.ler_linhas(nome).tamanho)
+Arquivo.apagar(nome)

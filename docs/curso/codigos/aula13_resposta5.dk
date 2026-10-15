@@ -1,0 +1,2 @@
+seja nomes = ["ana", "bia", "caio"]
+imprimir(nomes.mapear((n) => n.maiusculo()))

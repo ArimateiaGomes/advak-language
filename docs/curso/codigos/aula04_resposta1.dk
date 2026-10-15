@@ -1,0 +1,2 @@
+seja nome = entrada("Seu nome: ")
+imprimir("Bem-vindo, " + nome + "!")

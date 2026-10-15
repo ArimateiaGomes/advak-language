@@ -1,0 +1,4 @@
+seja notas = [4, 8, 6, 9, 3, 7]
+seja aprovados = notas.filtrar((n) => n >= 7)     // fica só quem tem nota >= 7
+imprimir(aprovados)
+imprimir(notas)                                    // a lista original não muda

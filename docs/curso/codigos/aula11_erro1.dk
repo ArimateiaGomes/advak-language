@@ -1,0 +1,2 @@
+seja aluno = {nome: "Ana"}
+imprimir(aluno[nome])

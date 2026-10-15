@@ -1,0 +1,7 @@
+fixo DESCONTO_MAXIMO = 30
+
+função valido(percentual) {
+    retornar percentual >= 0 e percentual <= DESCONTO_MAXIMO
+}
+
+exportar { DESCONTO_MAXIMO, valido }

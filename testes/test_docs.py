@@ -22,8 +22,8 @@ import advak_conectores as C                       # noqa: E402
 from advak_lexer import AdvakLexer                 # noqa: E402
 from advak_parser import Parser                    # noqa: E402
 
-# Arquivos que as próximas partes da documentação ainda vão criar (esvaziar quando existirem).
-PENDENTES = {"docs/curso/README.md", "docs/GUIA_PRATICO.md"}
+# Arquivos que as próximas partes da documentação ainda vão criar (vazio: todos já existem).
+PENDENTES = set()
 
 
 def ler(rel):

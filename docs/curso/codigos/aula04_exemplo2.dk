@@ -1,0 +1,4 @@
+seja a = entrada("Primeiro número: ")        // chega como texto
+seja b = entrada("Segundo número: ")          // chega como texto
+imprimir("Sem converter:", a + b)             // texto + texto = junta os dois (não soma!)
+imprimir("Convertendo:", numero(a) + numero(b))   // número + número = soma de verdade

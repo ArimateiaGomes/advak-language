@@ -1,0 +1,3 @@
+para (n em 1..=4) {
+    imprimir("*".repetir(n))
+}

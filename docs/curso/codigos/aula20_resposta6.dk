@@ -1,0 +1,21 @@
+função contar_vogais(texto) {
+    seja total = 0
+    para (letra em texto.minusculo()) {
+        se ("aeiou".contem(letra)) {
+            total = total + 1
+        }
+    }
+    retornar total
+}
+
+testar("banana", () => {
+    afirmar_igual(contar_vogais("banana"), 3)
+})
+testar("xyz", () => {
+    afirmar_igual(contar_vogais("xyz"), 0)
+})
+testar("maiúsculas", () => {
+    afirmar_igual(contar_vogais("AEIOU"), 5)
+})
+
+resumo_testes()

@@ -1,0 +1,23 @@
+classe Animal {
+    construtor(nome) {
+        isso.nome = nome
+    }
+    falar() {
+        imprimir(`${isso.nome} faz um som`)
+    }
+}
+
+classe Cachorro herda Animal {
+    construtor(nome, raca) {
+        super(nome)                       // a mãe guarda o nome
+        isso.raca = raca                  // a filha guarda o que é só dela
+    }
+    detalhes() {
+        super.falar()                     // chama o falar() da mãe
+        imprimir(`Raça: ${isso.raca}`)
+    }
+}
+
+seja rex = novo Cachorro("Rex", "vira-lata")
+rex.detalhes()
+imprimir(rex.nome, rex.raca)

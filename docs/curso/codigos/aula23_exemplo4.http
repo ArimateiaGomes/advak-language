@@ -1,0 +1,5 @@
+GET /tarefas
+POST /tarefas {"titulo": "Estudar Advak"}
+POST /tarefas {"titulo": "Fazer exercícios"}
+POST /tarefas {"descricao": "sem título"}
+GET /tarefas

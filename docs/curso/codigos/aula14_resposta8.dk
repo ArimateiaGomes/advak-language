@@ -1,0 +1,4 @@
+seja preco = numero(entrada("Preço: "))
+seja desconto = numero(entrada("Desconto (%): "))
+seja final = preco - preco * desconto / 100
+imprimir(`Preço final: ${final:moeda}`)

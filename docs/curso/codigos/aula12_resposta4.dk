@@ -1,0 +1,5 @@
+função e_par(n) {
+    retornar n % 2 == 0
+}
+imprimir(e_par(10))
+imprimir(e_par(7))

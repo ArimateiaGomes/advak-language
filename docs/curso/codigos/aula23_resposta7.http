@@ -1,0 +1,3 @@
+DELETE /produtos/1
+DELETE /produtos/1
+GET /produtos

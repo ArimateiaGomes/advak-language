@@ -1,0 +1,2 @@
+seja cores = ["azul", "verde"]
+imprimir(cores[2])

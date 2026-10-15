@@ -1,0 +1,3 @@
+POST /produtos {"nome": "Mochila", "preco": 120}
+POST /produtos {"nome": "Sem preço"}
+GET /produtos

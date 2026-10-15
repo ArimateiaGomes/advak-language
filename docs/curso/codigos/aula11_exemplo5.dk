@@ -1,0 +1,6 @@
+seja pessoa = {
+    nome: "Ana",
+    endereco: {rua: "Rua das Flores", numero: 42}
+}
+imprimir(pessoa.endereco.rua)       // entra no mapa de dentro, campo por campo
+imprimir(pessoa.endereco.numero)

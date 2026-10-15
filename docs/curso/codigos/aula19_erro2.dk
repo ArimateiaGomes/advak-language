@@ -1,0 +1,2 @@
+importar { dobro } de "aula19_matematicaa.dk"
+imprimir(dobro(2))

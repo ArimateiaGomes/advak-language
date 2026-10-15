@@ -1,0 +1,7 @@
+seja dia = numero(entrada("Dia da semana (1 a 7): "))
+combinar(dia) {                       // o valor que será comparado
+    caso 1: imprimir("Domingo")       // se dia == 1
+    caso 2: imprimir("Segunda")
+    caso 3: imprimir("Terça")
+    padrão: imprimir("Outro dia")     // se nenhum caso combinou
+}

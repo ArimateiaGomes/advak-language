@@ -1,0 +1,17 @@
+função media(a, b, c) {
+    retornar (a + b + c) / 3
+}
+função situacao(m) {
+    se (m >= 7) {
+        retornar "Aprovado"
+    }
+    se (m >= 5) {
+        retornar "Recuperação"
+    }
+    retornar "Reprovado"
+}
+seja n1 = numero(entrada("Nota 1: "))
+seja n2 = numero(entrada("Nota 2: "))
+seja n3 = numero(entrada("Nota 3: "))
+seja m = media(n1, n2, n3)
+imprimir("Média:", m, "-", situacao(m))

@@ -1,0 +1,15 @@
+classe Animal {
+    construtor(nome) {
+        isso.nome = nome
+    }
+}
+classe Cachorro herda Animal { }
+classe Gato herda Animal { }
+
+seja rex = novo Cachorro("Rex")
+imprimir("É Cachorro?", rex instanceof Cachorro)
+imprimir("É Animal?", rex instanceof Animal)
+imprimir("É Gato?", rex instanceof Gato)
+
+seja bicho = novo Animal("Bicho")
+imprimir("Um Animal qualquer é Cachorro?", bicho instanceof Cachorro)

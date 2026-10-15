@@ -1,0 +1,19 @@
+seja produtos = [
+    {id: 1, nome: "Caderno", preco: 20},
+    {id: 2, nome: "Caneta", preco: 3}
+]
+
+servidor.obter("/produtos", (req) => {
+    retornar resposta_json(produtos)
+})
+
+servidor.obter("/produtos/:id", (req) => {
+    seja id = inteiro(req.parametros.id)
+    seja achados = produtos.filtrar((p) => p.id == id)
+    se (achados.tamanho == 0) {
+        retornar resposta_json({erro: "produto não encontrado"}, 404)
+    }
+    retornar resposta_json(achados[0])
+})
+
+servidor.iniciar(8825, falso)

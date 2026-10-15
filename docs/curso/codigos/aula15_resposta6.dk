@@ -1,0 +1,17 @@
+seja pronto = falso
+enquanto (!pronto) {
+    seja digitado = entrada("Idade: ")
+    tentar {
+        se (!e_numero(digitado)) {
+            lançar "digite um número"
+        }
+        seja idade = inteiro(digitado)
+        se (idade < 0 ou idade > 120) {
+            lançar "idade fora do normal"
+        }
+        imprimir("Idade registrada:", idade)
+        pronto = verdadeiro
+    } capturar (e) {
+        imprimir("Inválido:", e)
+    }
+}

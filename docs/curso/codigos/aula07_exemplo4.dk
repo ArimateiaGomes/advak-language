@@ -1,0 +1,7 @@
+seja nota = numero(entrada("Nota: "))
+combinar(verdadeiro) {
+    caso nota >= 9: imprimir("Conceito A")
+    caso nota >= 7: imprimir("Conceito B")
+    caso nota >= 5: imprimir("Conceito C")
+    padrão:         imprimir("Conceito F")
+}

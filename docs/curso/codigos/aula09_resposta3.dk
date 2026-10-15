@@ -1,0 +1,5 @@
+seja soma = 0
+para (i em 1..=100) {
+    soma = soma + i
+}
+imprimir("Soma de 1 a 100:", soma)

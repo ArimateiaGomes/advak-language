@@ -1,0 +1,8 @@
+para (i em 1..4) {
+    tentar {
+        imprimir("volta", i)
+        quebrar
+    } capturar (e) {
+        imprimir("capturar rodou sem erro nenhum!")
+    }
+}

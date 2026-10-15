@@ -1,0 +1,14 @@
+seja nome = "aula16_notas.txt"
+Arquivo.escrever(nome, "8\n6.5\n9\n")
+
+seja linhas = Arquivo.ler_linhas(nome)
+imprimir("Linhas:", linhas)
+imprimir("Quantidade:", linhas.tamanho)
+
+seja soma = 0
+para (linha em linhas) {
+    soma = soma + numero(linha)       // cada linha chega como texto
+}
+imprimir("Média:", soma / linhas.tamanho)
+
+Arquivo.apagar(nome)

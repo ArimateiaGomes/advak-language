@@ -1,0 +1,6 @@
+seja senha = entrada("Digite a senha: ")
+enquanto (senha != "1234") {          // continua enquanto a senha estiver errada
+    imprimir("Senha incorreta.")
+    senha = entrada("Digite a senha: ")
+}
+imprimir("Bem-vindo!")

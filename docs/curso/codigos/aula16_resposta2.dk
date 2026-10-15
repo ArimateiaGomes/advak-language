@@ -1,0 +1,4 @@
+seja nome = entrada("Seu nome: ")
+Arquivo.escrever("aula16_ola.txt", `Olá, ${nome}!`)
+imprimir(Arquivo.ler("aula16_ola.txt"))
+Arquivo.apagar("aula16_ola.txt")

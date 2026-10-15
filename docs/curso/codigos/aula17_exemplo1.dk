@@ -1,0 +1,17 @@
+classe Pessoa {
+    construtor(nome, idade) {            // roda quando o objeto é criado
+        isso.nome = nome                 // isso = "este objeto"
+        isso.idade = idade
+    }
+
+    apresentar() {                       // um método: uma ação
+        imprimir(`Oi, sou ${isso.nome} e tenho ${isso.idade} anos`)
+    }
+}
+
+seja ana = novo Pessoa("Ana", 17)        // novo = fabrica um objeto
+seja bia = novo Pessoa("Bia", 20)
+
+ana.apresentar()
+bia.apresentar()
+imprimir(ana.nome, bia.nome)             // cada objeto tem os seus dados

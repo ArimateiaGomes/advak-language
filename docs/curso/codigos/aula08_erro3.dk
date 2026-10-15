@@ -1,0 +1,3 @@
+seja i = 0
+enquanto (i < 3)
+    imprimir(i)

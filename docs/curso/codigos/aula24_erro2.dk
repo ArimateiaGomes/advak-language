@@ -1,0 +1,2 @@
+importar { apagar_tudo } de "aula24_repositorio.dk"
+apagar_tudo()

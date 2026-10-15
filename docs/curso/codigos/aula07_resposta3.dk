@@ -1,0 +1,10 @@
+seja a = numero(entrada("Primeiro número: "))
+seja b = numero(entrada("Segundo número: "))
+seja op = entrada("Operação (+, -, *, /): ")
+combinar(op) {
+    caso "+": imprimir(a + b)
+    caso "-": imprimir(a - b)
+    caso "*": imprimir(a * b)
+    caso "/": imprimir(a / b)
+    padrão: imprimir("Operação inválida")
+}

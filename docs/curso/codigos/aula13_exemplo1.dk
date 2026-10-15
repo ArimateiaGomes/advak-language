@@ -1,0 +1,4 @@
+seja dobro = (x) => x * 2          // recebe x e devolve x * 2
+seja somar = (a, b) => a + b       // dois parâmetros
+imprimir(dobro(5))
+imprimir(somar(3, 4))

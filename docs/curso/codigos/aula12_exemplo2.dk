@@ -1,0 +1,6 @@
+função saudar(nome) {                  // "nome" é o parâmetro
+    imprimir("Olá,", nome)
+}
+
+saudar("Ana")                          // "Ana" é o argumento
+saudar("Bia")

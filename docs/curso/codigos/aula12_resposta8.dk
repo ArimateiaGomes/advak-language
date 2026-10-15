@@ -1,0 +1,16 @@
+função e_primo(n) {
+    se (n < 2) {
+        retornar falso
+    }
+    para (d em 2..n) {
+        se (n % d == 0) {
+            retornar falso            // achou um divisor: não é primo
+        }
+    }
+    retornar verdadeiro
+}
+para (n em 1..=30) {
+    se (e_primo(n)) {
+        imprimir(n)
+    }
+}

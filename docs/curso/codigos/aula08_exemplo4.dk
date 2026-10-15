@@ -1,0 +1,12 @@
+seja n = 0
+enquanto (verdadeiro) {               // condição sempre verdadeira: só sai com quebrar
+    n = n + 1
+    se (n == 2) {
+        continuar                     // pula o imprimir desta volta
+    }
+    se (n > 4) {
+        quebrar                       // sai do laço
+    }
+    imprimir("n vale", n)
+}
+imprimir("Fim, n =", n)

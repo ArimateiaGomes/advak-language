@@ -1,0 +1,7 @@
+seja letra = entrada("Nota (A, B ou C): ")
+combinar(letra) {
+    caso "A": imprimir("Ótimo")
+    caso "B": imprimir("Bom")
+    caso "C": imprimir("Regular")
+    padrão: imprimir("Letra inválida")
+}

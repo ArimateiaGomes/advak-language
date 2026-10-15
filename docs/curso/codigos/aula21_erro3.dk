@@ -1,0 +1,14 @@
+seja arquivo = "aula21_erro3.db"
+se (Arquivo.existe(arquivo)) {
+    Arquivo.apagar(arquivo)
+}
+seja db = banco.conectar("sqlite:///aula21_erro3.db")
+db.tabela("produtos", {id: "autonum", nome: "texto obrigatorio", estoque: "inteiro"})
+db.inserir("produtos", {nome: "Caderno", estoque: 10})
+db.inserir("produtos", {nome: "Caneta", estoque: 100})
+
+seja n = db.atualizar("produtos", {estoque: 0}).executar()      // faltou o .onde(...)
+imprimir("Registros alterados:", n)
+imprimir(db.buscar("produtos").executar())
+db.fechar()
+Arquivo.apagar(arquivo)

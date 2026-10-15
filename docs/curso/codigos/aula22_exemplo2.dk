@@ -1,0 +1,23 @@
+seja jan = gui.janela("Cumprimento", 380, 240)
+
+gui.label(jan, "Qual é o seu nome?")
+seja campo_nome = gui.campo(jan, "Digite aqui", largura=25)
+seja resposta = gui.label(jan, "")                      // começa vazio
+
+seja botao = gui.botao(jan, "Cumprimentar", (x) => {
+    seja nome = campo_nome.valor()
+    resposta.texto(`Olá, ${nome}!`)
+    imprimir("Clique recebido. Nome digitado:", nome)
+})
+
+// --- Só para o exemplo: a pessoa "digita" e "clica" ---
+gui.apos(300, () => {
+    campo_nome.definir("Ana")
+    botao.invoke()                                      // simula o clique
+})
+gui.apos(900, () => {
+    imprimir("Texto que a janela mostra:", resposta.cget("text"))
+    gui.parar()
+})
+
+gui.iniciar()

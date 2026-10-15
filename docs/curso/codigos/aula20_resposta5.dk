@@ -1,0 +1,15 @@
+função raiz_segura(n) {
+    se (n < 0) {
+        lançar "negativo"
+    }
+    retornar n ** 0.5
+}
+
+testar("raiz de 9", () => {
+    afirmar_igual(raiz_segura(9), 3)
+})
+testar("raiz de negativo dá erro", () => {
+    afirmar_erro(() => raiz_segura(-1))
+})
+
+resumo_testes()

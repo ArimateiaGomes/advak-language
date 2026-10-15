@@ -1,0 +1,4 @@
+// Este programa apresenta uma pessoa
+imprimir("Nome: Ana Souza")
+imprimir("Cidade: Picos")
+imprimir("Curso: Aprenda a programar com Advak")

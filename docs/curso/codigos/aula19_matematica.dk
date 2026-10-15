@@ -1,0 +1,15 @@
+fixo PI = 3.14159
+
+função dobro(x) {
+    retornar x * 2
+}
+
+função area_circulo(raio) {
+    retornar PI * raio * raio
+}
+
+função segredo() {                       // esta NÃO vai ser exportada
+    retornar "uso interno"
+}
+
+exportar { PI, dobro, area_circulo }     // só estas três ficam disponíveis

@@ -1,0 +1,3 @@
+seja nome = entrada("Nome: ")
+seja cidade = entrada("Cidade: ")
+imprimir(`Olá, ${nome} de ${cidade}!`)

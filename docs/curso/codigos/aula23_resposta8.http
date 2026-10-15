@@ -1,0 +1,7 @@
+GET /contador
+POST /contador/somar {"valor": 5}
+POST /contador/somar {"valor": 10}
+POST /contador/somar {"valor": "abc"}
+GET /contador
+POST /contador/zerar {}
+GET /contador

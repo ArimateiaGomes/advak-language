@@ -1,0 +1,14 @@
+classe Pessoa {
+    construtor(nome, idade) {
+        isso.nome = nome
+        isso.idade = idade
+    }
+    maior_de_idade() {
+        retornar isso.idade >= 18
+    }
+}
+
+seja nome = entrada("Nome: ")
+seja idade = inteiro(entrada("Idade: "))
+seja p = novo Pessoa(nome, idade)
+imprimir(`${p.nome} é maior de idade?`, p.maior_de_idade())

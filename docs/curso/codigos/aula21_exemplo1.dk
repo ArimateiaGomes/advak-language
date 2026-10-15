@@ -1,0 +1,12 @@
+seja arquivo = "aula21_exemplo1.db"
+se (Arquivo.existe(arquivo)) {            // (só para o exemplo recomeçar do zero a cada vez)
+    Arquivo.apagar(arquivo)
+}
+
+seja db = banco.conectar("sqlite:///aula21_exemplo1.db")      // abre (ou cria) o banco
+
+db.tabela("produtos", {id: "autonum", nome: "texto obrigatorio", preco: "numero", estoque: "inteiro"})
+
+imprimir("Produtos cadastrados:", db.contar("produtos"))
+db.fechar()
+Arquivo.apagar(arquivo)

@@ -1,0 +1,6 @@
+função calcular() {
+    seja segredo = 42
+    retornar segredo
+}
+calcular()
+imprimir(segredo)

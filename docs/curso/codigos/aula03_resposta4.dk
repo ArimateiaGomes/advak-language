@@ -1,0 +1,3 @@
+imprimir(tipo(42))
+imprimir(tipo("42"))
+imprimir(tipo(verdadeiro))

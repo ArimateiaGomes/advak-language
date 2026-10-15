@@ -3,6 +3,7 @@ import csv, os, re, sys, unittest
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(RAIZ, "testes"))
+sys.path.insert(0, RAIZ)                      # com `python -I` a pasta do projeto não entra sozinha (advak_lexer)
 from rodar_exemplo import executar
 
 GUIA = open(os.path.join(RAIZ, "docs", "GUIA_PRATICO.md"), encoding="utf-8").read()

@@ -1,0 +1,3 @@
+seja nome = entrada("Seu nome: ")
+imprimir(nome.maiusculo())
+imprimir(nome.minusculo())

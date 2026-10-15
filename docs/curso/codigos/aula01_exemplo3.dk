@@ -1,0 +1,4 @@
+imprimir(2 + 3)          // sem aspas: o computador calcula e escreve 5
+imprimir("2 + 3")        // com aspas: é só texto, escreve 2 + 3
+imprimir("Resultado:", 10 * 4)   // vários itens separados por vírgula saem na mesma linha
+imprimir(100 - 1, 7 * 6)

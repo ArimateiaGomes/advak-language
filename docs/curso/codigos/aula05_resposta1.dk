@@ -1,0 +1,2 @@
+imprimir((8 + 4) * 3)
+imprimir(8 + 4 * 3)

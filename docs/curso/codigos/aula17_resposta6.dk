@@ -1,0 +1,13 @@
+classe ContaPoupanca {
+    construtor(saldo) {
+        isso.saldo = saldo
+    }
+    render(taxa) {
+        isso.saldo = isso.saldo + isso.saldo * taxa / 100
+    }
+}
+
+seja c = novo ContaPoupanca(1000)
+c.render(10)
+c.render(10)
+imprimir("Saldo:", c.saldo)

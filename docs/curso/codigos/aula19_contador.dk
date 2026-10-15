@@ -1,0 +1,8 @@
+exportar classe Contador {
+    construtor() {
+        isso.valor = 0
+    }
+    somar(n) {
+        isso.valor = isso.valor + n
+    }
+}

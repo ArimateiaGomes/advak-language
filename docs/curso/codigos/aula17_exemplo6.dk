@@ -1,0 +1,6 @@
+classe Gato { }
+classe Cachorro { }
+
+seja t = novo Gato()
+imprimir(t instanceof Gato)
+imprimir(t instanceof Cachorro)

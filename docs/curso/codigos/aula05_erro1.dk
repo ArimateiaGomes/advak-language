@@ -1,0 +1,4 @@
+seja x = 5
+se (x = 5) {
+    imprimir("é cinco")
+}

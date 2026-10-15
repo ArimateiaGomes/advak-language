@@ -1,0 +1,10 @@
+importar { media } de "aula19_calculos.dk"
+importar { situacao } de "aula19_situacao.dk"
+
+seja notas = []
+para (i em 1..4) {
+    notas.adicionar(numero(entrada(`Nota ${i}: `)))
+}
+seja m = media(notas)
+imprimir(`Média: ${m}`)
+imprimir("Situação:", situacao(m))

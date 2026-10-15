@@ -1,0 +1,6 @@
+seja i = 5
+enquanto (i >= 1) {
+    imprimir(i)
+    i = i - 1
+}
+imprimir("Fogo!")

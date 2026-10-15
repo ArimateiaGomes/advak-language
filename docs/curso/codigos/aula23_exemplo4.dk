@@ -1,0 +1,18 @@
+seja tarefas = []
+seja proximo_id = 1
+
+servidor.obter("/tarefas", (req) => {
+    retornar resposta_json(tarefas)
+})
+
+servidor.publicar("/tarefas", (req) => {
+    se (req.dados == nulo ou !req.dados.titulo) {                   // validação: sem título não cria
+        retornar resposta_json({erro: "informe o titulo"}, 400)
+    }
+    seja nova = {id: proximo_id, titulo: req.dados.titulo, feita: falso}
+    proximo_id = proximo_id + 1
+    tarefas.adicionar(nova)
+    retornar resposta_json(nova, 201)                               // 201 significa criado
+})
+
+servidor.iniciar(8804, falso)

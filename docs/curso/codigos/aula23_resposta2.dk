@@ -1,0 +1,5 @@
+servidor.obter("/dobro/:n", (req) => {
+    seja n = numero(req.parametros.n)
+    retornar resposta_json({n: n, dobro: n * 2})
+})
+servidor.iniciar(8822, falso)

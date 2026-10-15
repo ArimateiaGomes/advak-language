@@ -1,0 +1,2 @@
+seja valor = numero(entrada("Valor em reais: "))
+imprimir("O dobro é:", valor * 2)

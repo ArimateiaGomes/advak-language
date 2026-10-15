@@ -1,0 +1,11 @@
+seja aluno = {"nome": "Ana", "idade": 17, "notas": [8, 9.5], "ativo": verdadeiro, "apelido": nulo}
+
+seja texto_json = JSON.codificar(aluno)
+imprimir(texto_json)
+imprimir(tipo(texto_json))
+
+imprimir(JSON.formatar(aluno))
+
+seja volta = JSON.decodificar(texto_json)
+imprimir(volta.nome, volta.notas[1], volta.ativo)
+imprimir(tipo(volta))

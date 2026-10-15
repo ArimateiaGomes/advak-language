@@ -1,0 +1,6 @@
+seja idade = 17
+imprimir(idade == 17)     // um = guarda valor; dois == comparam
+imprimir(idade != 17)
+imprimir(idade >= 18)
+imprimir(idade < 18)
+imprimir("ana" == "ana")  // também compara textos

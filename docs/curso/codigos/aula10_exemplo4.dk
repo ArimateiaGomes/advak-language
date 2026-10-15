@@ -1,0 +1,7 @@
+seja alunos = ["Ana", "Bia", "Caio"]
+para (nome em alunos) {
+    imprimir("Olá,", nome)
+}
+para (i em 0..alunos.tamanho) {          // 0, 1, 2: as posições da lista
+    imprimir("Aluno", i + 1, "->", alunos[i])
+}

@@ -1,0 +1,4 @@
+seja numeros = [5, 2, 9, 1]
+numeros.ordenar()
+imprimir(numeros)
+imprimir("Menor:", numeros[0], "Maior:", numeros[-1])

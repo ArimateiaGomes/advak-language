@@ -1,0 +1,2 @@
+seja n = numero(entrada("Digite um número: "))
+imprimir(n * 2)

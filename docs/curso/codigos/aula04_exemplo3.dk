@@ -1,0 +1,5 @@
+imprimir("=== Média de duas notas ===")
+seja nota1 = numero(entrada("Nota 1: "))     // pergunta e já converte para número
+seja nota2 = numero(entrada("Nota 2: "))
+seja media = (nota1 + nota2) / 2             // parênteses mandam fazer a soma primeiro
+imprimir("Média:", media)

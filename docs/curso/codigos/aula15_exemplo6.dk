@@ -1,0 +1,5 @@
+imprimir(e_numero("12"))
+imprimir(e_numero("3.5"))
+imprimir(e_numero("-4"))
+imprimir(e_numero("abc"))
+imprimir(e_numero(""))
