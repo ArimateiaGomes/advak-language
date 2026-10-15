@@ -55,8 +55,8 @@ def executar(programa, respostas=(), ocioso=0.6, limite=60, cwd=RAIZ, extra_env=
                     break
                 ultimo[0] = time.time()
                 enviou[0], novo[0] = True, False
-            elif parou >= ocioso * 3:
-                break                                    # esperando digitação que não virá
+            elif parou >= max(ocioso * 3, 6.0):
+                break                                    # esperando digitação que não virá (6 s: máquina ocupada não pode cortar a saída)
     if p.poll() is None:
         p.kill()
     t.join(2)
