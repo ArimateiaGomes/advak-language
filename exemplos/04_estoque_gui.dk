@@ -35,15 +35,22 @@ função cadastrar() {
         gui.erro("O nome é obrigatório!")
         retornar
     }
-    tentar {
-        db.inserir("produtos", {nome: campo_nome.valor(), quantidade: inteiro(campo_qtd.valor()), preco: numero(campo_preco.valor())})
-        campo_nome.limpar()
-        campo_qtd.limpar()
-        campo_preco.limpar()
-        atualizar_tela()
-    } capturar (e) {
+    seja qtd_texto = campo_qtd.valor()
+    seja preco_texto = campo_preco.valor()
+    se (!e_numero(qtd_texto) ou !e_numero(preco_texto)) {       // confere ANTES de converter
         gui.erro("Quantidade e preço precisam ser números.")
+        retornar
     }
+    seja quantidade = inteiro(qtd_texto)
+    se (quantidade < 0 ou quantidade != numero(qtd_texto)) {
+        gui.erro("A quantidade deve ser um número inteiro, 0 ou mais.")
+        retornar
+    }
+    db.inserir("produtos", {nome: campo_nome.valor(), quantidade: quantidade, preco: numero(preco_texto)})
+    campo_nome.limpar()
+    campo_qtd.limpar()
+    campo_preco.limpar()
+    atualizar_tela()
 }
 
 função dar_baixa() {

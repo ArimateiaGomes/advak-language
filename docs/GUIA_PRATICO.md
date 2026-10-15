@@ -346,18 +346,18 @@ Total de clientes: 1
 seja db = banco.conectar("sqlite:///exemplos/dados/estoque.db")
 db.tabela("produtos", {id: "autonum", nome: "texto obrigatorio", quantidade: "inteiro padrao 0", preco: "decimal padrao 0"})
 
-seja jan = gui.janela("Controle de Estoque", 720, 520)       // 1
+seja jan = gui.janela("Controle de Estoque", 720, 520)       // item 1
 jan.centralizar()
 
-gui.label(jan, "Controle de Estoque", negrito=verdadeiro)    // 2
-seja tabela = gui.tabela(jan, ["ID", "Produto", "Quantidade", "Preço"], altura=10)   // 3
+gui.label(jan, "Controle de Estoque", negrito=verdadeiro)    // item 2
+seja tabela = gui.tabela(jan, ["ID", "Produto", "Quantidade", "Preço"], altura=10)   // item 3
 
-seja campo_nome  = gui.campo(jan, "Nome do produto", largura=30)   // 4
+seja campo_nome  = gui.campo(jan, "Nome do produto", largura=30)   // item 4
 seja campo_qtd   = gui.campo(jan, "Quantidade", largura=10)
 seja campo_preco = gui.campo(jan, "Preço (ex: 12.5)", largura=10)
 seja resumo      = gui.label(jan, "")
 
-função atualizar_tela() {                                    // 5
+função atualizar_tela() {                                    // item 5
     seja todos = db.buscar("produtos").ordenar("nome").executar()
     tabela.limpar()
     seja valor_total = 0
@@ -365,27 +365,34 @@ função atualizar_tela() {                                    // 5
         tabela.adicionar([p.id, p.nome, p.quantidade, moeda(p.preco)])
         valor_total += p.quantidade * p.preco
     }
-    resumo.texto(`${todos.tamanho} produtos | valor em estoque: ${moeda(valor_total)}`)   // 6
+    resumo.texto(`${todos.tamanho} produtos | valor em estoque: ${moeda(valor_total)}`)   // item 6
 }
 
 função cadastrar() {
     se (campo_nome.valor() == "") {
-        gui.erro("O nome é obrigatório!")                    // 7
+        gui.erro("O nome é obrigatório!")                    // item 7
         retornar
     }
-    tentar {
-        db.inserir("produtos", {nome: campo_nome.valor(), quantidade: inteiro(campo_qtd.valor()), preco: numero(campo_preco.valor())})
-        campo_nome.limpar()
-        campo_qtd.limpar()
-        campo_preco.limpar()
-        atualizar_tela()
-    } capturar (e) {
-        gui.erro("Quantidade e preço precisam ser números.") // 8
+    seja qtd_texto = campo_qtd.valor()
+    seja preco_texto = campo_preco.valor()
+    se (!e_numero(qtd_texto) ou !e_numero(preco_texto)) {       // confere ANTES de converter
+        gui.erro("Quantidade e preço precisam ser números.")     // item 8
+        retornar
     }
+    seja quantidade = inteiro(qtd_texto)
+    se (quantidade < 0 ou quantidade != numero(qtd_texto)) {
+        gui.erro("A quantidade deve ser um número inteiro, 0 ou mais.")
+        retornar
+    }
+    db.inserir("produtos", {nome: campo_nome.valor(), quantidade: quantidade, preco: numero(preco_texto)})
+    campo_nome.limpar()
+    campo_qtd.limpar()
+    campo_preco.limpar()
+    atualizar_tela()
 }
 
 função dar_baixa() {
-    seja escolhido = tabela.selecionado()                    // 9
+    seja escolhido = tabela.selecionado()                    // item 9
     se (escolhido == nulo) {
         gui.aviso("Selecione um produto na tabela.")
         retornar
@@ -405,19 +412,19 @@ função excluir() {
         gui.aviso("Selecione um produto na tabela.")
         retornar
     }
-    se (gui.confirmar(`Excluir "${escolhido["Produto"]}"?`)) {   // 10
+    se (gui.confirmar(`Excluir "${escolhido["Produto"]}"?`)) {   // item 10
         db.deletar("produtos").onde("id = %s", inteiro(escolhido["ID"])).executar()
         atualizar_tela()
     }
 }
 
 seja botoes = gui.frame_horizontal(jan)
-gui.botao(botoes, "Cadastrar", (x) => { cadastrar() }, estilo="sucesso")        // 11
+gui.botao(botoes, "Cadastrar", (x) => { cadastrar() }, estilo="sucesso")        // item 11
 gui.botao(botoes, "Dar baixa (-1)", (x) => { dar_baixa() })
 gui.botao(botoes, "Excluir", (x) => { excluir() }, estilo="perigo")
 
 atualizar_tela()
-gui.iniciar()                                                // 12
+gui.iniciar()                                                // item 12
 ```
 
 **Explicação**
@@ -429,7 +436,7 @@ gui.iniciar()                                                // 12
 5. Sempre que o banco muda, chamamos `atualizar_tela()`: ela limpa a tabela e desenha tudo de novo, com o valor total do estoque.
 6. Para trocar o texto de um `label` usa-se `.texto(...)`.
 7. `gui.erro` abre uma janelinha de erro.
-8. Se o aluno digitar letras em Quantidade, `inteiro("abc")` **não dá erro**: devolve `0` (e `inteiro("3.7")` devolve `3`, cortando a parte decimal). Por isso o `capturar` só pega outros problemas, como uma falha ao gravar no banco. O jeito seguro é conferir antes com `e_numero(texto)`, que responde `falso` para `"abc"` e `verdadeiro` para `"12"` e `"3.7"`, e só então converter. Veja a [aula 15 do curso](curso/aula15_erros.md).
+8. Se o aluno digitar letras em Quantidade ou Preço, `inteiro("abc")` **não dá erro**: devolve `0` (e `inteiro("3.7")` devolve `3`, cortando a parte decimal). Por isso o programa **confere antes** com `e_numero(texto)`, que responde `falso` para `"abc"` e `verdadeiro` para `"12"` e `"3.7"`; se algum campo não for número, mostra `gui.erro` e sai da função com `retornar`, sem gravar nada. Depois converte e ainda recusa quantidade negativa ou com decimais (`quantidade != numero(qtd_texto)` pega o `3.7`). Veja a [aula 15 do curso](curso/aula15_erros.md).
 9. `tabela.selecionado()` devolve a linha clicada como um mapa (`escolhido["Produto"]`) ou `nulo` se nada foi clicado.
 10. `gui.confirmar` pergunta Sim/Não e devolve verdadeiro ou falso.
 11. Cada botão recebe uma função que roda ao clicar. `estilo` muda a cor.
