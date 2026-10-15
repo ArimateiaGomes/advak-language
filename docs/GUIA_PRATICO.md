@@ -73,15 +73,15 @@ Todas as palavras desta tabela foram testadas: cada uma, usada como nome em `sej
 **Arquivo:** `exemplos/01_medias.dk`  ·  **Você vai aprender:** funções, listas, repetição, decisão.
 
 ```advak
-função media(notas) {                       // 1
-    seja soma = 0                           // 2
-    para (n em notas) {                     // 3
-        soma += n                           // 4
+função media(notas) {                       // item 1
+    seja soma = 0                           // item 2
+    para (n em notas) {                     // item 3
+        soma += n                           // item 4
     }
-    retornar soma / notas.tamanho           // 5
+    retornar soma / notas.tamanho           // item 5
 }
 
-função situacao(m) {                        // 6
+função situacao(m) {                        // item 6
     se (m >= 7) {
         retornar "Aprovado"
     } senão se (m >= 5) {
@@ -92,19 +92,19 @@ função situacao(m) {                        // 6
 }
 
 imprimir("=== Calculadora de médias ===")
-seja nome = entrada("Nome do aluno: ")                       // 7
-seja quantas = inteiro(entrada("Quantas notas? "))           // 8
+seja nome = entrada("Nome do aluno: ")                       // item 7
+seja quantas = inteiro(entrada("Quantas notas? "))           // item 8
 
-seja notas = []                                              // 9
-para (i em 1..=quantas) {                                    // 10
-    seja n = numero(entrada(`Nota ${i}: `))                  // 11
-    notas.adicionar(n)                                       // 12
+seja notas = []                                              // item 9
+para (i em 1..=quantas) {                                    // item 10
+    seja n = numero(entrada(`Nota ${i}: `))                  // item 11
+    notas.adicionar(n)                                       // item 12
 }
 
 seja m = media(notas)
 imprimir("")
 imprimir(`Aluno: ${nome}`)
-imprimir(`Média: ${arred(m, 2)}`)                            // 13
+imprimir(`Média: ${arred(m, 2)}`)                            // item 13
 imprimir(`Maior nota: ${Mat.max(notas)}  |  Menor nota: ${Mat.min(notas)}`)
 imprimir(`Situação: ${situacao(m)}`)
 ```
@@ -150,23 +150,23 @@ Situação: Aprovado
 **Arquivo:** `exemplos/02_gastos.dk`  ·  **Você vai aprender:** `enquanto`, mapas, ler e gravar arquivo JSON.
 
 ```advak
-fixo ARQUIVO = "exemplos/dados/gastos.json"      // 1
+fixo ARQUIVO = "exemplos/dados/gastos.json"      // item 1
 
 função carregar() {
-    se (Arquivo.existe(ARQUIVO)) {               // 2
-        retornar Arquivo.ler_json(ARQUIVO)       // 3
+    se (Arquivo.existe(ARQUIVO)) {               // item 2
+        retornar Arquivo.ler_json(ARQUIVO)       // item 3
     }
-    retornar []                                  // 4
+    retornar []                                  // item 4
 }
 
 função salvar(gastos) {
-    Arquivo.escrever_json(ARQUIVO, gastos)       // 5
+    Arquivo.escrever_json(ARQUIVO, gastos)       // item 5
 }
 
 função total(gastos) {
     seja soma = 0
     para (g em gastos) {
-        soma += g.valor                          // 6
+        soma += g.valor                          // item 6
     }
     retornar soma
 }
@@ -175,13 +175,13 @@ seja gastos = carregar()
 imprimir(`Gastos já salvos: ${gastos.tamanho}`)
 
 seja mais_gastos = verdadeiro
-enquanto (mais_gastos) {                         // 7
+enquanto (mais_gastos) {                         // item 7
     seja descricao = entrada("Descrição (vazio para terminar): ")
     se (descricao == "") {
-        mais_gastos = falso                      // 8
+        mais_gastos = falso                      // item 8
     } senão {
         seja valor = numero(entrada("Valor em R$: "))
-        gastos.adicionar({descricao: descricao, valor: valor})   // 9
+        gastos.adicionar({descricao: descricao, valor: valor})   // item 9
     }
 }
 
@@ -190,7 +190,7 @@ salvar(gastos)
 imprimir("")
 imprimir("=== Seus gastos ===")
 para (g em gastos) {
-    imprimir(`${g.descricao}: ${moeda(g.valor)}`)   // 10
+    imprimir(`${g.descricao}: ${moeda(g.valor)}`)   // item 10
 }
 imprimir(`TOTAL: ${moeda(total(gastos))}`)
 ```
@@ -237,11 +237,11 @@ Na 2ª execução, o programa começa com `Gastos já salvos: 2` e o total sobe 
 CRUD quer dizer **C**riar, **R**ler, **A**tualizar (*Update*) e **D**eletar. Usamos o SQLite, que guarda tudo em um arquivo e não precisa instalar nada. Para usar o PostgreSQL, troque **só** a linha da conexão (veja o [Capítulo 9](#capítulo-9--trocando-só-a-string-de-conexão)).
 
 ```advak
-seja db = banco.conectar("sqlite:///exemplos/dados/clientes.db")                // 1
-db.tabela("clientes", {id: "autonum", nome: "texto obrigatorio", cidade: "texto", telefone: "texto"})   // 2
+seja db = banco.conectar("sqlite:///exemplos/dados/clientes.db")                // item 1
+db.tabela("clientes", {id: "autonum", nome: "texto obrigatorio", cidade: "texto", telefone: "texto"})   // item 2
 
 função listar() {
-    seja todos = db.buscar("clientes").ordenar("nome").executar()               // 3
+    seja todos = db.buscar("clientes").ordenar("nome").executar()               // item 3
     se (todos.tamanho == 0) {
         imprimir("  (nenhum cliente cadastrado)")
     }
@@ -254,20 +254,20 @@ função cadastrar() {
     seja nome = entrada("  Nome: ")
     seja cidade = entrada("  Cidade: ")
     seja telefone = entrada("  Telefone: ")
-    seja novo = db.inserir("clientes", {nome: nome, cidade: cidade, telefone: telefone})   // 4
+    seja novo = db.inserir("clientes", {nome: nome, cidade: cidade, telefone: telefone})   // item 4
     imprimir(`  Cliente ${novo.nome} cadastrado com o número ${novo.id}.`)
 }
 
 função alterar() {
     seja id = inteiro(entrada("  Número do cliente: "))
     seja telefone = entrada("  Novo telefone: ")
-    seja n = db.atualizar("clientes", {telefone: telefone}).onde("id = %s", id).executar()  // 5
+    seja n = db.atualizar("clientes", {telefone: telefone}).onde("id = %s", id).executar()  // item 5
     imprimir(`  ${n} cliente(s) alterado(s).`)
 }
 
 função apagar() {
     seja id = inteiro(entrada("  Número do cliente: "))
-    seja n = db.deletar("clientes").onde("id = %s", id).executar()              // 6
+    seja n = db.deletar("clientes").onde("id = %s", id).executar()              // item 6
     imprimir(`  ${n} cliente(s) apagado(s).`)
 }
 
@@ -277,7 +277,7 @@ enquanto (rodando) {
     imprimir("")
     imprimir("1) Listar  2) Cadastrar  3) Alterar telefone  4) Apagar  0) Sair")
     seja opcao = entrada("Escolha: ")
-    combinar(opcao) {                                                           // 7
+    combinar(opcao) {                                                           // item 7
         caso "1": listar()
         caso "2": cadastrar()
         caso "3": alterar()
@@ -286,8 +286,8 @@ enquanto (rodando) {
         padrão:   imprimir("  Opção inválida.")
     }
 }
-imprimir(`Total de clientes: ${db.contar("clientes")}`)                         // 8
-db.fechar()                                                                     // 9
+imprimir(`Total de clientes: ${db.contar("clientes")}`)                         // item 8
+db.fechar()                                                                     // item 9
 ```
 
 **Explicação**
@@ -458,19 +458,19 @@ Uma **API** é um "balcão" que outros programas (um site, um aplicativo de celu
 seja db = banco.conectar("sqlite:///exemplos/dados/tarefas.db")
 db.tabela("tarefas", {id: "autonum", titulo: "texto obrigatorio", feita: "booleano padrao falso"})
 
-servidor.obter("/api/tarefas", (req) => {                                     // 1
-    retornar resposta_json(db.buscar("tarefas").ordenar("id").executar())     // 2
+servidor.obter("/api/tarefas", (req) => {                                     // item 1
+    retornar resposta_json(db.buscar("tarefas").ordenar("id").executar())     // item 2
 })
 
-servidor.obter("/api/tarefas/:id", (req) => {                                 // 3
+servidor.obter("/api/tarefas/:id", (req) => {                                 // item 3
     seja t = db.buscar_id("tarefas", inteiro(req.parametros.id))
     se (t == nulo ou t.tamanho == 0) {
-        retornar resposta_json({erro: "tarefa não encontrada"}, 404)          // 4
+        retornar resposta_json({erro: "tarefa não encontrada"}, 404)          // item 4
     }
     retornar resposta_json(t)
 })
 
-servidor.publicar("/api/tarefas", (req) => {                                  // 5
+servidor.publicar("/api/tarefas", (req) => {                                  // item 5
     se (req.dados == nulo ou !req.dados.titulo) {
         retornar resposta_json({erro: "informe o titulo"}, 400)
     }
@@ -481,7 +481,7 @@ servidor.publicar("/api/tarefas", (req) => {                                  //
 servidor.atualizar("/api/tarefas/:id", (req) => { ... })    // PUT
 servidor.deletar("/api/tarefas/:id", (req) => { ... })      // DELETE
 
-servidor.iniciar(8080, falso)                                                 // 6
+servidor.iniciar(8080, falso)                                                 // item 6
 ```
 
 (O arquivo completo, com a página inicial e as rotas de `PUT` e `DELETE`, está em `exemplos/05_api_tarefas.dk`.)
@@ -526,30 +526,30 @@ data,produto,quantidade,preco
 ```
 
 ```advak
-seja linhas = Arquivo.ler_linhas("exemplos/dados/vendas.csv")    // 1
-seja cabecalho = linhas[0]                                        // 2
+seja linhas = Arquivo.ler_linhas("exemplos/dados/vendas.csv")    // item 1
+seja cabecalho = linhas[0]                                        // item 2
 imprimir(`Colunas: ${cabecalho}`)
 
-seja total_por_produto = {}                                       // 3
+seja total_por_produto = {}                                       // item 3
 seja total_geral = 0
 
-para (i em 1..linhas.tamanho) {                                   // 4
-    seja linha = Texto.aparar(linhas[i])                          // 5
+para (i em 1..linhas.tamanho) {                                   // item 4
+    seja linha = Texto.aparar(linhas[i])                          // item 5
     se (linha != "") {
-        seja campos = Texto.dividir(linha, ",")                   // 6
+        seja campos = Texto.dividir(linha, ",")                   // item 6
         seja produto = campos[1]
         seja quantidade = numero(campos[2])
         seja preco = numero(campos[3])
         seja subtotal = quantidade * preco
 
-        total_por_produto[produto] = (total_por_produto[produto] ?? 0) + subtotal   // 7
+        total_por_produto[produto] = (total_por_produto[produto] ?? 0) + subtotal   // item 7
         total_geral += subtotal
     }
 }
 
 imprimir("")
 imprimir("=== Resumo de vendas ===")
-para (produto em total_por_produto.chaves) {                      // 8
+para (produto em total_por_produto.chaves) {                      // item 8
     imprimir(`${produto}: ${moeda(total_por_produto[produto])}`)
 }
 imprimir(`TOTAL GERAL: ${moeda(total_geral)}`)
@@ -595,8 +595,8 @@ seja contatos = [
 ]
 
 função buscar(lista, termo) {
-    seja t = Texto.minusculo(termo)                                              // 1
-    retornar lista.filtrar((c) => Texto.minusculo(c.nome).contem(t) ou Texto.minusculo(c.cidade).contem(t))   // 2
+    seja t = Texto.minusculo(termo)                                              // item 1
+    retornar lista.filtrar((c) => Texto.minusculo(c.nome).contem(t) ou Texto.minusculo(c.cidade).contem(t))   // item 2
 }
 
 função mostrar(lista) {
@@ -609,10 +609,10 @@ função mostrar(lista) {
 }
 
 imprimir("=== Agenda ===")
-enquanto (verdadeiro) {                                                          // 3
+enquanto (verdadeiro) {                                                          // item 3
     seja termo = entrada("Buscar por nome ou cidade (ou 'sair'): ")
     se (termo == "sair") {
-        quebrar                                                                  // 4
+        quebrar                                                                  // item 4
     }
     mostrar(buscar(contatos, termo))
 }
@@ -655,7 +655,7 @@ Um teste é um pequeno programa que confere se outro está certo. Se você mudar
 ```advak
 função desconto(valor, cliente_vip) {
     se (valor <= 0) {
-        lançar "valor inválido"                      // 1
+        lançar "valor inválido"                      // item 1
     }
     se (cliente_vip) {
         retornar arred(valor * 0.9, 2)               // 10% de desconto
@@ -666,12 +666,12 @@ função desconto(valor, cliente_vip) {
     retornar valor
 }
 
-testar("cliente VIP tem 10% de desconto", () => {    // 2
-    afirmar_igual(desconto(50, verdadeiro), 45)      // 3
+testar("cliente VIP tem 10% de desconto", () => {    // item 2
+    afirmar_igual(desconto(50, verdadeiro), 45)      // item 3
 })
 
 testar("valor zero ou negativo é recusado", () => {
-    afirmar_erro(() => desconto(0, falso))           // 4
+    afirmar_erro(() => desconto(0, falso))           // item 4
 })
 ```
 
@@ -705,9 +705,9 @@ testar("valor zero ou negativo é recusado", () => {
 Esta é a grande vantagem do conector único da Advak: o código é o mesmo; só o **endereço** muda.
 
 ```advak
-env.carregar(".env")                                  // 1
-seja url_banco = env.texto("ADVAK_CADASTRO_URL", "sqlite:///exemplos/dados/trocar.db")   // 2
-seja db = banco.conectar(url_banco)                   // 3
+env.carregar(".env")                                  // item 1
+seja url_banco = env.texto("ADVAK_CADASTRO_URL", "sqlite:///exemplos/dados/trocar.db")   // item 2
+seja db = banco.conectar(url_banco)                   // item 3
 
 db.tabela("pessoas", {id: "autonum", nome: "texto obrigatorio", cidade: "texto"})
 db.deletar("pessoas").executar()                      // começa do zero (para repetir o exemplo)
@@ -764,11 +764,11 @@ env.carregar(".env")
 seja url_banco = env.texto("ADVAK_RELATORIO_URL", "sqlite:///exemplos/dados/pdv.db")
 seja db = banco.conectar(url_banco)
 
-se (url_banco.começa_com("sqlite")) {                 // 1
+se (url_banco.começa_com("sqlite")) {                 // item 1
     // cria vendas de mentira só no banco de teste
 }
 
-seja linhas = db.sql("SELECT produto, SUM(quantidade) AS qtd, SUM(quantidade * preco) AS total FROM vendas GROUP BY produto ORDER BY total DESC")   // 2
+seja linhas = db.sql("SELECT produto, SUM(quantidade) AS qtd, SUM(quantidade * preco) AS total FROM vendas GROUP BY produto ORDER BY total DESC")   // item 2
 
 seja geral = 0
 para (l em linhas) {
@@ -816,18 +816,18 @@ TOTAL GERAL: R$ 467,30
 O **Redis** guarda dados na memória, por isso é muito rápido. Um **cache** é uma "anotação": se a resposta já foi calculada, usamos a anotação em vez de fazer tudo de novo.
 
 ```advak
-seja cache = banco.conectar("redis")                  // 1
+seja cache = banco.conectar("redis")                  // item 1
 seja db = banco.conectar("sqlite:///exemplos/dados/cache_demo.db")
 ...
 função listar_produtos() {
-    seja guardado = cache.obter_json("produtos")      // 2
+    seja guardado = cache.obter_json("produtos")      // item 2
     se (guardado != nulo) {
         imprimir("  (veio do cache)")
         retornar guardado
     }
     imprimir("  (veio do banco)")
     seja lista = db.buscar("produtos").ordenar("nome").executar()
-    cache.definir("produtos", lista, 30)              // 3
+    cache.definir("produtos", lista, 30)              // item 3
     retornar lista
 }
 ```
@@ -864,14 +864,14 @@ Visitas: 2
 **Arquivo:** `exemplos/12_catalogo_mongodb.dk`  ·  **Você vai aprender:** banco de documentos, em que cada registro pode ter campos diferentes.
 
 ```advak
-seja db = banco.conectar("mongodb")                   // 1
-db.deletar("produtos").onde({}).executar()            // 2
+seja db = banco.conectar("mongodb")                   // item 1
+db.deletar("produtos").onde({}).executar()            // item 2
 
 db.inserir("produtos", {nome: "Caderno", preco: 12.5, categoria: "papelaria"})
-db.inserir("produtos", {nome: "Mochila", preco: 89.9, categoria: "acessorios", cores: ["azul", "preto"]})   // 3
+db.inserir("produtos", {nome: "Mochila", preco: 89.9, categoria: "acessorios", cores: ["azul", "preto"]})   // item 3
 db.inserir("produtos", {nome: "Caneta", preco: 2, categoria: "papelaria"})
 
-para (p em db.buscar("produtos").onde("categoria = %s", "papelaria").ordenar("nome").executar()) {   // 4
+para (p em db.buscar("produtos").onde("categoria = %s", "papelaria").ordenar("nome").executar()) {   // item 4
     imprimir(`  ${p.nome} - ${moeda(p.preco)}`)
 }
 ```
@@ -919,11 +919,11 @@ db.tabela("itens", {id: "autonum", venda_id: "inteiro", produto_id: "inteiro", q
 **Trecho 1 — a venda** (a função `nova_venda`, resumida):
 
 ```advak
-seja carrinho = []                                     // 1
+seja carrinho = []                                     // item 1
 seja total = 0
 ...
-seja p = db.buscar_id("produtos", inteiro(codigo))     // 2
-se (qtd > p.estoque) {                                 // 3
+seja p = db.buscar_id("produtos", inteiro(codigo))     // item 2
+se (qtd > p.estoque) {                                 // item 3
     imprimir(`  Só há ${p.estoque} em estoque.`)
 } senão {
     seja subtotal = qtd * p.preco
@@ -932,13 +932,13 @@ se (qtd > p.estoque) {                                 // 3
 }
 ...
 seja pago = numero(entrada(`  Total ${moeda(total)}. Valor recebido: `))
-enquanto (pago < total) {                              // 4
+enquanto (pago < total) {                              // item 4
     imprimir("  Valor menor que o total.")
     pago = numero(entrada("  Valor recebido: "))
 }
-seja troco = pago - total                              // 5
-seja venda = db.inserir("vendas", {dia: data_hoje(), total: total, pago: pago, troco: troco})   // 6
-para (item em carrinho) {                              // 7
+seja troco = pago - total                              // item 5
+seja venda = db.inserir("vendas", {dia: data_hoje(), total: total, pago: pago, troco: troco})   // item 6
+para (item em carrinho) {                              // item 7
     db.inserir("itens", {venda_id: venda.id, produto_id: item.produto.id, quantidade: item.quantidade, subtotal: item.subtotal})
     db.atualizar("produtos", {estoque: item.produto.estoque - item.quantidade}).onde("id = %s", item.produto.id).executar()
 }
