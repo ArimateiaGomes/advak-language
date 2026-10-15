@@ -115,6 +115,7 @@ TOKEN_SPECS = [
 ]
 
 _PARTES_DE_EXPRESSAO = re.compile(r'\d+(?:\.\d+)?|[^\W\d]\w*|[()+\-*/%]|\S')
+_TEXTO_ENTRE_ASPAS = re.compile(r'"[^"\n]*"|' + "'[^'\\n]*'")
 _SIMBOLOS_DE_EXPRESSAO = '()[]{},;+-*/%<>=!'
 _FECHAMENTOS_DE_EXPRESSAO = ')]};,'
 
@@ -273,13 +274,17 @@ class AdvakLexer:
                 rest_check = value[2:].lstrip()
                 first_char = rest_check[0] if rest_check else ''
                 looks_numeric = first_char.isdigit() or first_char in ('(', '-', '+')
-                if looks_numeric and not _parece_expressao(rest_check):
-                    looks_numeric = False
+                abertos = (sum(1 for k in tokens if k['type'] in ('LPAREN', 'LBRACKET'))
+                           - sum(1 for k in tokens if k['type'] in ('RPAREN', 'RBRACKET')))
+                if looks_numeric:
+                    # Dentro de parênteses/colchetes a conta pode continuar com outros argumentos: textos
+                    # entre aspas ("x", 'x') valem como valores (imprimir(7 // 2, "x") é divisão).
+                    teste = re.sub(_TEXTO_ENTRE_ASPAS, '0', rest_check) if abertos > 0 else rest_check
+                    if not _parece_expressao(teste):
+                        looks_numeric = False
 
                 # Fora de parênteses/colchetes, "valor   // texto" (2 ou mais espaços, ou um tab, antes do //)
                 # é o estilo de comentário alinhado. A divisão se escreve "a // b" (um espaço) ou "a//b".
-                abertos = (sum(1 for k in tokens if k['type'] in ('LPAREN', 'LBRACKET'))
-                           - sum(1 for k in tokens if k['type'] in ('RPAREN', 'RBRACKET')))
                 alinhado = line_prefix.endswith('\t') or line_prefix.endswith('  ')
                 if looks_numeric and abertos <= 0 and alinhado:
                     looks_numeric = False

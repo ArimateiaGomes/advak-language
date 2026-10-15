@@ -76,6 +76,17 @@ class TesteRegraDoEspaco(unittest.TestCase):
         self.assertTrue(tem_divisao("imprimir(7   // 2)"))
         self.assertTrue(tem_divisao("lista[9  // 2]"))
 
+    def test_divisao_em_parenteses_seguida_de_outros_argumentos(self):
+        """Regressão: imprimir(7 // 2, "x") virava comentário porque o resto da linha tinha aspas."""
+        for codigo in ['imprimir(7 // 2, "x")', "imprimir(10 // 0)", 'se (7 // 2 > 1) { imprimir("ok") }',
+                       'tentar { imprimir(10 // 0) } capturar (e) { imprimir("A:", e) }']:
+            with self.subTest(codigo=codigo):
+                self.assertTrue(tem_divisao(codigo))
+                self.assertNotEqual(len(tokens(codigo)), 5)   # a linha inteira foi lida, não só "imprimir(7"
+
+    def test_aspas_fora_de_parenteses_continuam_comentario(self):
+        self.assertFalse(tem_divisao('seja x = 1   // "texto"'))
+
 
 class TesteComentarioEmLinhaPropria(unittest.TestCase):
     def test_linha_propria(self):

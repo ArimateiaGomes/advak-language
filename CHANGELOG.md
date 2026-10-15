@@ -84,6 +84,10 @@ valem onde você os usa.
   Antes, `imprimir(2 ** 3)  // 2 elevado a 3` dava "token inesperado '//'" e `seja x = 1  // 3.5` virava, em
   silêncio, uma divisão. Quem escreve divisão com 2 ou mais espaços fora de parênteses (`7  //  2`) deve usar
   um espaço só ou parênteses. Os 46 exemplos do repositório geram exatamente os mesmos tokens de antes.
+  Dentro de parênteses/colchetes, textos entre aspas contam como valores (`imprimir(7 // 2, "x")` e
+  `tentar { imprimir(10 // 0) } capturar (e) { imprimir("A:", e) }` são divisão; a primeira versão desta regra
+  os lia como comentário). Limitação conhecida: um comentário escrito logo depois de uma divisão
+  (`seja y = 7 // 2   // metade`) ainda é lido como outra divisão.
 - `banco.conectar("postgres")` sozinho continua significando "o banco chamado postgres" do modo antigo; para
   o PostgreSQL pelo conector novo, use `postgresql://...` ou `banco.conectar("postgresql")`.
 
