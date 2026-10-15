@@ -429,7 +429,7 @@ gui.iniciar()                                                // 12
 5. Sempre que o banco muda, chamamos `atualizar_tela()`: ela limpa a tabela e desenha tudo de novo, com o valor total do estoque.
 6. Para trocar o texto de um `label` usa-se `.texto(...)`.
 7. `gui.erro` abre uma janelinha de erro.
-8. Se o aluno digitar letras em Quantidade, `inteiro(...)` falha e o `capturar` mostra a mensagem em vez de travar o programa.
+8. Se o aluno digitar letras em Quantidade, `inteiro("abc")` **não dá erro**: devolve `0` (e `inteiro("3.7")` devolve `3`, cortando a parte decimal). Por isso o `capturar` só pega outros problemas, como uma falha ao gravar no banco. O jeito seguro é conferir antes com `e_numero(texto)`, que responde `falso` para `"abc"` e `verdadeiro` para `"12"` e `"3.7"`, e só então converter. Veja a [aula 15 do curso](curso/aula15_erros.md).
 9. `tabela.selecionado()` devolve a linha clicada como um mapa (`escolhido["Produto"]`) ou `nulo` se nada foi clicado.
 10. `gui.confirmar` pergunta Sim/Não e devolve verdadeiro ou falso.
 11. Cada botão recebe uma função que roda ao clicar. `estilo` muda a cor.
