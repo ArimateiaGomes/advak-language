@@ -31,6 +31,8 @@ Antes de começar, leia a seção [Palavras reservadas](#palavras-reservadas): e
 | 9 (MySQL, SQL Server) e 10 (SQL Server, Firebird) | **Não testados** nesses bancos (só com SQLite). Não há servidor desses bancos neste computador. |
 | 11 (Redis) e 12 (MongoDB) | **Só simulados**: rodaram contra um Redis e um MongoDB de mentira em memória (`testes/rodar_simulado.py`). Prova que o código está certo, **não** que o banco real responde igual. |
 
+> **Aviso honesto:** Os capítulos 9 a 12 do guia foram testados só com SQLite ou com bancos simulados. Conectar a um servidor real de MySQL, SQL Server, Firebird, Redis ou MongoDB **ainda não foi testado**.
+
 ---
 
 ## Palavras reservadas

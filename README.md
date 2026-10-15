@@ -820,7 +820,7 @@ Os drivers são opcionais e só são carregados quando o banco é usado; se falt
 
 > **Seja honesto com os testes:** só o **SQLite** e o **PostgreSQL** foram testados contra um banco de verdade
 > (o PostgreSQL pelo modo antigo `--db` e pelo conector novo). Os outros 21 foram testados com drivers simulados
-> (o DuckDB está em teste / instável no Windows). A tabela completa, links de download,
+> (o DuckDB está em teste / instável no Windows). Os capítulos 9 a 12 do guia foram testados só com SQLite ou com bancos simulados. Conectar a um servidor real de MySQL, SQL Server, Firebird, Redis ou MongoDB **ainda não foi testado**. A tabela completa, links de download,
 > strings de conexão e um exemplo de cada banco estão em **[docs/BANCOS_DE_DADOS.md](docs/BANCOS_DE_DADOS.md)**.
 
 ---
