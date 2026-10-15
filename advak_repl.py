@@ -1,8 +1,8 @@
 """
-Advak 5.0 — REPL Interativo
+Advak — REPL Interativo
 Execute: advak  (sem argumentos)
 """
-import sys, os, asyncio
+import sys, os, re, asyncio
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from advak_lexer import AdvakLexer
@@ -15,7 +15,7 @@ try:
 except ImportError:
     readline = None
 
-BANNER = """
+_MOLDE_DO_BANNER = """
 ╔══════════════════════════════════════════════════════════╗
 ║                                                          ║
 ║    █████╗ ██████╗ ██╗   ██╗ █████╗ ██╗  ██╗            ║
@@ -23,11 +23,29 @@ BANNER = """
 ║   ███████║██║  ██║██║   ██║███████║█████╔╝              ║
 ║   ██╔══██║██║  ██║╚██╗ ██╔╝██╔══██║██╔═██╗             ║
 ║   ██║  ██║██████╔╝ ╚████╔╝ ██║  ██║██║  ██╗            ║
-║   ╚═╝  ╚═╝╚═════╝   ╚═══╝  ╚═╝  ╚═╝╚═╝  ╚═╝  5.0      ║
+║   ╚═╝  ╚═╝╚═════╝   ╚═══╝  ╚═╝  ╚═╝╚═╝  ╚═╝  {versao}║
 ║                                                          ║
 ║   Linguagem de Programação em Português                  ║
 ╚══════════════════════════════════════════════════════════╝
 """
+
+
+def ler_versao(pasta=None):
+    """A versão da Advak: a constante VERSION de advak.py (única fonte; o REPL não guarda cópia)."""
+    pasta = pasta or os.path.dirname(os.path.abspath(__file__))
+    try:
+        with open(os.path.join(pasta, "advak.py"), encoding="utf-8") as f:
+            return re.search(r'^VERSION\s*=\s*"([^"]+)"', f.read(), re.M).group(1)
+    except (OSError, AttributeError):
+        return "?"
+
+
+def montar_banner(versao=None):
+    """O banner com a versão encaixada na moldura (o espaço da versão tem 9 colunas)."""
+    return _MOLDE_DO_BANNER.replace("{versao}", (versao or ler_versao()).ljust(9)[:9])
+
+
+BANNER = montar_banner()
 
 AJUDA = """
   COMANDOS DO REPL:
@@ -181,7 +199,7 @@ class AdvakREPL:
 
     def run(self):
         print(BANNER)
-        print(f"  Python {sys.version.split()[0]} | Advak 5.0")
+        print(f"  Python {sys.version.split()[0]} | Advak {ler_versao()}")
         print(f"  Digite \033[36m.ajuda\033[0m para ver os comandos\n")
 
         if readline:
