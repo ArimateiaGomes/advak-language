@@ -17,14 +17,48 @@ Todas as mudanças importantes da Advak Language. Datas no formato ano-mês-dia.
   - **`perguntar` é para programas de console**: mostra o que falta e pergunta `[s/N]`. Sem entrada para ler a resposta,
     vira `manual` com um aviso e **nunca trava**.
   - `db.criar_banco(nome)` no conector PostgreSQL; em `automatico` o banco que não existe é criado ao conectar
-    (esse ramo foi testado só com driver falso, não contra um servidor real).
+    (testado com driver falso e confirmado no PostgreSQL 17.4 local; ver "Teste em servidor real" abaixo).
   - **Mensagens em português para o PostgreSQL**: servidor que não responde, porta errada, senha/usuário errados e banco
     inexistente (mais driver ausente, que já existia), sempre com o texto original do driver no final
     (`Detalhe do driver: ...`). Erro desconhecido passa sem conversão, como antes.
+  - **PostgreSQL em português do Windows (cp1252), banco inexistente**: o psycopg2 levanta `UnicodeDecodeError` em vez de
+    um erro com texto, então o texto não pode ser classificado. Achado ao tentar um servidor real. Agora, nesse caso, a
+    Advak reconecta ao banco `postgres` e consulta `pg_database`: se o banco não existe, segue o fluxo de "banco
+    inexistente" (mensagem própria, ou criação em `automatico`); se existe, ou se a reconexão também falha com
+    `UnicodeDecodeError` (não dá para distinguir), mantém a mensagem genérica "senha, usuário ou banco incorretos?".
+    Em ambos os casos o detalhe do servidor aparece depois de `Detalhe do driver:`, lido como cp1252 só para exibir.
+    Coberto por testes com driver falso (`testes/test_banco_automatico.py`) e **confirmado no PostgreSQL 17.4
+    local** (ver "Teste em servidor real" abaixo).
   - Erros `no such table` / `no column named` do SQLite e do PostgreSQL ganham, **depois** da mensagem original, uma linha de
     `Dica:` em português (a saída registrada da aula 21 foi atualizada).
   - Fora desta versão: instalar servidor, a palavra `modelo`, outros bancos, o caminho legado do PostgreSQL.
     Testes: `testes/test_banco_automatico.py`. Proposta e decisões: `docs/BANCO_AUTOMATICO_PROPOSTA.md`.
+  - **Teste em servidor real (2026-10-16)**: PostgreSQL 17.4 no Windows, mensagens em português (cp1252), em bancos
+    `advak_teste_*` criados só para isso. Nenhum banco existente foi tocado e nada foi apagado.
+    - `UnicodeDecodeError` em banco inexistente: o psycopg2 puro levanta `UnicodeDecodeError` (bytes cp1252 do servidor).
+      Em `modo="automatico"` a Advak cria o banco e conecta; em `modo="manual"` dá a mensagem em português
+      ("O banco '...' não existe neste servidor...", com `Detalhe do driver:`) e **não cria** nada.
+    - `db.preparar` duas vezes: a 1ª cria as tabelas; a 2ª diz "Nada a fazer", sem duplicar.
+    - `db.diferencas` lista o que falta (coluna e tabela) sem alterar nada, comprovado por snapshot independente
+      (psql, `information_schema.columns`) idêntico antes e depois.
+    - `db.adicionar_coluna` e recusas: coluna nova entra, repetida avisa "já existe", `obrigatorio` sem `padrao`
+      em tabela com dados é recusada com explicação, as demais do mapa seguem.
+    - `modo="perguntar"`: com `n` não cria nada (tabelas faltando, e banco inexistente: o banco continua inexistente
+      e o programa **para com a mensagem de erro de banco inexistente**, não segue em silêncio);
+      com `s` cria (tabelas faltando em banco existente; banco inexistente: uma pergunta do banco e uma das tabelas).
+    - Três falhas esperadas, com mensagem em português e `Detalhe do driver:`, nenhuma cria banco: porta errada,
+      usuário falso (mensagem genérica "senha, usuário ou banco incorretos?"; não dá para distinguir de outros
+      motivos) e banco inexistente em `manual`.
+  - **Defeito achado nesse teste e corrigido (`e581630`)**: no `modo="perguntar"` com mapa, a confirmação ao conectar
+    era pedida **duas vezes** com resposta `s` (a 2ª, em `preparar`); isso foi visto no servidor real. Pelo fluxo do
+    código, em console um `n` na 2ª impediria a criação apesar do `s` anterior; isso foi **deduzido da leitura do código
+    e não foi reproduzido no servidor real**. Agora é uma pergunta só (confirmado no servidor real, nos passos com
+    `s`). Teste: `TestePerguntarUmaVezSo` conta as chamadas de `input`.
+  - **Limites do que foi testado em servidor real**: só PostgreSQL local, versão 17.4, Windows em português. Os bytes
+    das mensagens de erro do servidor chegaram em cp1252; a consulta mostrou `server_encoding = UTF8` e
+    `lc_messages = pt-BR`, e nada além disso foi verificado sobre a codificação. MySQL, SQL Server, Firebird, Redis,
+    MongoDB e os demais **continuam não testados em servidor real**. O quadro de erro de porta errada e de usuário
+    falso aparece sem "Localização" nem trecho do código; é cosmético e ainda não foi investigado.
 - **`db.tabela` não diz mais "criada" quando a tabela já existe com colunas diferentes** das pedidas (conectores
   SQL). Agora devolve `ℹ️  Tabela 'x' já existe com colunas diferentes das pedidas (faltam na tabela: ...; a mais
   na tabela: ...). Nada foi alterado.` A tabela e os dados continuam intactos (a coluna nova **não** é adicionada).

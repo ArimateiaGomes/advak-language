@@ -1,6 +1,6 @@
 # Proposta: criação automática ou manual de banco e tabelas
 
-> **Status: implementado em SQLite e PostgreSQL (modos, `db.preparar`, `db.diferencas`, `db.adicionar_coluna`, mensagens do PostgreSQL), conforme as decisões da seção 10. Continua só descrito, sem implementação: instalar servidor (seção 7), a palavra `modelo`, outros bancos e o caminho legado. O ramo "criar o banco PostgreSQL sozinho" foi testado só com driver falso.** A seção 1 descreve o que a
+> **Status: implementado em SQLite e PostgreSQL (modos, `db.preparar`, `db.diferencas`, `db.adicionar_coluna`, mensagens do PostgreSQL), conforme as decisões da seção 10. Continua só descrito, sem implementação: instalar servidor (seção 7), a palavra `modelo`, outros bancos e o caminho legado. O ramo "criar o banco PostgreSQL sozinho" foi testado com driver falso e confirmado no PostgreSQL 17.4 local (seção 12).** A seção 1 descreve o que a
 > Advak faz hoje (testado de verdade); o resto é desenho.
 
 ## 1. O que a Advak já faz hoje
@@ -166,4 +166,47 @@ Respostas às perguntas da seção 8 (a numeração abaixo é a da seção 8):
 8. **Mensagem enganosa de `db.tabela`:** **corrigir logo**, em um commit pequeno e separado, depois do commit deste documento.
 
 Nada além do item 8 está autorizado a ser implementado.
+
+## 11. Achado ao tentar um PostgreSQL real (2026-10-16)
+
+Em servidor PostgreSQL em português no Windows (cp1252), conectar a um **banco inexistente** faz o psycopg2 levantar
+`UnicodeDecodeError` (a mensagem do servidor não é UTF-8), igual à senha errada. Com isso o texto do erro não pode
+ser classificado e o modo `automatico` não reconhecia "banco inexistente".
+
+Correção (aprovada pelo autor): no `except UnicodeDecodeError`, reconectar ao banco `postgres` e consultar
+`pg_database`.
+
+- Banco **não existe** → tratado como `banco_inexistente` (mensagem própria; em `automatico`, cria e reconecta).
+- Banco **existe**, ou a reconexão **também** falha com `UnicodeDecodeError` → não dá para distinguir: mantém a mensagem
+  genérica "senha, usuário ou banco incorretos?".
+- Nos dois casos o detalhe do servidor vai ao final, depois de `Detalhe do driver:`, decodificado como cp1252 com
+  `errors="replace"` só para exibir.
+
+Situação: coberto por testes com driver falso e confirmado no PostgreSQL 17.4 local (seção 12).
+
+## 12. Teste em servidor real (2026-10-16)
+
+PostgreSQL 17.4 no Windows, mensagens em português, bancos `advak_teste_*` criados só para isso. Nenhum banco
+existente foi tocado e nada foi apagado.
+
+| Passo | Resultado |
+|---|---|
+| psycopg2 puro, banco inexistente | `UnicodeDecodeError` (byte `\xe3` de "não"), confirmando o achado |
+| `modo="automatico"`, banco inexistente | `Banco '...' criado` e conexão; o banco passa a existir |
+| `modo="manual"`, banco inexistente | mensagem "O banco '...' não existe..." com `Detalhe do driver:`; nada criado |
+| `preparar` 1ª e 2ª vez | cria as tabelas; a 2ª diz "Nada a fazer" |
+| `diferencas` | lista coluna e tabela que faltam; snapshot (psql) idêntico antes e depois |
+| `adicionar_coluna` e recusas | entra a normal, repetida avisa, `obrigatorio` sem `padrao` em tabela com dados é recusada |
+| `perguntar`, resposta `n` | não cria: tabelas faltando ficam sem criar; banco inexistente continua inexistente e o programa para com a mensagem de erro de banco inexistente (não segue em silêncio) |
+| `perguntar`, resposta `s` | cria; uma pergunta do banco e uma das tabelas (depois da correção `e581630`) |
+| porta errada, usuário falso, banco inexistente em `manual` | três mensagens em português; usuário falso cai na mensagem genérica de autenticação |
+
+**Defeito achado:** no `perguntar` com `s` a confirmação era pedida duas vezes (visto no servidor real); corrigido em
+`e581630`. Que um `n` na 2ª pergunta impediria a criação apesar do `s` anterior foi **deduzido da leitura do código e
+não foi reproduzido no servidor real**.
+
+**Limites:** só PostgreSQL local, 17.4, Windows em português. Os bytes das mensagens de erro do servidor chegaram em
+cp1252; a consulta mostrou `server_encoding = UTF8` e `lc_messages = pt-BR`, e nada além disso foi verificado sobre
+a codificação. Outros bancos continuam não testados em servidor real. O quadro de erro sem "Localização" em porta
+errada e usuário falso é cosmético e não foi investigado.
 
