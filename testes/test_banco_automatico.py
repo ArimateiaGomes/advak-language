@@ -1,7 +1,7 @@
 """Banco automático/manual (docs/BANCO_AUTOMATICO_PROPOSTA.md): modo=, preparar, diferencas, adicionar_coluna,
 recusas e mensagens do PostgreSQL. Programas .dk reais com python -I; SQLite em pasta temporária.
 PostgreSQL: só tentativas que FALHAM (porta fechada) e driver falso; nada é criado em servidor nenhum."""
-import os, subprocess, sys, tempfile, types, unittest
+import io, os, subprocess, sys, tempfile, types, unittest
 from unittest import mock
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -190,22 +190,26 @@ class FalsoPg(types.ModuleType):
     class OperationalError(Exception):
         pass
 
-    def __init__(self, erros=()):
+    def __init__(self, erros=(), banco_existe=False):
         super().__init__("psycopg2")
-        self.erros = list(erros)
+        self.erros = list(erros)                # texto -> OperationalError; exceção -> levantada como está
+        self.banco_existe = banco_existe        # resposta da consulta a pg_database
         self.chamadas = []                      # (dbname, [comandos])
 
     def connect(self, **kw):
         if self.erros:
             e = self.erros.pop(0)
+            if isinstance(e, BaseException):
+                raise e
             if e:
                 raise self.OperationalError(e)
         cmds = []
         self.chamadas.append((kw.get("dbname"), cmds))
+        existe = self.banco_existe
 
         class Cur:
             def execute(s, q, p=None): cmds.append(q)
-            def fetchall(s): return []
+            def fetchall(s): return [(1,)] if existe else []
             def close(s): pass
             description = None
             rowcount = 0
@@ -277,6 +281,52 @@ class TesteMensagensPostgres(unittest.TestCase):
                 conectar_pg(falso, modo="perguntar")
         self.assertEqual(falso.chamadas, [])
 
+    # PostgreSQL em português do Windows (cp1252): o driver levanta UnicodeDecodeError em vez de OperationalError
+    BYTES_CP1252 = b'FATAL:  banco de dados "loja" n\xe3o existe'
+    ROTULO = "Detalhe do driver:"
+
+    def erro_cp1252(self):
+        return UnicodeDecodeError("utf-8", self.BYTES_CP1252, 36, 37, "invalid start byte")
+
+    def test_unicode_com_reconexao_ok_e_banco_ausente_e_banco_inexistente(self):
+        falso = FalsoPg([self.erro_cp1252()], banco_existe=False)
+        m = self.msg(falso)
+        self.assertIn("O banco 'loja' não existe", m); self.assertIn("criar_banco", m)
+        self.assertEqual(m.count(self.ROTULO), 1)
+        self.assertTrue(m.endswith(f'{self.ROTULO} FATAL:  banco de dados "loja" não existe'), m)
+        self.assertEqual([b for b, _ in falso.chamadas], ["postgres"])       # só consultou; nada criado
+        self.assertFalse(any("CREATE" in q for _, cmds in falso.chamadas for q in cmds))
+
+    def test_unicode_com_banco_ausente_no_automatico_cria_e_reconecta(self):
+        falso = FalsoPg([self.erro_cp1252()], banco_existe=False)
+        conectar_pg(falso, modo="automatico")
+        self.assertEqual([b for b, _ in falso.chamadas], ["postgres", "postgres", "loja"])
+        self.assertTrue(any('CREATE DATABASE "loja"' in q for q in falso.chamadas[1][1]))
+
+    def test_unicode_com_banco_existente_mantem_a_mensagem_generica_de_senha(self):
+        m = self.msg(FalsoPg([self.erro_cp1252()], banco_existe=True))
+        self.assertIn("senha, usuário ou banco incorretos?", m)
+        self.assertNotIn("não existe neste servidor", m)
+        self.assertEqual(m.count(self.ROTULO), 1)
+        self.assertTrue(m.endswith(f'{self.ROTULO} FATAL:  banco de dados "loja" não existe'), m)
+
+    def test_unicode_tambem_na_reconexao_nao_distingue_e_mantem_a_mensagem_generica(self):
+        falso = FalsoPg([self.erro_cp1252(), self.erro_cp1252()])
+        m = self.msg(falso)
+        self.assertIn("senha, usuário ou banco incorretos?", m)
+        self.assertNotIn("não existe neste servidor", m)
+        self.assertEqual(m.count(self.ROTULO), 1)
+        self.assertIn(f' {self.ROTULO} FATAL:  banco de dados "loja" não existe', m)   # espaço antes do rótulo
+        self.assertNotIn("�", m)                                                  # cp1252 leu o \xe3 certo
+        self.assertEqual(falso.chamadas, [])
+
+    def test_unicode_sem_texto_nao_poe_rotulo_vazio(self):
+        for bruto in (b"", b" \r\n "):                      # nada que mostrar: sem rótulo solto
+            vazio = UnicodeDecodeError("utf-8", bruto, 0, 0, "invalid start byte")
+            m = self.msg(FalsoPg([vazio, vazio]))
+            self.assertIn("senha, usuário ou banco incorretos?", m)
+            self.assertNotIn(self.ROTULO, m)
+
     def test_porta_fechada_de_verdade_com_o_driver_real(self):
         try:
             import psycopg2  # noqa: F401
@@ -288,6 +338,31 @@ class TesteMensagensPostgres(unittest.TestCase):
         self.assertIn("59999", m); self.assertIn("Detalhe do driver:", m)
         self.assertIn("connection to server", m.split("Detalhe do driver:")[1])    # o texto do driver fica só no final
         self.assertEqual(m.count("Detalhe do driver:"), 1)
+
+
+class TestePerguntarUmaVezSo(unittest.TestCase):
+    """No modo 'perguntar' com mapa, a confirmação ao conectar é pedida UMA vez (a resposta s não pergunta de novo)."""
+    MAPA_PY = {"clientes": {"id": "autonum", "nome": "texto"}}
+
+    def conectar(self, resposta):
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as pasta:
+            url = "sqlite:///" + os.path.join(pasta, "t.db").replace("\\", "/")
+            with mock.patch("builtins.input", side_effect=[resposta, EOFError]) as entrada, \
+                    mock.patch.object(sys, "stdout", io.StringIO()):
+                db = c.conectar(url, modo="perguntar", tabelas=self.MAPA_PY)
+                tabelas = db.listar_tabelas()
+                db.fechar()
+        return entrada.call_count, tabelas
+
+    def test_resposta_sim_pergunta_uma_vez_e_cria(self):
+        chamadas, tabelas = self.conectar("s")
+        self.assertEqual(chamadas, 1)
+        self.assertEqual(tabelas, ["clientes"])
+
+    def test_resposta_nao_pergunta_uma_vez_e_nao_cria(self):
+        chamadas, tabelas = self.conectar("n")
+        self.assertEqual(chamadas, 1)
+        self.assertEqual(tabelas, [])
 
 
 if __name__ == "__main__":

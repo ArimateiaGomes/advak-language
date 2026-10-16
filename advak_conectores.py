@@ -708,6 +708,9 @@ class ConectorSQL(ConectorBase):
                 _avisar(AVISO_SEM_ENTRADA)        # sem entrada: age como 'manual' (o pedido foi explícito)
             elif not resp:
                 return "ℹ️  Nada foi criado (você respondeu não)."
+        return self._aplicar_plano(plano)
+
+    def _aplicar_plano(self, plano):
         linhas = []
         for item in plano:
             if item[0] == 'tabela':
@@ -719,10 +722,10 @@ class ConectorSQL(ConectorBase):
     def _ao_conectar(self):
         if self.modo == 'manual' or not self.mapa:
             return
+        plano = self._plano(self.mapa)
+        if not plano:
+            return
         if self.modo == 'perguntar':
-            plano = self._plano(self.mapa)
-            if not plano:
-                return
             resp = _perguntar_sim_nao("O mapa de tabelas pede o que ainda não existe no banco:\n  " +
                                       "\n  ".join(self._texto_item(i) for i in plano))
             if resp is None:
@@ -731,9 +734,7 @@ class ConectorSQL(ConectorBase):
             if not resp:
                 _avisar("ℹ️  Nada foi criado (você respondeu não).")
                 return
-        texto = self.preparar()
-        if not texto.startswith("ℹ️  Nada a fazer"):
-            _avisar(texto)
+        _avisar(self._aplicar_plano(plano))               # já confirmado (ou automático): sem perguntar de novo
 
     def apagar_tabela(self, nome, cascata=False):
         if self.sem_if_exists:
@@ -1110,10 +1111,15 @@ class ConectorPostgres(ConectorSQL):
         banco = p['banco'] or 'postgres'
         try:
             return self._conectar_em(pg, banco, extra)
-        except UnicodeDecodeError:
-            # PostgreSQL em português + senha errada: a mensagem do servidor não é UTF-8
-            from advak_db import MSG_SENHA_ERRADA
-            raise ErroBanco(MSG_SENHA_ERRADA) from None
+        except UnicodeDecodeError as e:
+            # PostgreSQL em português (cp1252): o texto do erro não é UTF-8 e não dá para classificá-lo.
+            # Banco inexistente e senha errada geram o mesmo UnicodeDecodeError; pergunta ao banco 'postgres'.
+            detalhe = self._detalhe_cp1252(e)
+            if self._banco_existe(pg, banco, extra) is not False:
+                from advak_db import MSG_SENHA_ERRADA
+                raise ErroBanco(MSG_SENHA_ERRADA + (f" Detalhe do driver: {detalhe}" if detalhe else '')) from None
+            if not self._pode_criar_banco(banco):
+                raise ErroBanco(self._mensagem_falha('banco_inexistente', detalhe)) from None
         except getattr(pg, 'OperationalError', ()) as e:
             tipo_falha = self._classificar_falha(str(e))
             if tipo_falha == 'outro':
@@ -1126,6 +1132,32 @@ class ConectorPostgres(ConectorSQL):
         self._criar_banco_pelo_postgres(pg, banco, extra)
         _avisar(f"✅ Banco '{banco}' criado")
         return self._conectar_em(pg, banco, extra)
+
+    @staticmethod
+    def _detalhe_cp1252(erro):
+        """1ª linha do texto do servidor lida como cp1252 (só para exibir); '' se não houver."""
+        bruto = erro.object if isinstance(erro.object, (bytes, bytearray)) else b''
+        linhas = bytes(bruto).decode('cp1252', errors='replace').strip().splitlines()
+        return linhas[0].strip() if linhas else ''
+
+    def _banco_existe(self, pg, banco, extra):
+        """True/False consultando pg_database pelo banco 'postgres'; None se não der para saber."""
+        if banco == 'postgres':
+            return True
+        try:
+            conn = self._conectar_em(pg, 'postgres', extra)
+        except Exception:                               # inclui um 2º UnicodeDecodeError: não dá para distinguir
+            return None
+        try:
+            cur = conn.cursor()
+            cur.execute('SELECT 1 FROM pg_database WHERE datname = %s', (banco,))
+            achou = bool(cur.fetchall())
+            cur.close()
+            return achou
+        except Exception:
+            return None
+        finally:
+            conn.close()
 
     def _conectar_em(self, pg, banco, extra):
         p = self.params
