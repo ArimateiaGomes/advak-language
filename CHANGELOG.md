@@ -4,6 +4,13 @@ Todas as mudanças importantes da Advak Language. Datas no formato ano-mês-dia.
 
 ## [Não lançado]
 
+### Bancos de dados
+
+- **`db.tabela` não diz mais "criada" quando a tabela já existe com colunas diferentes** das pedidas (conectores
+  SQL). Agora devolve `ℹ️  Tabela 'x' já existe com colunas diferentes das pedidas (faltam na tabela: ...; a mais
+  na tabela: ...). Nada foi alterado.` A tabela e os dados continuam intactos (a coluna nova **não** é adicionada).
+  Tabela nova, ou já existente com as mesmas colunas, mantém o texto de antes. Teste: `testes/test_tabela_existente.py`.
+
 ### Interface gráfica
 
 - **`gui.canvas(janela, largura, altura, fundo)`**: área de desenho 2D em português. Devolve uma tela com

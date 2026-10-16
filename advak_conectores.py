@@ -511,7 +511,15 @@ class ConectorSQL(ConectorBase):
         self._cols_nomes = [str(c) for c in dict(campos)]
         if sobrescrever:
             self.apagar_tabela(nome)
-        if self.sem_if_not_exists and self.existe_tabela(nome):
+        try:
+            existe = self.existe_tabela(nome)
+        except Exception:
+            existe = False                      # não deu para olhar: segue como antes
+        if existe:
+            dif = self._colunas_diferentes(nome)
+            if dif:
+                return dif
+        if self.sem_if_not_exists and existe:
             return f"ℹ️  Tabela '{nome}' já existe"
         for cmd in antes:
             self._executar(cmd)
@@ -519,6 +527,26 @@ class ConectorSQL(ConectorBase):
         return f"✅ Tabela '{nome}' criada"
 
     criar_tabela = tabela
+
+    def _colunas_diferentes(self, nome):
+        """Texto de aviso se a tabela existente tem colunas diferentes das pedidas (self._cols_nomes); senão None."""
+        try:
+            atuais = [str(c['coluna']) for c in self.descrever_tabela(nome)]
+        except Exception:
+            return None
+        pedidas = {c.lower(): c for c in self._cols_nomes}
+        tem = {c.lower(): c for c in atuais}
+        faltam = [c for k, c in pedidas.items() if k not in tem]
+        sobram = [c for k, c in tem.items() if k not in pedidas]
+        if not faltam and not sobram:
+            return None
+        partes = []
+        if faltam:
+            partes.append("faltam na tabela: " + ", ".join(faltam))
+        if sobram:
+            partes.append("a mais na tabela: " + ", ".join(sobram))
+        return (f"ℹ️  Tabela '{nome}' já existe com colunas diferentes das pedidas ({'; '.join(partes)}). "
+                "Nada foi alterado.")
 
     def apagar_tabela(self, nome, cascata=False):
         if self.sem_if_exists:
