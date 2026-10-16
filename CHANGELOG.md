@@ -2,6 +2,23 @@
 
 Todas as mudanças importantes da Advak Language. Datas no formato ano-mês-dia.
 
+## [Não lançado]
+
+### Interface gráfica
+
+- **`gui.canvas(janela, largura, altura, fundo)`**: área de desenho 2D em português. Devolve uma tela com
+  `retangulo`, `circulo`, `linha`, `texto`, `mover`, `apagar`, `limpar` e `quantidade`. A origem (0, 0) fica no
+  canto superior esquerdo e o `y` cresce para baixo. Cada desenho devolve um número de item, usado para mover
+  ou apagar. Cores por nome em português (`vermelho`, `azul`...) ou hexadecimal (`"#ff8800"`). Erros (cor
+  desconhecida, tamanho negativo, item inexistente) saem em português e podem ser capturados com `tentar`.
+  O `canvas` SVG global continua como antes. Teste: `testes/test_gui_canvas.py`.
+- **Atenção:** `tela` é palavra reservada da Advak, então a variável que guarda o canvas precisa de outro
+  nome, como `area` (`seja area = gui.canvas(janela, 400, 300, "preto")`).
+- **Ordem dos argumentos diferente do SVG:** `area.texto(x, y, texto, cor, tamanho=12)` não segue a ordem de
+  `tela.texto(txt, x, y)` do canvas SVG global (aí o texto vem primeiro).
+- **`area.widget` é um atalho provisório** que expõe o objeto tkinter (hoje usado para `bind` de mouse e
+  teclado). Será substituído por eventos em português num passo futuro; não conte com ele a longo prazo.
+
 ## [5.2.0] — 2026-10-13
 
 Versão com mais recursos de linguagem, 23 bancos de dados, IA opcional, leitura de documentos e

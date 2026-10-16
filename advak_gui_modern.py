@@ -153,6 +153,91 @@ def _t(chave):
 
 _gui_instance = None  # Module-level singleton for _get_member access
 
+# ── Canvas 2D em português (gui.canvas) ─────────────────────────────────────
+# Origem (0, 0) no canto superior esquerdo; x cresce para a direita e y para BAIXO.
+CORES_CANVAS = {
+    'preto': '#000000', 'branco': '#ffffff', 'vermelho': '#e53935', 'azul': '#1e66f5',
+    'verde': '#2e9e44', 'amarelo': '#f9d71c', 'laranja': '#fb8c00', 'roxo': '#8e44ad',
+    'cinza': '#808080', 'rosa': '#ff69b4', 'marrom': '#8b5a2b',
+}
+
+
+def _erro_canvas(msg):
+    from advak_interpreter import AdvakError     # import tardio: a GUI só é carregada pelo interpretador
+    return AdvakError(msg)
+
+
+def _cor_canvas(cor):
+    if isinstance(cor, str):
+        c = cor.strip().lower()
+        if c in CORES_CANVAS:
+            return CORES_CANVAS[c]
+        if len(c) == 7 and c[0] == '#' and all(h in '0123456789abcdef' for h in c[1:]):
+            return c
+    raise _erro_canvas(f"Cor desconhecida: {cor!r}. Use um destes nomes: {', '.join(CORES_CANVAS)} "
+                       f"ou um valor hexadecimal como \"#ff8800\".")
+
+
+def _num_canvas(valor, nome):
+    if isinstance(valor, bool) or not isinstance(valor, (int, float)):
+        raise _erro_canvas(f"'{nome}' deve ser um número, mas recebeu {valor!r}.")
+    return valor
+
+
+def _positivo_canvas(valor, nome, minimo=0):
+    _num_canvas(valor, nome)
+    if valor < minimo:
+        raise _erro_canvas(f"'{nome}' não pode ser menor que {minimo} (recebeu {valor}).")
+    return valor
+
+
+class Tela:
+    """Área de desenho 2D. Cada desenho devolve um número de item para mover ou apagar."""
+
+    def __init__(self, canvas):
+        self.widget = canvas      # atalho avançado e provisório: expõe o tkinter (bind etc.)
+
+    def _item(self, item):
+        if isinstance(item, bool) or not isinstance(item, int) or not self.widget.find_withtag(item):
+            raise _erro_canvas(f"O item {item!r} não existe nesta tela (já foi apagado ou nunca foi criado).")
+        return item
+
+    def retangulo(self, x, y, largura, altura, cor, preenchido=True):
+        _num_canvas(x, 'x'); _num_canvas(y, 'y')
+        _positivo_canvas(largura, 'largura'); _positivo_canvas(altura, 'altura')
+        c = _cor_canvas(cor)
+        return self.widget.create_rectangle(x, y, x + largura, y + altura, outline=c, fill=c if preenchido else '')
+
+    def circulo(self, x, y, raio, cor, preenchido=True):
+        _num_canvas(x, 'x'); _num_canvas(y, 'y'); _positivo_canvas(raio, 'raio')
+        c = _cor_canvas(cor)
+        return self.widget.create_oval(x - raio, y - raio, x + raio, y + raio, outline=c, fill=c if preenchido else '')
+
+    def linha(self, x1, y1, x2, y2, cor, espessura=1):
+        for v, n in ((x1, 'x1'), (y1, 'y1'), (x2, 'x2'), (y2, 'y2')):
+            _num_canvas(v, n)
+        _positivo_canvas(espessura, 'espessura', 1)
+        return self.widget.create_line(x1, y1, x2, y2, fill=_cor_canvas(cor), width=espessura)
+
+    def texto(self, x, y, texto, cor, tamanho=12):
+        _num_canvas(x, 'x'); _num_canvas(y, 'y'); _positivo_canvas(tamanho, 'tamanho', 1)
+        return self.widget.create_text(x, y, text=str(texto), fill=_cor_canvas(cor),
+                                       font=('Segoe UI', int(tamanho)), anchor='nw')
+
+    def mover(self, item, dx, dy):
+        self._item(item); _num_canvas(dx, 'dx'); _num_canvas(dy, 'dy')
+        self.widget.move(item, dx, dy)
+
+    def apagar(self, item):
+        self.widget.delete(self._item(item))
+
+    def limpar(self):
+        self.widget.delete('all')
+
+    def quantidade(self):
+        return len(self.widget.find_all())
+
+
 class AdvakGUIModern:
     """
     GUI Moderno para Advak Language.
@@ -402,6 +487,15 @@ class AdvakGUIModern:
         w.cor   = lambda c: w.config(fg=c)
         w.posicionar = lambda **kw: self._posicionar(w, **kw)
         return w
+
+    def canvas(self, pai, largura=400, altura=300, fundo='preto'):
+        """Área de desenho 2D: devolve uma Tela (retangulo, circulo, linha, texto, mover, apagar...)."""
+        _check()
+        _positivo_canvas(largura, 'largura', 1); _positivo_canvas(altura, 'altura', 1)
+        cv = tk.Canvas(self._get_frame(pai), width=int(largura), height=int(altura),
+                       bg=_cor_canvas(fundo), highlightthickness=0)
+        cv.pack(pady=4, padx=4, anchor='w')
+        return Tela(cv)
 
     def botao(self, pai, texto='', ao_clicar=None, cor=None,
               largura=None, estilo='primario'):

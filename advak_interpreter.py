@@ -854,6 +854,7 @@ class AdvakInterpreter:
                 'campo':        _gui.campo,
                 'area_texto':   _gui.area_texto,
                 'tabela':       _gui.tabela,
+                'canvas':       _gui.canvas,
                 'lista':        _gui.lista,
                 'caixa_selecao':_gui.caixa_selecao,
                 'checkbox':     _gui.checkbox,
