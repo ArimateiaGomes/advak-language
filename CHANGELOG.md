@@ -6,6 +6,25 @@ Todas as mudanças importantes da Advak Language. Datas no formato ano-mês-dia.
 
 ### Bancos de dados
 
+- **Banco automático ou manual (SQLite e PostgreSQL)**, escolhido por projeto: `banco.conectar(url, modo="manual"|"automatico"|"perguntar", tabelas=mapa)`
+  ou `ADVAK_BANCO_MODO` no `.env`. O padrão é **`manual`** (igual a antes: nada é criado sozinho, só o arquivo SQLite).
+  - `db.preparar(mapa)` cria as tabelas e as colunas novas que faltam, **sem apagar nada** nem alterar tipos, e
+    devolve um relatório; `db.diferencas(mapa)` só lista o que falta, sem alterar; `db.adicionar_coluna(tabela, campo, definicao)`.
+    O mapa é um mapa comum: `{"clientes": {"id": "autonum", "nome": "texto obrigatorio"}}`. Com `tabelas=mapa` na conexão,
+    `db.preparar()` dispensa o argumento. Em `automatico` o mapa é criado ao conectar.
+  - **Coluna `obrigatorio` sem `padrao`** em tabela com dados é **recusada com explicação** (no SQLite, também em tabela
+    vazia, e `unico` ao adicionar coluna). As outras colunas do mapa seguem.
+  - **`perguntar` é para programas de console**: mostra o que falta e pergunta `[s/N]`. Sem entrada para ler a resposta,
+    vira `manual` com um aviso e **nunca trava**.
+  - `db.criar_banco(nome)` no conector PostgreSQL; em `automatico` o banco que não existe é criado ao conectar
+    (esse ramo foi testado só com driver falso, não contra um servidor real).
+  - **Mensagens em português para o PostgreSQL**: servidor que não responde, porta errada, senha/usuário errados e banco
+    inexistente (mais driver ausente, que já existia), sempre com o texto original do driver no final
+    (`Detalhe do driver: ...`). Erro desconhecido passa sem conversão, como antes.
+  - Erros `no such table` / `no column named` do SQLite e do PostgreSQL ganham, **depois** da mensagem original, uma linha de
+    `Dica:` em português (a saída registrada da aula 21 foi atualizada).
+  - Fora desta versão: instalar servidor, a palavra `modelo`, outros bancos, o caminho legado do PostgreSQL.
+    Testes: `testes/test_banco_automatico.py`. Proposta e decisões: `docs/BANCO_AUTOMATICO_PROPOSTA.md`.
 - **`db.tabela` não diz mais "criada" quando a tabela já existe com colunas diferentes** das pedidas (conectores
   SQL). Agora devolve `ℹ️  Tabela 'x' já existe com colunas diferentes das pedidas (faltam na tabela: ...; a mais
   na tabela: ...). Nada foi alterado.` A tabela e os dados continuam intactos (a coluna nova **não** é adicionada).

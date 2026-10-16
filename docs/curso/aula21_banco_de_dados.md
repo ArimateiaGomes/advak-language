@@ -283,8 +283,12 @@ Arquivo.apagar(arquivo)
 <!--saida:aula21_erro2.dk-->
 ```text
 Tabela: Erro no SQLite: no such table: produto
+Dica: essa tabela não existe neste banco. Confira o nome (db.listar_tabelas()) e crie com db.tabela("nome", {...}) ou db.preparar(mapa).
 Campo: Erro no SQLite: table produtos has no column named cor
+Dica: essa coluna não existe nesta tabela. Adicione com db.adicionar_coluna(tabela, campo, definicao) ou db.preparar(mapa).
 ```
+
+A Advak acrescenta uma linha de **Dica** depois da mensagem do banco; a mensagem original continua inteira, logo antes dela.
 
 **Como corrigir:** confira os nomes das tabelas e campos com o que você escreveu em `db.tabela(...)`.
 

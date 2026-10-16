@@ -106,12 +106,23 @@ class TesteConectorNovo(Base):
             self.assertNotIn("Zx9Qk7", str(e.exception))                  # a senha nunca aparece
             self.assertNotIn("codec", str(e.exception))
 
-    def test_outros_erros_continuam_com_a_mensagem_original(self):
+    def test_servidor_ausente_vira_erro_banco_em_portugues_com_o_detalhe_do_driver(self):
         import advak_conectores as c
         sys.modules["psycopg2"].connect = lambda *a, **k: (_ for _ in ()).throw(
             sys.modules["psycopg2"].OperationalError("connection refused"))
-        with self.assertRaises(sys.modules["psycopg2"].OperationalError):
-            c.conectar("postgresql://u:s@localhost/loja")                 # não é UnicodeDecodeError: sem tradução
+        with self.assertRaises(c.ErroBanco) as e:
+            c.conectar("postgresql://u:s@localhost/loja")
+        m = str(e.exception)
+        self.assertIn("Não consegui falar com o PostgreSQL", m)
+        self.assertTrue(m.endswith("Detalhe do driver: connection refused"), m)
+
+    def test_erro_desconhecido_passa_sem_conversao(self):
+        import advak_conectores as c
+        pg = sys.modules["psycopg2"]
+        pg.connect = lambda *a, **k: (_ for _ in ()).throw(pg.OperationalError("algo totalmente diferente"))
+        with self.assertRaises(pg.OperationalError) as e:
+            c.conectar("postgresql://u:s@localhost/loja")
+        self.assertEqual(str(e.exception), "algo totalmente diferente")
 
 
 if __name__ == "__main__":

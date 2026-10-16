@@ -1,6 +1,6 @@
 # Proposta: criação automática ou manual de banco e tabelas
 
-> **Status: rascunho para discussão, com as decisões do autor registradas na seção 10. Nada aqui está implementado e nada é promessa.** A seção 1 descreve o que a
+> **Status: implementado em SQLite e PostgreSQL (modos, `db.preparar`, `db.diferencas`, `db.adicionar_coluna`, mensagens do PostgreSQL), conforme as decisões da seção 10. Continua só descrito, sem implementação: instalar servidor (seção 7), a palavra `modelo`, outros bancos e o caminho legado. O ramo "criar o banco PostgreSQL sozinho" foi testado só com driver falso.** A seção 1 descreve o que a
 > Advak faz hoje (testado de verdade); o resto é desenho.
 
 ## 1. O que a Advak já faz hoje

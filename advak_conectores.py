@@ -24,6 +24,7 @@ Regras:
 
 import os
 import re
+import sys
 import json
 import importlib
 import importlib.util
@@ -246,13 +247,60 @@ def eh_conexao_nova(args, kwargs):
     return True
 
 
+MODOS_BANCO = ('manual', 'automatico', 'perguntar')
+
+
+def _resolver_modo(modo):
+    """modo= da conexão, senão ADVAK_BANCO_MODO do .env, senão 'manual'."""
+    carregar_env()
+    escolhido = str(modo or os.environ.get('ADVAK_BANCO_MODO') or 'manual').strip().lower()
+    if escolhido not in MODOS_BANCO:
+        raise ErroBanco(f"Modo de banco desconhecido: '{escolhido}'. Use um destes: {', '.join(MODOS_BANCO)}.")
+    return escolhido
+
+
 def conectar(destino, **kw):
-    """Cria o conector certo para a URL/tipo informado."""
+    """Cria o conector certo para a URL/tipo informado.
+    modo= ('manual' padrão, 'automatico', 'perguntar') e tabelas= (mapa de tabelas do projeto) são opcionais."""
+    modo = kw.pop('modo', None)
+    mapa = kw.pop('tabelas', None)
     tipo, params = resolver_conexao(destino, **kw)
     classe = globals()[BANCOS[tipo]['classe']]
     c = classe(params)
+    c.modo = _resolver_modo(modo)
+    c.mapa = mapa
     c._abrir()
+    c._ao_conectar()
     return c
+
+
+def _avisar(texto):
+    """Imprime um aviso. Se o terminal não codifica algum caractere (emoji no cp1252/ascii), imprime sem ele;
+    nunca lança exceção por causa de um aviso."""
+    try:
+        print(texto, flush=True)
+    except UnicodeEncodeError:
+        try:
+            cod = getattr(sys.stdout, 'encoding', None) or 'ascii'
+            print(texto.encode(cod, 'ignore').decode(cod).lstrip(), flush=True)
+        except Exception:
+            pass
+    except Exception:
+        pass
+
+
+def _perguntar_sim_nao(texto):
+    """Mostra o texto e pergunta [s/N]. True/False pela resposta; None se não há entrada (não trava)."""
+    _avisar(texto)
+    try:
+        resposta = input("Confirma? [s/N] ")
+    except (EOFError, OSError):
+        return None
+    return resposta.strip().lower() in ('s', 'sim', 'y', 'yes')
+
+
+AVISO_SEM_ENTRADA = ("⚠️  Modo 'perguntar' sem entrada para ler a resposta: tratando como 'manual' "
+                     "(nada foi criado sozinho). O 'perguntar' é para programas de console.")
 
 
 def _carregar_driver(tipo):
@@ -271,6 +319,11 @@ def _carregar_driver(tipo):
 class ConectorBase:
     tipo = None
     sql_suportado = False
+    modo = 'manual'                     # 'manual' | 'automatico' | 'perguntar'
+    mapa = None                         # mapa de tabelas do projeto (tabelas=...)
+
+    def _ao_conectar(self):             # só os conectores SQL fazem algo aqui
+        pass
 
     def __init__(self, params):
         self.params = params
@@ -350,6 +403,8 @@ class ConectorSQL(ConectorBase):
     suporta_unico = True
     suporta_padrao = True
     suporta_fk = True
+    add_notnull_exige_padrao = False    # SQLite: ADD COLUMN ... NOT NULL só com DEFAULT (até em tabela vazia)
+    add_unico_proibido = False          # SQLite: ADD COLUMN não aceita UNIQUE
     sem_if_not_exists = False          # Oracle, Firebird e Db2 não têm CREATE TABLE IF NOT EXISTS
     sem_if_exists = False               # ... nem DROP TABLE IF EXISTS
     minusculas = False                  # o banco devolve nomes em MAIÚSCULAS (Oracle, Firebird, Db2, Snowflake)
@@ -436,12 +491,26 @@ class ConectorSQL(ConectorBase):
                 conn.rollback()
             except Exception:
                 pass
-            raise ErroBanco(f"Erro no {self.nome_banco}: {e}") from e
+            raise ErroBanco(f"Erro no {self.nome_banco}: {e}" + self._dica_erro(str(e))) from e
         finally:
             try:
                 cur.close()
             except Exception:
                 pass
+
+    def _dica_erro(self, msg):
+        """Dica em português ACRESCENTADA depois da mensagem original (SQLite/PostgreSQL); '' se não se aplica."""
+        if self.tipo not in ('sqlite', 'postgres'):
+            return ''
+        m = msg.lower()
+        if 'no such table' in m or ('relation' in m and 'does not exist' in m and 'column' not in m):
+            return ('\nDica: essa tabela não existe neste banco. Confira o nome (db.listar_tabelas()) e crie com '
+                    'db.tabela("nome", {...}) ou db.preparar(mapa).')
+        if 'no column named' in m or 'has no column' in m or 'no such column' in m or \
+                ('column' in m and 'does not exist' in m):
+            return ('\nDica: essa coluna não existe nesta tabela. Adicione com '
+                    'db.adicionar_coluna(tabela, campo, definicao) ou db.preparar(mapa).')
+        return ''
 
     _SELECTS = ('SELECT', 'WITH', 'SHOW', 'DESCRIBE', 'DESC ', 'EXPLAIN', 'PRAGMA', 'VALUES')
 
@@ -547,6 +616,124 @@ class ConectorSQL(ConectorBase):
             partes.append("a mais na tabela: " + ", ".join(sobram))
         return (f"ℹ️  Tabela '{nome}' já existe com colunas diferentes das pedidas ({'; '.join(partes)}). "
                 "Nada foi alterado.")
+
+    # ── banco automático/manual: preparar, diferencas, adicionar_coluna ───────────────────────────
+    def _so_sqlite_postgres(self):
+        if self.tipo not in ('sqlite', 'postgres'):
+            raise ErroBanco(f"preparar/diferencas/adicionar_coluna ainda só estão disponíveis para SQLite e "
+                            f"PostgreSQL (este é {self.nome_banco}).")
+
+    def _mapa_de(self, mapa):
+        mapa = self.mapa if mapa is None else mapa
+        if not mapa:
+            raise ErroBanco("Nenhum mapa de tabelas informado. Use db.preparar({\"clientes\": {\"id\": \"autonum\", "
+                            "\"nome\": \"texto\"}}) ou passe tabelas=mapa em banco.conectar(...).")
+        return dict(mapa)
+
+    def _nomes_colunas(self, tabela):
+        return {str(r['coluna']).lower() for r in self.descrever_tabela(tabela)}
+
+    def _recusa_coluna(self, tabela, definicao, tem_dados):
+        """Motivo (texto) pelo qual a coluna NÃO pode ser adicionada a uma tabela existente; None se pode."""
+        t = str(definicao).lower().split()
+        if t and t[0] == 'autonum':
+            return "coluna 'autonum' (chave primária) não pode ser adicionada a uma tabela que já existe."
+        if ('obrigatorio' in t or 'notnull' in t) and 'padrao' not in t and (tem_dados or self.add_notnull_exige_padrao):
+            quando = "a tabela já tem dados" if tem_dados else f"o {self.nome_banco} exige isso ao adicionar coluna"
+            return (f"coluna obrigatória sem 'padrao' ({quando}). Acrescente um valor padrão "
+                    f"(ex.: \"inteiro obrigatorio padrao 0\") ou adicione a coluna sem 'obrigatorio'.")
+        if ('unico' in t or 'unique' in t) and self.add_unico_proibido:
+            return f"o {self.nome_banco} não aceita 'unico' ao adicionar coluna a uma tabela que já existe."
+        return None
+
+    def _plano(self, mapa):
+        """Lista do que falta: ('tabela', nome, campos) ou ('coluna', tabela, campo, definicao, motivo_recusa)."""
+        plano = []
+        for tabela, campos in self._mapa_de(mapa).items():
+            campos = dict(campos)
+            if not self.existe_tabela(tabela):
+                plano.append(('tabela', tabela, campos))
+                continue
+            tem = self._nomes_colunas(tabela)
+            tem_dados = None
+            for campo, definicao in campos.items():
+                if str(campo).lower() in tem:
+                    continue
+                if tem_dados is None:
+                    tem_dados = self.contar(tabela) > 0
+                plano.append(('coluna', tabela, campo, definicao, self._recusa_coluna(tabela, definicao, tem_dados)))
+        return plano
+
+    @staticmethod
+    def _texto_item(item):
+        if item[0] == 'tabela':
+            return f"Falta a tabela '{item[1]}'"
+        quase = f" (não poderá ser adicionada: {item[4]})" if item[4] else ""
+        return f"Falta a coluna '{item[1]}.{item[2]}'{quase}"
+
+    def diferencas(self, mapa=None):
+        """Lista de textos com o que o mapa pede e o banco não tem ([] = em dia). Não altera nada."""
+        self._so_sqlite_postgres()
+        return [self._texto_item(i) for i in self._plano(mapa)]
+
+    def adicionar_coluna(self, tabela, campo, definicao):
+        self._so_sqlite_postgres()
+        if not self.existe_tabela(tabela):
+            raise ErroBanco(f"A tabela '{tabela}' não existe. Crie com db.tabela(\"{tabela}\", {{...}}) "
+                            f"ou db.preparar(mapa).")
+        if str(campo).lower() in self._nomes_colunas(tabela):
+            return f"ℹ️  Coluna '{tabela}.{campo}' já existe. Nada foi alterado."
+        motivo = self._recusa_coluna(tabela, definicao, self.contar(tabela) > 0)
+        if motivo:
+            return f"⚠️  Coluna '{tabela}.{campo}' NÃO adicionada: {motivo}"
+        col, antes, fk = self._coluna(tabela, campo, definicao)
+        if fk:
+            col += ' ' + fk[fk.index('REFERENCES'):]
+        for cmd in antes:
+            self._executar(cmd)
+        self._executar(f'ALTER TABLE {self._id(tabela)} ADD COLUMN {col}')
+        return f"✅ Coluna '{tabela}.{campo}' adicionada"
+
+    def preparar(self, mapa=None):
+        """Cria o que o mapa pede e o banco não tem (tabelas e colunas novas). Nunca apaga nem altera tipos.
+        No modo 'perguntar' mostra o que falta e pergunta antes."""
+        self._so_sqlite_postgres()
+        plano = self._plano(mapa)
+        if not plano:
+            return "ℹ️  Nada a fazer: o banco já tem tudo o que o mapa pede."
+        if self.modo == 'perguntar':
+            resp = _perguntar_sim_nao("O mapa pede o que ainda não existe no banco:\n  " +
+                                      "\n  ".join(self._texto_item(i) for i in plano))
+            if resp is None:
+                _avisar(AVISO_SEM_ENTRADA)        # sem entrada: age como 'manual' (o pedido foi explícito)
+            elif not resp:
+                return "ℹ️  Nada foi criado (você respondeu não)."
+        linhas = []
+        for item in plano:
+            if item[0] == 'tabela':
+                linhas.append(self.tabela(item[1], item[2]))
+            else:
+                linhas.append(self.adicionar_coluna(item[1], item[2], item[3]))
+        return "\n".join(linhas)
+
+    def _ao_conectar(self):
+        if self.modo == 'manual' or not self.mapa:
+            return
+        if self.modo == 'perguntar':
+            plano = self._plano(self.mapa)
+            if not plano:
+                return
+            resp = _perguntar_sim_nao("O mapa de tabelas pede o que ainda não existe no banco:\n  " +
+                                      "\n  ".join(self._texto_item(i) for i in plano))
+            if resp is None:
+                _avisar(AVISO_SEM_ENTRADA)
+                return                                      # sem entrada: 'manual' não cria nada ao conectar
+            if not resp:
+                _avisar("ℹ️  Nada foi criado (você respondeu não).")
+                return
+        texto = self.preparar()
+        if not texto.startswith("ℹ️  Nada a fazer"):
+            _avisar(texto)
 
     def apagar_tabela(self, nome, cascata=False):
         if self.sem_if_exists:
@@ -784,6 +971,8 @@ class ConectorSQLite(ConectorSQL):
     autonum = 'INTEGER PRIMARY KEY AUTOINCREMENT'
     verdadeiro, falso = '1', '0'
     tipos = dict(ConectorSQL.tipos, json='TEXT')
+    add_notnull_exige_padrao = True
+    add_unico_proibido = True
 
     def _conectar_driver(self):
         sqlite3 = _carregar_driver('sqlite')
@@ -918,13 +1107,104 @@ class ConectorPostgres(ConectorSQL):
         extra = {}
         if (p.get('opcoes') or {}).get('sslmode'):
             extra['sslmode'] = p['opcoes']['sslmode']
+        banco = p['banco'] or 'postgres'
         try:
-            return pg.connect(host=p['host'], port=p['porta'], user=p['usuario'],
-                              password=p['senha'] or '', dbname=p['banco'] or 'postgres', **extra)
+            return self._conectar_em(pg, banco, extra)
         except UnicodeDecodeError:
             # PostgreSQL em português + senha errada: a mensagem do servidor não é UTF-8
             from advak_db import MSG_SENHA_ERRADA
             raise ErroBanco(MSG_SENHA_ERRADA) from None
+        except getattr(pg, 'OperationalError', ()) as e:
+            tipo_falha = self._classificar_falha(str(e))
+            if tipo_falha == 'outro':
+                raise                                   # erro desconhecido: passa sem conversão, como antes
+            if tipo_falha != 'banco_inexistente':
+                raise ErroBanco(self._mensagem_falha(tipo_falha, str(e))) from None
+            if not self._pode_criar_banco(banco):
+                raise ErroBanco(self._mensagem_falha(tipo_falha, str(e))) from None
+        # o banco não existe e o modo (ou a resposta) autoriza criar: cria pelo banco 'postgres' e reconecta
+        self._criar_banco_pelo_postgres(pg, banco, extra)
+        _avisar(f"✅ Banco '{banco}' criado")
+        return self._conectar_em(pg, banco, extra)
+
+    def _conectar_em(self, pg, banco, extra):
+        p = self.params
+        return pg.connect(host=p['host'], port=p['porta'], user=p['usuario'],
+                          password=p['senha'] or '', dbname=banco, **extra)
+
+    @staticmethod
+    def _classificar_falha(msg):
+        m = msg.lower()
+        if 'password authentication failed' in m or 'no password supplied' in m or 'authentication failed' in m:
+            return 'senha'
+        if 'does not exist' in m and 'database' in m:
+            return 'banco_inexistente'
+        if 'connection refused' in m or 'could not connect' in m or 'timeout' in m or 'timed out' in m \
+                or 'could not translate host' in m or 'getaddrinfo' in m or 'name or service not known' in m \
+                or 'is the server running' in m:
+            return 'rede'
+        return 'outro'
+
+    def _mensagem_falha(self, tipo_falha, original):
+        p = self.params
+        host, porta, banco = p['host'], p['porta'], p['banco'] or 'postgres'
+        # 1ª linha do texto original do driver, no final de toda mensagem (a do driver repete IPv6 e IPv4)
+        primeira = original.strip().splitlines()[0].strip() if original.strip() else ''
+        primeira = primeira.encode('utf-8', 'replace').decode('utf-8')
+        detalhe = f" Detalhe do driver: {primeira}" if primeira else ""
+        if tipo_falha == 'senha':
+            return (f"Senha ou usuário incorretos para o PostgreSQL em {host}:{porta} (usuário '{p['usuario']}'). "
+                    "Confira o usuário e a senha (ADVAK_DB_USER e ADVAK_DB_PASS no .env) e teste os mesmos dados "
+                    f"no pgAdmin.{detalhe}")
+        if tipo_falha == 'banco_inexistente':
+            return (f"O banco '{banco}' não existe neste servidor. Crie-o com db.criar_banco('{banco}') depois de "
+                    f"conectar ao banco 'postgres', ou conecte com modo=\"automatico\" para criá-lo sozinho.{detalhe}")
+        if tipo_falha == 'rede':
+            if porta != BANCOS['postgres']['porta']:
+                return (f"Nada respondeu em {host}:{porta}. A porta está certa? O PostgreSQL costuma usar a "
+                        f"{BANCOS['postgres']['porta']}. Se a porta estiver certa, o servidor pode estar "
+                        f"desligado.{detalhe}")
+            return (f"Não consegui falar com o PostgreSQL em {host}:{porta}. Ele está instalado e ligado? "
+                    "No Windows, procure o serviço 'postgresql-x64-NN' em Serviços (services.msc). Se o servidor "
+                    f"está em outro computador, confira o endereço ({host}) e o firewall.{detalhe}")
+        return f"Não foi possível conectar ao PostgreSQL em {host}:{porta}.{detalhe}"
+
+    def _pode_criar_banco(self, banco):
+        if self.modo == 'automatico':
+            return True
+        if self.modo == 'perguntar':
+            resp = _perguntar_sim_nao(f"O banco '{banco}' não existe neste servidor e o mapa de tabelas precisa dele.")
+            if resp is None:
+                _avisar(AVISO_SEM_ENTRADA)
+            return bool(resp)
+        return False
+
+    def _criar_banco_pelo_postgres(self, pg, banco, extra):
+        try:
+            conn = self._conectar_em(pg, 'postgres', extra)
+            try:
+                conn.autocommit = True
+                cur = conn.cursor()
+                cur.execute(f'CREATE DATABASE {self._id(banco)}')
+                cur.close()
+            finally:
+                conn.close()
+        except Exception as e:
+            raise ErroBanco(f"Não consegui criar o banco '{banco}': {str(e).strip().splitlines()[0] if str(e).strip() else e}") from None
+
+    def criar_banco(self, nome):
+        """db.criar_banco("loja"): cria o banco no servidor se ainda não existir (nunca apaga)."""
+        if not nome or not str(nome).strip():
+            raise ErroBanco("criar_banco: informe o nome do banco.")
+        if self._executar('SELECT 1 AS x FROM pg_database WHERE datname = %s', [str(nome)], buscar=True):
+            return f"ℹ️  Banco '{nome}' já existe"
+        conn = self._garantir()
+        conn.autocommit = True
+        try:
+            self._executar(f'CREATE DATABASE {self._id(nome)}')
+        finally:
+            conn.autocommit = False
+        return f"✅ Banco '{nome}' criado"
 
     def inserir(self, tabela, dados):
         if not dados:
