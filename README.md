@@ -1143,10 +1143,15 @@ A meta é que a linguagem tenha os recursos para quem programa nela criar qualqu
 
 O PDV do [guia prático](docs/GUIA_PRATICO.md#capítulo-13--pdv-didático) é didático e **não é PDV fiscal**.
 
+### Ideia para uma versão futura (sem data)
+
+Uma palavra própria para a divisão inteira (por exemplo `div`), deixando o `//` sempre como comentário. Acabaria com a regra de espaços e de parênteses descrita abaixo, mas quebraria os programas que hoje usam `//` como divisão, então exigiria uma versão nova, com aviso de transição. Está só registrada como possibilidade: **não está implementada e não há versão prevista.**
+
 ### Limitações conhecidas da linguagem
 
-- Um comentário escrito logo depois de uma divisão inteira (`seja y = 7 // 2   // metade`) é lido como outra divisão.
-- Dentro de parênteses (inclusive em funções escritas como argumento, como as rotas do servidor e os botões da janela), um comentário `//` que pareça uma conta, como `// 201 = criado`, é lido como divisão inteira. Comentários com frases normais não são afetados.
+- **Divisão inteira ou comentário?** O `//` divide quando vem colado ou com um espaço antes (`7//2`, `7 // 2`) e é comentário quando tem 2 ou mais espaços (ou um tab) antes dele, fora de parênteses abertos. Por isso `seja y = 7 // 2   // metade` funciona: a divisão vale 3 e `// metade` é comentário. Com um espaço só (`7 // 2 // metade`), o segundo `//` ainda é lido como outra divisão.
+- **Dentro de parênteses abertos o comentário continua sendo lido como divisão.** Vale também para o corpo de uma função escrita como argumento, como `testar(...)`: ali `seja z = (10 // 3)   // 3` tem duas divisões, e um comentário `//` que pareça uma conta, como `// 201 = criado`, é lido como divisão inteira. Comentários com frases normais (`// isto é um comentário`) não são afetados.
+- **`advak formatar`** mantém os 2 ou mais espaços antes de um comentário `//` no fim da linha, porque com um espaço só o `//` passaria a ser lido como divisão.
 
 ---
 

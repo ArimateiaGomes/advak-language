@@ -79,6 +79,37 @@ Todas as mudanças importantes da Advak Language. Datas no formato ano-mês-dia.
 - **`area.widget` é um atalho provisório** que expõe o objeto tkinter (hoje usado para `bind` de mouse e
   teclado). Será substituído por eventos em português num passo futuro; não conte com ele a longo prazo.
 
+### Linguagem e ferramentas
+
+- **Comentário alinhado depois de uma divisão inteira** (`advak_lexer.py`). Antes, `seja y = 7 // 2   // metade`
+  dava erro de sintaxe, e `seja z = (10 // 3)   // 3` e `seja b = (20 // 3) + 1   // 201 = criado` rodavam em
+  silêncio com valor errado (1 em vez de 3; 6 em vez de 7), porque o segundo `//` da linha era lido como outra
+  divisão. Agora o segundo `//` com 2 ou mais espaços (ou um tab) antes, fora de parênteses abertos, é comentário.
+  - Continua divisão: `a // b // c` com um espaço, e o que está dentro de parênteses abertos (medido com
+    `testar(...)` e com uma chamada aberta em várias linhas). Comentário de frase normal não é afetado em nenhum
+    dos dois lugares (0 tokens `//` na medição).
+  - Testes: `testes/test_comentarios.py`, classe `TestComentarioAposDivisao`, 8 testes novos. Antes da correção:
+    `Ran 22 tests`, `FAILED (failures=7)`; depois: `Ran 22 tests`, `OK`.
+  - Comparação de tokens dos 439 `.dk` do repositório, lexer anterior contra o novo: 438 iguais; o
+    `testes/comentario_barras.dk` atual difere por ter ganhado linhas novas, e a versão dele no HEAD é igual.
+- **`advak formatar` preserva os 2 ou mais espaços antes de um comentário `//` no fim da linha**
+  (`advak_formatador.py`). Antes, `seja x = 1   // 3` virava `seja x = 1 // 3` (a divisão `1 // 3`) e
+  `imprimir(5)   // 2` virava um programa que nem analisa.
+  - Testes: `testes/test_formatador.py`, classe `TesteComentarioAlinhado`, 6 testes novos. Antes da correção:
+    `Ran 6 tests`, `FAILED (failures=16, errors=1)`; depois, a suíte do formatador: `Ran 19 tests`, `OK`.
+- Com as duas mudanças, as 18 suítes de `testes/` passam e o curso completo (`python testes/curso.py`), rodando
+  sozinho, termina com `pronto.` e `exit=0`.
+- **Ideia para uma versão futura, não implementada:** palavra própria para a divisão inteira (por exemplo `div`),
+  com o `//` sempre como comentário. Veja "Ideia para uma versão futura" no README. Sem versão prevista.
+
+### Conhecido
+
+- A lição 22 do curso pode falhar sob carga forte de CPU: com 4 processos em loop, `python testes/curso.py` deu
+  "bloco desatualizado" em blocos da lição 22 (vistos: `aula22_resposta5.dk` no código corrigido; `aula22_resposta7.dk`
+  e `aula22_exemplo3.dk` no código de antes das correções acima). O curso completo rodando sozinho passou
+  (`exit=0`, cerca de 9 minutos); uma execução completa feita ao mesmo tempo que outras tarefas falhou. A lição usa
+  janela gráfica e temporizadores; a causa não foi investigada e não há correção prometida.
+
 ## [5.2.0] — 2026-10-13
 
 Versão com mais recursos de linguagem, 23 bancos de dados, IA opcional, leitura de documentos e
