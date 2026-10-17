@@ -11,3 +11,16 @@ testar("comentario que comeca com numero", () => {
     afirmar_igual(a, 8);
     afirmar_igual(b, falso);
 });
+
+// Comentário de uma palavra, de um número ou com "=" logo depois de uma divisão (fora de parênteses abertos)
+seja metade = 7 // 2   // metade
+seja terco = (10 // 3)   // 3
+seja criado = (20 // 3) + 1   // 201 = criado
+seja encadeada = 100 // 5 // 2
+
+testar("comentario depois de divisao inteira", () => {
+    afirmar_igual(metade, 3);
+    afirmar_igual(terco, 3);
+    afirmar_igual(criado, 7);
+    afirmar_igual(encadeada, 10);
+});

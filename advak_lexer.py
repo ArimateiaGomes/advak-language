@@ -309,7 +309,12 @@ class AdvakLexer:
                             # Could be another // (floor div again) or real comment
                             # Check: any non-skip token on this line before → floor div
                             rest2 = v2[2:].strip()
-                            valida2 = _parece_expressao(rest2)
+                            # Segundo "//" alinhado (2+ espaços ou tab) fora de parênteses abertos é comentário
+                            antes2 = line_prefix + '//' + rest_stripped[:m2.start()]
+                            abertos2 = (sum(1 for k in tokens if k['type'] in ('LPAREN', 'LBRACKET'))
+                                        - sum(1 for k in tokens if k['type'] in ('RPAREN', 'RBRACKET')))
+                            alinhado2 = antes2.endswith('\t') or antes2.endswith('  ')
+                            valida2 = _parece_expressao(rest2) and not (alinhado2 and abertos2 <= 0)
                             if valida2 and tokens and tokens[-1].get('line') == line:
                                 tokens.append({'type':'OP','value':'//','line':line,'col':col})
                                 col += 2

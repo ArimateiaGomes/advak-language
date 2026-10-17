@@ -7,6 +7,7 @@ resto da linha é uma expressão (sem dois valores seguidos nem caracteres estra
 Rodar:  python -I testes/test_comentarios.py
 """
 import os
+import subprocess
 import sys
 import unittest
 
@@ -86,6 +87,52 @@ class TesteRegraDoEspaco(unittest.TestCase):
 
     def test_aspas_fora_de_parenteses_continuam_comentario(self):
         self.assertFalse(tem_divisao('seja x = 1   // "texto"'))
+
+
+class TestComentarioAposDivisao(unittest.TestCase):
+    """Um segundo "//" na linha, depois de uma divisão, é comentário quando está alinhado (2+ espaços ou tab)
+    fora de parênteses abertos. Antes, "7 // 2   // metade" virava duas divisões (erro de sintaxe ou valor errado)."""
+    def test_comentario_de_uma_palavra_apos_divisao(self):
+        self.assertEqual(tokens("seja y = 7 // 2   // metade").count(('OP', '//')), 1)
+
+    def test_comentario_apos_divisao_em_parenteses(self):
+        t = tokens("imprimir(7 // 2)   // metade")
+        self.assertEqual(t.count(('OP', '//')), 1)
+        self.assertNotIn(('IDENT', 'metade'), t)
+
+    def test_comentario_numerico_apos_divisao(self):
+        t = tokens("seja z = (10 // 3)   // 3")
+        self.assertEqual(t.count(('OP', '//')), 1)
+        self.assertEqual(t[-1], ('RPAREN', ')'))   # o "3" do comentário não entra como número
+
+    def test_comentario_com_igual_apos_divisao(self):
+        t = tokens("seja b = (20 // 3) + 1   // 201 = criado")
+        self.assertEqual(t.count(('OP', '//')), 1)
+        self.assertEqual(t[-2:], [('OP', '+'), ('NUMBER', 1)])
+
+    def test_comentario_com_tab_apos_divisao(self):
+        self.assertEqual(tokens("seja y = 7 // 2\t// metade").count(('OP', '//')), 1)
+
+    def test_divisao_encadeada_com_um_espaco_continua(self):
+        """Regressão: a·b·c com um espaço, colado ou em parênteses continua sendo duas divisões."""
+        for codigo in ["seja c = 100 // 5 // 2", "seja c = 100//5//2", "seja c = (100 // 5   // 2)"]:
+            with self.subTest(codigo=codigo):
+                self.assertEqual(tokens(codigo).count(('OP', '//')), 2)
+
+    def test_encadeada_com_dois_espacos_o_segundo_e_comentario(self):
+        self.assertEqual(tokens("seja c = 100 // 5  // 2").count(('OP', '//')), 1)
+
+    def test_arquivo_de_ponta_a_ponta(self):
+        """testes/comentario_barras.dk roda com a Advak de verdade e todos os testar() passam."""
+        raiz = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        r = subprocess.run([sys.executable, "-I", os.path.join(raiz, "advak.py"),
+                            os.path.join(raiz, "testes", "comentario_barras.dk")],
+                           cwd=raiz, capture_output=True, text=True, encoding="utf-8", timeout=60,
+                           env=dict(os.environ, PYTHONUTF8="1"))
+        saida = r.stdout + r.stderr
+        self.assertNotIn("ERRO", saida, saida)
+        self.assertNotIn("❌", saida, saida)
+        self.assertEqual(saida.count("✅"), 3, saida)
 
 
 class TesteComentarioEmLinhaPropria(unittest.TestCase):
