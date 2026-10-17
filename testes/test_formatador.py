@@ -102,6 +102,52 @@ class TesteOperadoresCompostos(unittest.TestCase):
         self.assertEqual(fmt(origem), esperado)
 
 
+class TesteComentarioAlinhado(unittest.TestCase):
+    """Os 2+ espaços (ou o tab) antes de um "//" de comentário no fim da linha são o que o lexer lê como
+    comentário alinhado. Se o formatador os juntasse em um espaço só, "1   // 3" viraria a divisão "1 // 3"."""
+    LINHAS = [
+        "seja x = 1   // 3",
+        "seja x = 2 * 3   // 4",
+        "imprimir(5)   // 2",
+        "seja y = 7 // 2   // metade",
+        "seja z = (10 // 3)   // 3",
+        "seja b = (20 // 3) + 1   // 201 = criado",
+        "seja x = 5   // metade",
+        "seja x = 1\t// 3",
+        "seja x = 1     // 3",
+    ]
+
+    def test_espacos_antes_do_comentario_sao_preservados(self):
+        for linha in self.LINHAS:
+            with self.subTest(linha=linha):
+                self.assertEqual(fmt(linha), linha)
+
+    def test_arvore_igual_depois_de_formatar(self):
+        for linha in self.LINHAS:
+            with self.subTest(linha=linha):
+                self.assertEqual(sem_linhas(ast(fmt(linha))), sem_linhas(ast(linha)))
+
+    def test_formatar_duas_vezes_da_o_mesmo(self):
+        for linha in self.LINHAS:
+            with self.subTest(linha=linha):
+                self.assertEqual(fmt(fmt(linha)), fmt(linha))
+
+    def test_dentro_de_bloco_mantem_o_recuo_e_o_alinhamento(self):
+        entrada = "se (verdadeiro) {\nseja x = 1   // 3\n}"
+        self.assertEqual(fmt(entrada), "se (verdadeiro) {\n    seja x = 1   // 3\n}")
+
+    def test_espacos_fora_do_comentario_continuam_sendo_juntados(self):
+        """Regressão: só o espaço antes do "//" é preservado; o resto do código segue normalizado."""
+        self.assertEqual(fmt("seja  a  =  1   // 3"), "seja a = 1   // 3")
+        self.assertEqual(fmt("seja  a  =  1"), "seja a = 1")
+        self.assertEqual(fmt("seja a = 7 // 2"), "seja a = 7 // 2")        # divisão com 1 espaço: igual a antes
+
+    def test_espacos_antes_de_texto_no_fim_da_linha_continuam_sendo_juntados(self):
+        """Regressão: só comentário "//" é preservado; um texto entre aspas no fim da linha não."""
+        self.assertEqual(fmt('imprimir(a,   "x")'), 'imprimir(a, "x")')
+        self.assertEqual(fmt('seja t = a  +   "x"'), 'seja t = a + "x"')
+
+
 class TesteSignificadoPreservado(unittest.TestCase):
     """Formatar não pode mudar o que o programa significa."""
 

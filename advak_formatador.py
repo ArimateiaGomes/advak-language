@@ -77,8 +77,14 @@ class Formatador:
         corpo = re.sub(r'(?<![=!<>.+\-*/%&|^?])\s*=(?![=>])\s*', ' = ', corpo)
         # Garante espaço após vírgula
         corpo = re.sub(r',([^\s])', r', \1', corpo)
-        # Remove espaço duplo (o recuo no começo da linha é preservado)
-        corpo = re.sub(r'  +', ' ', corpo)
+        # Remove espaço duplo (o recuo no começo da linha é preservado), menos antes de um comentário "//" no
+        # fim da linha: 2+ espaços ali é o que o lexer lê como comentário (com 1 espaço, "1 // 3" é divisão)
+        def juntar(m):
+            seguinte = m.group(1)
+            if seguinte and (seguinte == '//' or lits[int(m.group(2))].startswith('//')):
+                return m.group(0)
+            return ' ' + (seguinte or '')
+        corpo = re.sub(r'  +(//|\x00(\d+)\x00$)?', juntar, corpo)
         # Remove trailing whitespace
         return (recuo + restaurar_literais(corpo, lits)).rstrip()
     
