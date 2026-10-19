@@ -901,6 +901,75 @@ Para ver todos os componentes funcionando:
 advak projetos\guia_gui.dk
 ```
 
+### Teclado e mouse
+
+`gui.ao_tecla(tratador)` chama o tratador a cada tecla pressionada na janela principal. Numa tela de desenho (`gui.canvas`), `area.ao_clicar(tratador)` e `area.ao_soltar(tratador)` chamam o tratador quando o botão esquerdo do mouse é pressionado ou solto sobre ela. A variável da tela não pode se chamar `tela` (palavra reservada); aqui ela é `area`.
+
+```advak
+seja jan = gui.janela("Teclado e mouse", 320, 200)
+seja area = gui.canvas(jan, 300, 140, "branco")
+seja bola = area.circulo(150, 70, 10, "azul")
+
+gui.ao_tecla((e) => {
+    imprimir("tecla:", e.tecla, "| caractere:", e.caractere)
+    se (e.tecla == "esquerda") {
+        area.mover(bola, -10, 0)
+    }
+})
+area.ao_clicar((e) => { imprimir("clicou em", e.x, e.y) })
+area.ao_soltar((e) => { imprimir("soltou em", e.x, e.y) })
+
+// Daqui até gui.iniciar(): simula a pessoa usando a janela. Num programa de verdade, apague estas linhas.
+gui.apos(200, () => {
+    jan.focus_force()
+    jan.event_generate("<KeyPress>", keysym="a")
+    jan.event_generate("<KeyPress>", keysym="Left")
+    area.widget.event_generate("<ButtonPress-1>", x=40, y=30)
+    area.widget.event_generate("<ButtonRelease-1>", x=40, y=30)
+})
+gui.apos(1200, () => {
+    imprimir("bola em", area.widget.coords(bola))
+    gui.parar()
+})
+gui.iniciar()
+imprimir("fechou")
+```
+
+Saída deste programa, rodado de verdade (3 vezes, igual nas 3). A janela fecha sozinha por causa do `gui.apos(1200, ...)`:
+
+```text
+tecla: a | caractere: a
+tecla: esquerda | caractere: 
+clicou em 40 30
+soltou em 40 30
+bola em [130.0, 60.0, 150.0, 80.0]
+fechou
+```
+
+As linhas de simulação usam `jan.event_generate` e `area.widget`, atalhos para o Tkinter; `area.widget` é provisório e será trocado por eventos em português num passo futuro.
+
+**O que o tratador recebe:**
+
+| Chamada | O tratador recebe |
+|---|---|
+| `gui.ao_tecla` | `e.tecla` e `e.caractere` |
+| `area.ao_clicar`, `area.ao_soltar` | `e.x` e `e.y`: as coordenadas do desenho, números inteiros |
+
+- `tecla` vem em português para sete teclas: `esquerda`, `direita`, `cima`, `baixo`, `espaco`, `enter` e `esc`. As outras seguem o nome do Tk (`a`, `A`, `F1`...). `caractere` é o texto digitado: vazio para setas, Esc e F1, e `"\r"` para enter. O `ç` chega como `ccedilla` em `tecla` e como `ç` em `caractere`.
+- Chamar `gui.ao_tecla`, `area.ao_clicar` ou `area.ao_soltar` de novo troca o tratador.
+- Uma tecla digitada num campo com foco também chega ao `gui.ao_tecla`; o campo recebe o texto normalmente.
+- Só o botão esquerdo do mouse. Não existem `ao_mover` nem tratador de tecla solta.
+- Os tratadores rodam um por vez, na ordem em que chegam. Um erro dentro de um tratador aparece no terminal, com a mensagem e a linha.
+- `ao_soltar` tem outro sentido em `habilitar_drop` e `kanban`: lá é o tratador de um item arrastado e solto numa área; em `area.ao_soltar` é soltar o botão do mouse sobre a tela.
+
+**O que não foi medido:**
+
+- Se o Windows repete a tecla segurada. O tratador é chamado uma vez por tecla que o Tk entregar, um de cada vez, sem juntar eventos.
+- Janela secundária: `gui.ao_tecla` só foi testado na janela principal.
+- Programas compilados (`advak_compiler.py`): `gui.ao_tecla` não existe neles. O compilador também não lista `gui.canvas`.
+
+Detalhes e testes: `CHANGELOG.md` e `testes/test_gui_teclado.py`.
+
 ---
 
 ## Testes unitários
