@@ -103,6 +103,11 @@ ele mesmo mostra o resultado de `advak --versao`.
 do `INSTALAR.bat`. A partir daí você digita só `advak programa.dk`, em qualquer pasta, em vez de
 `python advak.py programa.dk`.
 
+Digitar só `advak`, sem nada depois, abre o modo interativo (REPL). Para sair, digite `.sair`, ou use Ctrl+Z e
+Enter, ou feche a janela.
+O `advak.bat` usa a página de código 65001 (UTF-8) e `PYTHONUTF8=1` enquanto roda, e devolve os valores anteriores
+ao sair.
+
 ## 4. Testar a instalação
 
 Em um Prompt de Comando **novo**:
