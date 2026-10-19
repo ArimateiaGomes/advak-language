@@ -23,7 +23,7 @@ Recursos adicionados:
   - gui.cor_hex(nome)             — resolve nome para hex
 """
 
-import os, sys, threading, time, json
+import os, sys, threading, time, json, queue
 from datetime import datetime, date
 
 try:
@@ -191,6 +191,103 @@ def _positivo_canvas(valor, nome, minimo=0):
     return valor
 
 
+# ── Tratadores (callbacks) ───────────────────────────────────────────────────
+# Cada tratador .dk roda fora da thread da janela. Antes: uma thread por chamada e `except: pass`, então dois
+# tratadores corriam juntos e o erro de um sumia. Agora há uma fila (um por vez, na ordem de chegada) e o erro
+# aparece uma vez no stderr. Chave de segurança: False volta a uma thread por chamada (o erro continua visível).
+_SERIALIZAR_CALLBACKS = True
+
+
+def _janela_ja_fechou(e):
+    """Chamar o Tk depois do destroy levanta RuntimeError/TclError: é a janela que fechou, não erro do programa."""
+    visto = set()
+    while e is not None and id(e) not in visto:
+        visto.add(id(e))
+        t = str(e)
+        if ('main thread is not in main loop' in t or 'application has been destroyed' in t
+                or 'invalid command name' in t):
+            return True
+        e = e.__cause__ or e.__context__
+    return False
+
+
+class _Despachante:
+    """Roda os tratadores .dk (um por vez) e mostra o erro de cada um uma única vez."""
+
+    def __init__(self):
+        self._fila = queue.Queue()
+        self._cond = threading.Condition()
+        self._pendentes = 0
+        self._trabalhador = None
+        self._vistos = set()
+        self._total = 0
+
+    def enviar(self, fn, args, origem=None):
+        with self._cond:
+            self._pendentes += 1
+            if _SERIALIZAR_CALLBACKS:
+                self._fila.put((fn, args, origem))
+                if self._trabalhador is None:
+                    self._trabalhador = threading.Thread(target=self._trabalhar, daemon=True)
+                    self._trabalhador.start()
+                return
+        threading.Thread(target=self._rodar, args=(fn, args, origem), daemon=True).start()
+
+    def _trabalhar(self):
+        while True:
+            self._rodar(*self._fila.get())
+
+    def _rodar(self, fn, args, origem):
+        import asyncio, warnings
+        warnings.filterwarnings('ignore', category=RuntimeWarning, message='coroutine.*never awaited')
+        interp = None
+        loop = asyncio.new_event_loop()
+        try:
+            asyncio.set_event_loop(loop)
+            from advak_interpreter import AdvakInterpreter
+            interp = AdvakInterpreter.__new__(AdvakInterpreter)
+            interp.ast = []
+            interp.global_scope = fn.closure
+            interp.ai_api_key   = getattr(fn.closure, '_ai_key', None)
+            interp.db           = getattr(fn.closure, '_db', None)
+            loop.run_until_complete(interp._call_fn(fn, args, fn.closure))
+        except Exception as e:
+            if not _janela_ja_fechou(e):
+                self._relatar(e, fn, origem, getattr(interp, '_current_line', None))
+        finally:
+            loop.close()
+            with self._cond:
+                self._pendentes -= 1
+                self._cond.notify_all()
+
+    def _relatar(self, e, fn, origem, linha):
+        import re
+        msg = re.sub(r'\s*\(linha \d+\)\s*$', '', str(e) or type(e).__name__).strip()
+        origem = origem or (f"tratador '{fn.name}'" if getattr(fn, 'name', None) else 'tratador')
+        with self._cond:
+            self._total += 1
+            chave = (origem, msg, linha)
+            if chave in self._vistos:
+                return
+            self._vistos.add(chave)
+        texto = f"❌ Erro em {origem}: {msg}" + (f" (linha {linha})" if linha else "") + "\n"
+        try:
+            sys.stderr.write(texto)
+        except UnicodeEncodeError:
+            sys.stderr.write(texto.encode('ascii', 'replace').decode('ascii'))
+        except Exception:
+            pass
+
+    def esperar(self, limite):
+        with self._cond:
+            return self._cond.wait_for(lambda: self._pendentes == 0, limite)
+
+    def resumo(self):
+        """(erros no total, erros diferentes)"""
+        with self._cond:
+            return self._total, len(self._vistos)
+
+
 class Tela:
     """Área de desenho 2D. Cada desenho devolve um número de item para mover ou apagar."""
 
@@ -251,6 +348,7 @@ class AdvakGUIModern:
         self._tema_nome = 'claro'
         self._toasts    = []
         self._style     = None
+        self._despachante = _Despachante()
 
     # ── Janela principal ──────────────────────────────────────────────────────
 
@@ -427,7 +525,18 @@ class AdvakGUIModern:
         if hasattr(pai, '_frame'): return pai._frame
         return pai
 
-    def _chamar(self, fn, arg=None):
+    def _esperar_tratadores(self, limite=5.0):
+        """True quando não há mais tratador rodando nem na fila; False se estourar o limite (segundos)."""
+        return self._despachante.esperar(limite)
+
+    def _linha_resumo_erros(self):
+        total, diferentes = self._despachante.resumo()
+        if not total:
+            return ""
+        return (f"⚠ {total} {'erro' if total == 1 else 'erros'} em tratadores "
+                f"({diferentes} {'diferente' if diferentes == 1 else 'diferentes'}).")
+
+    def _chamar(self, fn, arg=None, origem=None):
         import asyncio, concurrent.futures
         if not fn: return
         if callable(fn) and not hasattr(fn, 'params'):
@@ -446,26 +555,7 @@ class AdvakGUIModern:
                 args = []  # usa defaults, não passa widget
             else:
                 args = [arg] if arg is not None else []
-            def run():
-                import warnings
-                warnings.filterwarnings('ignore', category=RuntimeWarning,
-                                        message='coroutine.*never awaited')
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                try:
-                    from advak_interpreter import AdvakInterpreter
-                    interp = AdvakInterpreter.__new__(AdvakInterpreter)
-                    interp.ast = []
-                    interp.global_scope = fn.closure
-                    interp.ai_api_key   = getattr(fn.closure, '_ai_key', None)
-                    interp.db           = getattr(fn.closure, '_db', None)
-                    loop.run_until_complete(interp._call_fn(fn, args, fn.closure))
-                except Exception as _e:
-                    # Log silently — não travar a GUI por erro em callback
-                    pass
-                finally:
-                    loop.close()
-            threading.Thread(target=run, daemon=True).start()
+            self._despachante.enviar(fn, args, origem)
 
     # ── Widgets básicos (compatíveis com advak_gui.py) ────────────────────────
 
@@ -1416,6 +1506,9 @@ class AdvakGUIModern:
     def iniciar(self):
         _check()
         if self._root: self._root.mainloop()
+        resumo = self._linha_resumo_erros()
+        if resumo:
+            print(resumo, file=sys.stderr)
 
     def parar(self):
         if self._root:
@@ -2247,7 +2340,7 @@ class AdvakGUIModern:
         )
         return api
 
-    def _chamar_com_args(self, fn, args):
+    def _chamar_com_args(self, fn, args, origem=None):
         """Chama função Advak com lista de argumentos, em thread segura."""
         if fn is None: return
         import asyncio
@@ -2266,23 +2359,4 @@ class AdvakGUIModern:
             return
         if hasattr(fn, 'params'):
             # AdvakFunction — executa via interpretador
-            def run():
-                import warnings
-                warnings.filterwarnings('ignore', category=RuntimeWarning,
-                                        message='coroutine.*never awaited')
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                try:
-                    from advak_interpreter import AdvakInterpreter
-                    interp = AdvakInterpreter.__new__(AdvakInterpreter)
-                    interp.ast = []
-                    interp.global_scope = fn.closure
-                    interp.ai_api_key   = getattr(fn.closure, '_ai_key', None)
-                    interp.db           = getattr(fn.closure, '_db', None)
-                    loop.run_until_complete(interp._call_fn(fn, args, fn.closure))
-                except Exception:
-                    pass
-                finally:
-                    loop.close()
-            import threading
-            threading.Thread(target=run, daemon=True).start()
+            self._despachante.enviar(fn, args, origem)

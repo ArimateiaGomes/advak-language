@@ -78,6 +78,10 @@ Todas as mudanças importantes da Advak Language. Datas no formato ano-mês-dia.
   `tela.texto(txt, x, y)` do canvas SVG global (aí o texto vem primeiro).
 - **`area.widget` é um atalho provisório** que expõe o objeto tkinter (hoje usado para `bind` de mouse e
   teclado). Será substituído por eventos em português num passo futuro; não conte com ele a longo prazo.
+- **Mudado:** erros dentro de tratadores (botão, `gui.apos`, `gui.repetir`) agora aparecem no terminal (stderr), com a
+  mensagem e a linha; antes eram engolidos em silêncio. O mesmo erro repetido aparece uma vez, e ao fechar a janela
+  sai um resumo (`⚠ 3 erros em tratadores (1 diferente).`). Um erro causado só por a janela já ter fechado não é mostrado.
+  Os tratadores passam a rodar **um por vez**, na ordem em que chegam. Testes: `testes/test_gui_eventos.py`.
 
 ### Linguagem e ferramentas
 
@@ -109,6 +113,12 @@ Todas as mudanças importantes da Advak Language. Datas no formato ano-mês-dia.
   e `aula22_exemplo3.dk` no código de antes das correções acima). O curso completo rodando sozinho passou
   (`exit=0`, cerca de 9 minutos); uma execução completa feita ao mesmo tempo que outras tarefas falhou. A lição usa
   janela gráfica e temporizadores; a causa não foi investigada e não há correção prometida.
+- **Os tratadores da interface gráfica rodam um por vez; um tratador que espera por outro tratador não termina.** O
+  segundo só começa quando o primeiro acaba. Medido: um tratador A esperando um sinal que só o tratador B envia, com B
+  chegando depois de A, não recebeu o sinal em 3 s; com `_SERIALIZAR_CALLBACKS = False` (em `advak_gui_modern.py`,
+  volta a uma thread por chamada) os dois terminaram em 0,2 s. Uma busca por `esperar`, `aguardar`, `dormir` e `sleep`
+  nos `.dk` do curso e de `projetos/` só achou `embarcado.aguardar` em `projetos/mobile_embarcado_demo.dk`, que não
+  verifiquei se está dentro de um tratador.
 
 ## [5.2.0] — 2026-10-13
 

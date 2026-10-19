@@ -321,7 +321,7 @@ Campo vazio devolve: []
 
 **Como corrigir:** converta com `numero(...)` e valide com `e_numero(...)` antes (aula 15).
 
-**4. Um erro dentro do botão passa em silêncio.** Se a função do botão tem um defeito, a Advak **não mostra** a caixa de erro: o botão simplesmente "não faz nada". Aqui, `arredondar` não existe para números (o certo é `arred`), mas nada avisa:
+**4. Um erro dentro do botão aparece só no terminal.** Se a função do botão tem um defeito, a Advak mostra o erro **no terminal**, com a mensagem e a linha, mas a janela segue sem reação: o botão simplesmente "não faz nada" nela. Aqui, `arredondar` não existe para números (o certo é `arred`):
 
 <!--codigo:aula22_erro4.dk-->
 ```advak
@@ -345,10 +345,12 @@ gui.iniciar()
 <!--saida:aula22_erro4.dk-->
 ```text
 1) o botão começou a rodar
+❌ Erro em tratador: Não é possível acessar 'arredondar' em número decimal (linha 5)
 Texto da janela depois do clique: ainda não calculou
+⚠ 1 erro em tratadores (1 diferente).
 ```
 
-**Como corrigir:** quando um botão "não faz nada", espalhe `imprimir("passou aqui")` pela função: a última mensagem que aparecer mostra onde parou. Também ajuda testar a função fora do botão primeiro, chamando-a direto.
+**Como corrigir:** leia a mensagem no terminal: ela diz o que falhou e em que linha (aqui, a 5). Se o botão faz a coisa errada sem mensagem nenhuma, espalhe `imprimir("passou aqui")` pela função: a última mensagem que aparecer mostra onde parou. Também ajuda testar a função fora do botão primeiro, chamando-a direto.
 
 ## Exercícios
 

@@ -160,7 +160,7 @@ Se algum desses testes quebrar no futuro, você descobre **na hora**, antes de o
 
 A janela só **chama** o repositório e mostra o resultado. Duas regras de ouro aqui:
 
-- toda chamada que pode dar erro vai dentro de `tentar`/`capturar`, e a mensagem aparece num label de status (lembre da aula 22: erro dentro de um botão não aparece sozinho!);
+- toda chamada que pode dar erro vai dentro de `tentar`/`capturar`, e a mensagem aparece num label de status (lembre da aula 22: o erro de um botão aparece só no terminal, e a janela segue sem reação!);
 - depois de cada mudança, `atualizar_tela()` redesenha a tabela a partir do banco. A verdade está sempre no banco, nunca em uma lista paralela.
 
 Como na aula 22, as últimas linhas **simulam** a pessoa usando a janela (digitar, clicar, escolher uma linha) para o exemplo mostrar o resultado sozinho; num programa de verdade, quem faz isso é o usuário. Um clique de cada vez, com uma folga entre eles.
