@@ -879,6 +879,7 @@ class AdvakInterpreter:
                 'parar':        _gui.parar,
                 'apos':         _gui.apos,
                 'repetir':      _gui.repetir,
+                'ao_tecla':     _gui.ao_tecla,
                 'switch':           getattr(_gui,'switch',  lambda *a,**k: None),
                 'toggle':           getattr(_gui,'switch',  lambda *a,**k: None),
                 'atualizar':        _gui.atualizar,

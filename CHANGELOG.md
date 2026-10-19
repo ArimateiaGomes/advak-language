@@ -78,6 +78,23 @@ Todas as mudanças importantes da Advak Language. Datas no formato ano-mês-dia.
   `tela.texto(txt, x, y)` do canvas SVG global (aí o texto vem primeiro).
 - **`area.widget` é um atalho provisório** que expõe o objeto tkinter (hoje usado para `bind` de mouse e
   teclado). Será substituído por eventos em português num passo futuro; não conte com ele a longo prazo.
+- **Teclado e mouse em português:** `gui.ao_tecla(tratador)` chama o tratador a cada tecla pressionada na janela
+  principal, com `{tecla, caractere}`. `area.ao_clicar(tratador)` e `area.ao_soltar(tratador)` chamam o tratador com
+  `{x, y}` (as coordenadas do desenho) quando o botão esquerdo do mouse é pressionado ou solto sobre a tela. Chamar de
+  novo troca o tratador. Teste: `testes/test_gui_teclado.py`, 17 testes.
+  - `tecla` vem em português para sete teclas (`esquerda`, `direita`, `cima`, `baixo`, `espaco`, `enter`, `esc`); as
+    outras seguem o nome do Tk (`a`, `A`, `F1`...). `caractere` é o texto digitado: vazio para setas, Esc e F1, e
+    `"\r"` para enter. O `ç` chega como `ccedilla` em `tecla` e como `ç` em `caractere`.
+  - Uma tecla digitada num campo com foco também chega ao `gui.ao_tecla`; o campo recebe o texto normalmente.
+  - Só o botão esquerdo do mouse. Não há `ao_mover` nem tratador de tecla solta.
+  - `area.ao_clicar` e `area.ao_soltar` não apagam um `bind` que o programa já tenha feito em `area.widget`.
+  - **`ao_soltar` tem outro sentido em `habilitar_drop` e `kanban`:** lá é o tratador de um item arrastado e solto
+    numa área; em `area.ao_soltar` é soltar o botão do mouse sobre a tela.
+  - Não foi medido se o Windows repete a tecla segurada; o tratador é chamado uma vez por tecla que o Tk entregar, um
+    de cada vez, sem juntar eventos.
+  - **Janela secundária:** `gui.ao_tecla` só foi testado na janela principal; o bindtags de uma janela secundária
+    inclui all, mas o event_generate não permitiu medir.
+  - **`gui.ao_tecla` não existe em programas compilados** (`advak_compiler.py`, que também não lista `gui.canvas`).
 - **Mudado:** erros dentro de tratadores (botão, `gui.apos`, `gui.repetir`) agora aparecem no terminal (stderr), com a
   mensagem e a linha; antes eram engolidos em silêncio. O mesmo erro repetido aparece uma vez, e ao fechar a janela
   sai um resumo (`⚠ 3 erros em tratadores (1 diferente).`). Um erro causado só por a janela já ter fechado não é mostrado.
@@ -119,6 +136,13 @@ Todas as mudanças importantes da Advak Language. Datas no formato ano-mês-dia.
   volta a uma thread por chamada) os dois terminaram em 0,2 s. Uma busca por `esperar`, `aguardar`, `dormir` e `sleep`
   nos `.dk` do curso e de `projetos/` só achou `embarcado.aguardar` em `projetos/mobile_embarcado_demo.dk`, que não
   verifiquei se está dentro de um tratador.
+- **Falha não explicada no curso completo, lição 22 (`aula22_resposta7`).** Com o código deste commit, o curso
+  completo (`python testes/curso.py`, sozinho) deu `exit=1` uma vez ("bloco desatualizado" em `aula22_resposta7`,
+  7 min 34 s) e `exit=0` na vez seguinte (9 min 22 s). A causa é desconhecida e a falha não se repetiu:
+  `aula22_resposta7` isolado deu 20 de 20 OK sem carga e 10 de 10 com carga de 4 processos, e a lição 22 inteira
+  (`AULA=aula22`) deu `exit=0` 3 vezes de 3. Na cópia do HEAD, sem as mudanças deste commit, o mesmo bloco isolado
+  deu 20 de 20 OK sem carga e 1 de 10 OK com carga (saída com `1` ou `0` tarefa em vez de `2`); amostra pequena,
+  sem conclusão sobre a causa.
 
 ## [5.2.0] — 2026-10-13
 

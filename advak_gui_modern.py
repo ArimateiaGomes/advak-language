@@ -291,8 +291,10 @@ class _Despachante:
 class Tela:
     """Área de desenho 2D. Cada desenho devolve um número de item para mover ou apagar."""
 
-    def __init__(self, canvas):
+    def __init__(self, canvas, gui=None):
         self.widget = canvas      # atalho avançado e provisório: expõe o tkinter (bind etc.)
+        self._gui = gui           # quem roda os tratadores (ao_clicar, ao_soltar)
+        self._ligados = {}        # sequência do Tk -> id da ligação, para trocar o tratador
 
     def _item(self, item):
         if isinstance(item, bool) or not isinstance(item, int) or not self.widget.find_withtag(item):
@@ -334,6 +336,32 @@ class Tela:
     def quantidade(self):
         return len(self.widget.find_all())
 
+    def _ponto(self, evento):
+        # canvasx/canvasy: a coordenada do desenho (a mesma dos itens), mesmo que o canvas tenha rolagem
+        return {"x": int(round(self.widget.canvasx(evento.x))), "y": int(round(self.widget.canvasy(evento.y)))}
+
+    def _ligar(self, sequencia, tratador, origem):
+        if self._gui is None:
+            raise _erro_canvas("Esta tela não foi criada por gui.canvas, então não tem tratadores de mouse.")
+        if sequencia in self._ligados:
+            self.widget.unbind(sequencia, self._ligados[sequencia])      # o tratador novo substitui o anterior
+        # add='+': não apaga um bind que o programa tenha feito em area.widget para a mesma sequência
+        self._ligados[sequencia] = self.widget.bind(
+            sequencia, lambda e: self._gui._chamar(tratador, self._ponto(e), origem=origem), add='+')
+
+    def ao_clicar(self, tratador):
+        """Chama `tratador` com {x, y} quando o botão esquerdo do mouse é pressionado sobre a tela."""
+        self._ligar('<ButtonPress-1>', tratador, 'tratador de clique na tela')
+
+    def ao_soltar(self, tratador):
+        """Chama `tratador` com {x, y} quando o botão esquerdo do mouse é solto sobre a tela."""
+        self._ligar('<ButtonRelease-1>', tratador, 'tratador de soltar na tela')
+
+
+# Nomes das teclas que o programa recebe em português; as outras seguem o nome do Tk (a, A, F1, ccedilla...).
+_NOMES_TECLA = {'Left': 'esquerda', 'Right': 'direita', 'Up': 'cima', 'Down': 'baixo',
+                'space': 'espaco', 'Return': 'enter', 'Escape': 'esc'}
+
 
 class AdvakGUIModern:
     """
@@ -349,6 +377,8 @@ class AdvakGUIModern:
         self._toasts    = []
         self._style     = None
         self._despachante = _Despachante()
+        self._tratador_tecla = None
+        self._tecla_ligada = False
 
     # ── Janela principal ──────────────────────────────────────────────────────
 
@@ -585,7 +615,7 @@ class AdvakGUIModern:
         cv = tk.Canvas(self._get_frame(pai), width=int(largura), height=int(altura),
                        bg=_cor_canvas(fundo), highlightthickness=0)
         cv.pack(pady=4, padx=4, anchor='w')
-        return Tela(cv)
+        return Tela(cv, self)
 
     def botao(self, pai, texto='', ao_clicar=None, cor=None,
               largura=None, estilo='primario'):
@@ -1523,6 +1553,26 @@ class AdvakGUIModern:
             self._chamar(fn, None)
             if self._root: self._root.after(ms, loop)
         if self._root: self._root.after(ms, loop)
+
+    def ao_tecla(self, tratador):
+        """Chama `tratador` com {tecla, caractere} a cada tecla pressionada na janela principal."""
+        _check()
+        if self._root is None:
+            raise _erro_canvas("Crie a janela antes, com gui.janela(...), para usar gui.ao_tecla.")
+        self._tratador_tecla = tratador                                  # o tratador novo substitui o anterior
+        if not self._tecla_ligada:
+            # bind_all e não bind na janela: o Tk só roda a ligação mais específica de cada tag, e a janela já
+            # tem <F11> (tema), que esconderia o <KeyPress> da janela. A tag 'all' é separada e está em todos os widgets.
+            self._root.bind_all('<KeyPress>', self._evento_tecla, add='+')
+            self._tecla_ligada = True
+
+    def _evento_tecla(self, evento):
+        if self._tratador_tecla is not None:
+            self._chamar(self._tratador_tecla, self._dados_tecla(evento), origem='tratador de tecla')
+
+    @staticmethod
+    def _dados_tecla(evento):
+        return {"tecla": _NOMES_TECLA.get(evento.keysym, evento.keysym), "caractere": evento.char}
 
     def atualizar(self):
         if self._root:
