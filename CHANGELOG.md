@@ -138,7 +138,9 @@ Todas as mudanças importantes da Advak Language. Datas no formato ano-mês-dia.
   "bloco desatualizado" em blocos da lição 22 (vistos: `aula22_resposta5.dk` no código corrigido; `aula22_resposta7.dk`
   e `aula22_exemplo3.dk` no código de antes das correções acima). O curso completo rodando sozinho passou
   (`exit=0`, cerca de 9 minutos); uma execução completa feita ao mesmo tempo que outras tarefas falhou. A lição usa
-  janela gráfica e temporizadores; a causa não foi investigada e não há correção prometida.
+  janela gráfica e temporizadores. A causa de `aula22_resposta7` foi investigada em 2026-10-20 e a causa natural
+  não foi encontrada (veja o item dele logo abaixo); essa investigação não olhou os outros blocos citados. Não há
+  correção prometida.
 - **Os tratadores da interface gráfica rodam um por vez; um tratador que espera por outro tratador não termina.** O
   segundo só começa quando o primeiro acaba. Medido: um tratador A esperando um sinal que só o tratador B envia, com B
   chegando depois de A, não recebeu o sinal em 3 s; com `_SERIALIZAR_CALLBACKS = False` (em `advak_gui_modern.py`,
