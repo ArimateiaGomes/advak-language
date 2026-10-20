@@ -145,13 +145,18 @@ Todas as mudanças importantes da Advak Language. Datas no formato ano-mês-dia.
   volta a uma thread por chamada) os dois terminaram em 0,2 s. Uma busca por `esperar`, `aguardar`, `dormir` e `sleep`
   nos `.dk` do curso e de `projetos/` só achou `embarcado.aguardar` em `projetos/mobile_embarcado_demo.dk`, que não
   verifiquei se está dentro de um tratador.
-- **Falha não explicada no curso completo, lição 22 (`aula22_resposta7`).** Com o código deste commit, o curso
-  completo (`python testes/curso.py`, sozinho) deu `exit=1` uma vez ("bloco desatualizado" em `aula22_resposta7`,
-  7 min 34 s) e `exit=0` na vez seguinte (9 min 22 s). A causa é desconhecida e a falha não se repetiu:
-  `aula22_resposta7` isolado deu 20 de 20 OK sem carga e 10 de 10 com carga de 4 processos, e a lição 22 inteira
-  (`AULA=aula22`) deu `exit=0` 3 vezes de 3. Na cópia do HEAD, sem as mudanças deste commit, o mesmo bloco isolado
-  deu 20 de 20 OK sem carga e 1 de 10 OK com carga (saída com `1` ou `0` tarefa em vez de `2`); amostra pequena,
-  sem conclusão sobre a causa.
+- **`aula22_resposta7` (lição 22) é intermitente em algumas condições; a causa natural não foi encontrada.** O exemplo
+  `docs/curso/codigos/aula22_resposta7.dk` às vezes imprime `Tarefas na tabela: 0` ou `1` em vez de `2`, sem mostrar
+  erro. Uma vez o curso completo (`python testes/curso.py`, sozinho) deu `exit=1` por causa dele ("bloco
+  desatualizado", 7 min 34 s) e `exit=0` na vez seguinte (9 min 22 s).
+  - Medido (exemplo isolado, falhas por rodadas): 10 em 60 na primeira medição, com outros comandos rodando em
+    paralelo e sem controle; 4 em 80 com carga de CPU aplicada de propósito; 0 em 160 em silêncio (80 com
+    `ADVAK_EVENTOS` e 80 sem); em 2026-10-20, 0 em 200 com relógio e eventos e 0 em 200 no código sem instrumentação,
+    ambos com a mesma carga.
+  - Provado só em condição artificial: parar a janela por cerca de 700 ms ou mais, no início, produz exatamente essas
+    saídas (10 rodadas por condição: com 700 ms, 9 deram `1` e 1 deu `0`; com 1000 ms e com 1500 ms, as 10 rodadas de
+    cada uma deram `0`). Não foi provado que as falhas naturais tenham essa causa.
+  - Não corrigido: não há mudança no interpretador nem no exemplo.
 
 ## [5.2.0] — 2026-10-13
 
