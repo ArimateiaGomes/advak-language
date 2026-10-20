@@ -122,6 +122,15 @@ Todas as mudanças importantes da Advak Language. Datas no formato ano-mês-dia.
   sozinho, termina com `pronto.` e `exit=0`.
 - **Ideia para uma versão futura, não implementada:** palavra própria para a divisão inteira (por exemplo `div`),
   com o `//` sempre como comentário. Veja "Ideia para uma versão futura" no README. Sem versão prevista.
+- **Nomes de exceção inexistentes em `advak.py`** (8 pontos: `ImportErro` nas linhas 97, 110, 115, 120, 125, 134 e 149;
+  `AttributeErro` na 181; agora `ImportError` e `AttributeError`). Antes, simulando a falta do `colorama` (import
+  falhando), `advak.py versao` terminava com `NameError: name 'ImportErro' is not defined` e exit 1; agora termina com
+  `Advak 5.2.0` e exit 0.
+  - Testes: `testes/test_advak_excecoes.py`, 2 testes novos. Antes da correção: `Ran 2 tests`, `FAILED (failures=2)`;
+    depois: `Ran 2 tests`, `OK`. As 20 suítes que já existiam em `testes/` somam 426 testes e passaram (uma rodada
+    cada).
+  - Limites: só a linha 97 foi reproduzida (simulando a falta do `colorama`); para as outras sete a prova é a varredura
+    por AST, que só olha nomes simples em `except` de `advak.py` (não vê `except modulo.Erro` nem outros arquivos).
 
 ### Conhecido
 

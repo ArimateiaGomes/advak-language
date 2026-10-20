@@ -94,7 +94,7 @@ if sys.platform == 'win32':
         pass
     try:
         import colorama; colorama.init(autoreset=False)
-    except ImportErro:
+    except ImportError:
         pass
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -107,22 +107,22 @@ from advak_parser      import Parser
 from advak_interpreter import AdvakInterpreter, AdvakError
 try:
     from advak_erros import exibir_erro_sintaxe, exibir_erro_advak, exibir_erro_interno
-except ImportErro:
+except ImportError:
     pass
 
 try:
     from advak_verificador import cmd_verificar
-except ImportErro:
+except ImportError:
     def cmd_verificar(p): print("⚠️  Módulo advak_verificador não encontrado")
 
 try:
     from advak_doc import cmd_doc
-except ImportErro:
+except ImportError:
     def cmd_doc(p): print("⚠️  Módulo advak_doc não encontrado")
 
 try:
     from advak_live import cmd_live
-except ImportErro:
+except ImportError:
     def cmd_live(p): print("⚠️  Módulo advak_live não encontrado")
 
 if False:
@@ -131,7 +131,7 @@ if False:
     def exibir_erro_interno(t, m, s=None, debug=False): print(f"\n❌ ERRO INTERNO\n   {t}: {m}")
 try:
     from advak_repl import cmd_repl
-except ImportErro:
+except ImportError:
     cmd_repl = None
 
 VERSION = "5.2.0"
@@ -146,7 +146,7 @@ def cmd_run(path, with_db=False, debug=False, passo=False):
         try:
             import advak_debug
             advak_debug.inicializar(source, path, passo_a_passo=passo)
-        except ImportErro:
+        except ImportError:
             print("⚠️  Módulo advak_debug não encontrado")
     # Carrega .env automaticamente
     for env_file in ['.env', 'env_config.env']:
@@ -178,7 +178,7 @@ def cmd_run(path, with_db=False, debug=False, passo=False):
         if sys.platform == 'win32':
             try:
                 asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-            except AttributeErro:
+            except AttributeError:
                 pass
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
