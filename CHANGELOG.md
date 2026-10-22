@@ -146,6 +146,25 @@ Todas as mudanças importantes da Advak Language. Datas no formato ano-mês-dia.
     cair no diretório atual, mas não foi testado), `advak_nativo.py`, `debug_gui.py`, `debug_studio_executar.py` e
     `_studio_executar`. Não testados também: caminho com "/" sem letra de unidade, "C:foo", UNC, `advak.bat` e
     `advak --live`.
+- **Gerador das imagens do jogo 2D do curso** (`docs/curso/ferramentas/gerar_imagens.py`) e as 7 imagens PNG que ele
+  produz em `docs/curso/codigos/imagens/` (`fundo` 480×320; `heroi` e `parede` 32×32; `moeda1` a `moeda4` 16×16;
+  3.536 bytes no total). Só biblioteca padrão (`zlib`, `struct`); os pixels saem de fórmulas escritas no gerador, sem
+  arte de terceiros. `python docs/curso/ferramentas/gerar_imagens.py` escreve; com `--conferir` não escreve e compara
+  os bytes (sai com 0 se iguais, 1 se diferirem). O destino vem da localização do script, não do diretório atual.
+  - Nada na linguagem usa essas imagens ainda (não há `quadro.imagem`), e nenhuma aula as referencia.
+  - Testes: `testes/test_gerador_imagens.py`, 10 testes, `OK`: três processos separados (diretório atual e
+    `PYTHONHASHSEED` diferentes) dão o mesmo SHA-256; os pixels dos arquivos versionados são os do gerador; o Tk lê
+    cada PNG com o tamanho esperado e o canto (0, 0) transparente só no herói e nas moedas; um PNG cortado
+    (40 bytes do herói, criado numa pasta temporária) é recusado pelo Tk. Se os pixels forem iguais e os bytes
+    diferirem, o teste imprime um AVISO e passa; quem reprova é o teste de pixels.
+  - `.gitattributes` (novo): `*.png binary`, só como declaração explícita; o Git já os detectava como binários nesta
+    máquina com `core.autocrlf=true`.
+  - As 22 suítes que já existiam em `testes/` e `python testes/curso.py` passaram (nesta máquina, uma rodada cada).
+  - Não medidos: bytes idênticos em outra máquina, outro Python ou outro `zlib`. O AVISO de `zlib` foi medido só
+    SIMULANDO bytes diferentes (`heroi.png` recomprimido), não com outro `zlib`. A linha `assertNotIn("Traceback")` do
+    teste de `--conferir` não foi rodada sobre bytes diferentes (o AVISO e o pixel diferente foram medidos antes
+    dela). `core.autocrlf` diferente de `true` não foi testado. A aparência da transparência na tela não foi vista
+    (só `transparency_get`). Sem display, o teste do Tk falha em vez de pular. A arte pode mudar antes da aula.
 
 ### Conhecido
 

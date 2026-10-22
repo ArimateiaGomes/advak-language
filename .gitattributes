@@ -1,0 +1,3 @@
+# Declaração explícita: o Git já detectava estes arquivos como binários (medido com core.autocrlf=true).
+# Só *.png por enquanto; *.gif e *.wav entram quando existir arquivo desse tipo.
+*.png binary
