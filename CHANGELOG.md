@@ -165,9 +165,43 @@ Todas as mudanças importantes da Advak Language. Datas no formato ano-mês-dia.
     teste de `--conferir` não foi rodada sobre bytes diferentes (o AVISO e o pixel diferente foram medidos antes
     dela). `core.autocrlf` diferente de `true` não foi testado. A aparência da transparência na tela não foi vista
     (só `transparency_get`). Sem display, o teste do Tk falha em vez de pular. A arte pode mudar antes da aula.
+- **`quadro.imagem(x, y, caminho)`** (`gui.canvas`): desenha um PNG com o canto superior esquerdo em (x, y) e devolve o
+  número do item, que `mover`, `apagar`, `limpar` e `quantidade` já aceitam. Só PNG, checado pelo nome (`.png`, também
+  `.PNG`); sem zoom nem redução. Mudança só em `advak_gui_modern.py` (22 linhas); o interpretador e o `advak.py` não mudaram.
+  - **Duas regras, lado a lado:** `quadro.imagem` resolve o caminho **relativo pela pasta do programa** (a do `.dk` em
+    execução; sem programa em arquivo, como no REPL, o diretório atual). **`Arquivo.ler`, `escrever` e `importar`
+    continuam pelo diretório atual.** Caminho absoluto fica como está. Não depende de `Arquivo.do_programa`.
+  - Erros em português (capturáveis): caminho que não é texto, extensão que não é `.png`, arquivo inexistente (com o
+    caminho absoluto procurado), pasta, arquivo corrompido ou vazio; `x` e `y` pelas mesmas mensagens dos outros desenhos.
+  - A `Tela` guarda cada imagem lida (`caminho absoluto` → `PhotoImage`), porque o Tk apaga a imagem quando ninguém a
+    guarda; o mesmo arquivo duas vezes dá dois itens com a mesma imagem. `apagar` e `limpar` não esvaziam esse cache.
+  - Testes: `testes/test_gui_imagem.py`, 15 testes. Antes da mudança, `Ran 14 tests`, `FAILED (failures=12, errors=2)`
+    (o caso do REPL ainda não existia); depois, `Ran 15 tests`, `OK`. As 24 suítes de `testes/` e `python testes/curso.py`
+    (`exit=0`) passaram (nesta máquina, uma rodada cada). Cobrem: rodar de outra pasta, `advak programa.dk` e `advak run`,
+    um `imagens/heroi.png` homônimo de 16×16 no diretório atual que **não** é lido, caminho absoluto, tratador de
+    `gui.apos`, os erros acima com o texto exato, `.jpg`, `.bmp` e `.gif` recusados, e a imagem sobrevivendo a `gc.collect()`.
+  - REPL com `quadro.imagem` (rodado, entrada pela stdin): `ITEM 1 (0, 0, 32, 32)` e `FIM`, e a janela fechou sozinha. O
+    código de saída do `advak.py` no REPL não foi medido (o `exit=0` visto era do `tail`).
+  - Medido uma vez nesta máquina, em Tk puro: carregar `fundo.png` (480×320) levou 21,5 e 34,9 ms; um quadro com o fundo
+    em cache e o herói, mediana de 2,66 ms; o fundo recarregado do disco a cada quadro, mediana de cerca de 30 ms.
+  - Limitação conhecida (com teste): um GIF renomeado para `.png` é lido pelo Tk, porque só o nome é checado. Não há
+    suporte a GIF.
+  - Não medidos: custo por quadro pelo interpretador (`repetir`, `ao_tecla`); aparência na tela e transparência real;
+    memória do cache; outros tipos de PNG além dos 7 gerados (RGBA 8 bits): paleta, tons de cinza, 16 bits; JPEG real;
+    `_SERIALIZAR_CALLBACKS = False` com várias threads; sem display (o teste falha em vez de pular); `advak.bat`,
+    `advak --live` e programa compilado. Num programa que usa `importar`, o caminho relativo da imagem vale a partir da
+    pasta do programa principal, não da do módulo importado (só leitura do código, não testado).
 
 ### Conhecido
 
+- **OBSERVADO:** `advak.py:344` faz `args[0].lower()` e passa o caminho do programa já em minúsculas a `cmd_run` ao rodar
+  `advak programa.dk` (linha 406). Medido no Windows: o caminho impresso por `quadro.imagem` ("procurei em ...") saiu em
+  minúsculas. Em sistema que diferencia maiúsculas o arquivo talvez não fosse achado: só leitura do código, não
+  testado. `advak run programa.dk` passa `args[1]` sem o `lower()` (só leitura do código). É anterior à `quadro.imagem`;
+  o `advak.py` não foi alterado.
+- **`quadro.imagem` chamado de outra thread** só funciona com a janela em `mainloop` (sem ele:
+  `RuntimeError: main thread is not in main loop`, medido). É o caso dos tratadores de `gui.apos`, que rodam com a
+  janela em `mainloop`; o teste cobre isso.
 - A lição 22 do curso pode falhar sob carga forte de CPU: com 4 processos em loop, `python testes/curso.py` deu
   "bloco desatualizado" em blocos da lição 22 (vistos: `aula22_resposta5.dk` no código corrigido; `aula22_resposta7.dk`
   e `aula22_exemplo3.dk` no código de antes das correções acima). O curso completo rodando sozinho passou

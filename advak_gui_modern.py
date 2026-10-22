@@ -295,6 +295,7 @@ class Tela:
         self.widget = canvas      # atalho avançado e provisório: expõe o tkinter (bind etc.)
         self._gui = gui           # quem roda os tratadores (ao_clicar, ao_soltar)
         self._ligados = {}        # sequência do Tk -> id da ligação, para trocar o tratador
+        self._imagens = {}        # caminho absoluto -> PhotoImage (o Tk apaga a imagem se ninguém a guardar)
 
     def _item(self, item):
         if isinstance(item, bool) or not isinstance(item, int) or not self.widget.find_withtag(item):
@@ -322,6 +323,27 @@ class Tela:
         _num_canvas(x, 'x'); _num_canvas(y, 'y'); _positivo_canvas(tamanho, 'tamanho', 1)
         return self.widget.create_text(x, y, text=str(texto), fill=_cor_canvas(cor),
                                        font=('Segoe UI', int(tamanho)), anchor='nw')
+
+    def imagem(self, x, y, caminho):
+        from advak_interpreter import pasta_do_programa     # import tardio, como _erro_canvas
+        _num_canvas(x, 'x'); _num_canvas(y, 'y')
+        if not isinstance(caminho, str):
+            raise _erro_canvas(f"'caminho' deve ser um texto, mas recebeu {caminho!r}.")
+        if not caminho.lower().endswith('.png'):
+            raise _erro_canvas(f"Formato de imagem não suportado: '{caminho}'. Só PNG (.png) é aceito.")
+        absoluto = caminho if os.path.isabs(caminho) else os.path.normpath(os.path.join(pasta_do_programa(), caminho))
+        if os.path.isdir(absoluto):
+            raise _erro_canvas(f"'{caminho}' é uma pasta, não um arquivo de imagem.")
+        if not os.path.isfile(absoluto):
+            raise _erro_canvas(f"Imagem não encontrada: '{caminho}' (procurei em {absoluto}).")
+        img = self._imagens.get(absoluto)
+        if img is None:
+            try:
+                img = tk.PhotoImage(master=self.widget, file=absoluto)
+            except tk.TclError:
+                raise _erro_canvas(f"Não consegui ler a imagem '{caminho}': o arquivo está corrompido ou não é um PNG válido.")
+            self._imagens[absoluto] = img
+        return self.widget.create_image(x, y, image=img, anchor='nw')
 
     def mover(self, item, dx, dy):
         self._item(item); _num_canvas(dx, 'dx'); _num_canvas(dy, 'dy')
