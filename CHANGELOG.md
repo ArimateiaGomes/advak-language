@@ -131,6 +131,21 @@ Todas as mudanças importantes da Advak Language. Datas no formato ano-mês-dia.
     cada).
   - Limites: só a linha 97 foi reproduzida (simulando a falta do `colorama`); para as outras sete a prova é a varredura
     por AST, que só olha nomes simples em `except` de `advak.py` (não vê `except modulo.Erro` nem outros arquivos).
+- **`Arquivo.pasta_do_programa()` e `Arquivo.do_programa(caminho)`** (`advak.py`, `advak_interpreter.py`). A primeira devolve
+  a pasta do `.dk` em execução; a segunda junta um caminho relativo a essa pasta (um caminho absoluto fica como está; só
+  aceita texto). `advak programa.dk` e `advak run programa.dk` guardam o caminho do programa numa variável do módulo,
+  e a pasta não muda se o programa faz `OS.cd(...)`.
+  - **O resto não mudou:** `Arquivo.ler`, `escrever` etc. e `importar` continuam procurando pelo **diretório atual**, não pela
+    pasta do `.dk`. Os testes fixam isso, inclusive a limitação conhecida: rodando de outra pasta, um módulo homônimo do
+    diretório atual é carregado sem aviso.
+  - Testes: `testes/test_pasta_programa.py`, 17 testes (6 fixam o comportamento anterior e passavam antes). Antes da
+    mudança, os 11 testes das funções novas falhavam (`FAILED (failures=10, errors=1)`); depois, `Ran 17 tests`, `OK`.
+    As outras 21 suítes de `testes/` e `python testes/curso.py` passaram (nesta máquina, uma rodada cada).
+  - Limites: no REPL e quando o interpretador é usado direto (testados), as duas funções caem no diretório atual, sem
+    erro. Não verificados: programa compilado (pela leitura do código, o wrapper gerado não define o caminho, então deve
+    cair no diretório atual, mas não foi testado), `advak_nativo.py`, `debug_gui.py`, `debug_studio_executar.py` e
+    `_studio_executar`. Não testados também: caminho com "/" sem letra de unidade, "C:foo", UNC, `advak.bat` e
+    `advak --live`.
 
 ### Conhecido
 

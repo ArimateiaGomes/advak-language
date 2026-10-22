@@ -104,7 +104,7 @@ sys.path.insert(0, BASE_DIR)
 
 from advak_lexer       import AdvakLexer
 from advak_parser      import Parser
-from advak_interpreter import AdvakInterpreter, AdvakError
+from advak_interpreter import AdvakInterpreter, AdvakError, definir_arquivo_do_programa
 try:
     from advak_erros import exibir_erro_sintaxe, exibir_erro_advak, exibir_erro_interno
 except ImportError:
@@ -141,6 +141,7 @@ def cmd_run(path, with_db=False, debug=False, passo=False):
         print(f"❌ Arquivo '{path}' não encontrado"); return
     with open(path, 'r', encoding='utf-8') as f:
         source = f.read()
+    definir_arquivo_do_programa(path)     # Arquivo.pasta_do_programa() / Arquivo.do_programa()
     # Inicializa depurador se solicitado
     if debug or passo:
         try:

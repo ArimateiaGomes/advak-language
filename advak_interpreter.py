@@ -70,6 +70,20 @@ class _TailCall(Exception):
 class AdvakError(Exception): pass
 class ImmutableError(AdvakError): pass
 
+# Arquivo do programa em execução (caminho absoluto), definido por advak.py antes de interpretar. É variável do módulo
+# e não atributo do interpretador: os tratadores da GUI criam o interpretador com __new__ (sem passar pelo __init__).
+# Sem programa (REPL, interpretador usado direto), vale o diretório atual.
+_ARQUIVO_DO_PROGRAMA = None
+
+
+def definir_arquivo_do_programa(caminho):
+    global _ARQUIVO_DO_PROGRAMA
+    _ARQUIVO_DO_PROGRAMA = os.path.abspath(caminho) if caminho else None
+
+
+def pasta_do_programa():
+    return os.path.dirname(_ARQUIVO_DO_PROGRAMA) if _ARQUIVO_DO_PROGRAMA else os.getcwd()
+
 _GENERATOR_DONE = object()  # sentinel para fim de gerador
 
 
@@ -1229,6 +1243,11 @@ class AdvakInterpreter:
             except Exception as e:
                 raise AdvakError(f"Erro ao inspecionar '{p}': {e}")
 
+        def _do_programa(p):
+            if isinstance(p, bool) or not isinstance(p, str):
+                raise AdvakError(f"Arquivo.do_programa espera um texto com o caminho, mas recebeu {p!r}.")
+            return p if os.path.isabs(p) else os.path.normpath(os.path.join(pasta_do_programa(), p))
+
         _arquivo_obj = {
             'ler':         _ler_arquivo,
             'escrever':    _escrever_arquivo,
@@ -1245,6 +1264,8 @@ class AdvakInterpreter:
             'info':        _info_arquivo,
             'criar_pasta': lambda p: os.makedirs(p, exist_ok=True) or f"✅ Pasta criada",
             'pasta_atual': os.getcwd,
+            'pasta_do_programa': pasta_do_programa,
+            'do_programa': _do_programa,
             'juntar':      os.path.join,
             'nome':        os.path.basename,
             'extensao':    lambda p: os.path.splitext(p)[1],
