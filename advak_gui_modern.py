@@ -324,9 +324,9 @@ class Tela:
         return self.widget.create_text(x, y, text=str(texto), fill=_cor_canvas(cor),
                                        font=('Segoe UI', int(tamanho)), anchor='nw')
 
-    def imagem(self, x, y, caminho):
+    def _carregar(self, caminho):
+        """Valida o caminho de um PNG e devolve o PhotoImage (do cache, se o arquivo já foi lido)."""
         from advak_interpreter import pasta_do_programa     # import tardio, como _erro_canvas
-        _num_canvas(x, 'x'); _num_canvas(y, 'y')
         if not isinstance(caminho, str):
             raise _erro_canvas(f"'caminho' deve ser um texto, mas recebeu {caminho!r}.")
         if not caminho.lower().endswith('.png'):
@@ -343,7 +343,41 @@ class Tela:
             except tk.TclError:
                 raise _erro_canvas(f"Não consegui ler a imagem '{caminho}': o arquivo está corrompido ou não é um PNG válido.")
             self._imagens[absoluto] = img
-        return self.widget.create_image(x, y, image=img, anchor='nw')
+        return img
+
+    def imagem(self, x, y, caminho):
+        _num_canvas(x, 'x'); _num_canvas(y, 'y')
+        return self.widget.create_image(x, y, image=self._carregar(caminho), anchor='nw')
+
+    _NOME_TIPO = {'rectangle': 'um retângulo', 'oval': 'um círculo', 'line': 'uma linha', 'text': 'um texto'}
+
+    def trocar_imagem(self, item, caminho):
+        self._item(item)
+        tipo = self.widget.type(item)
+        if tipo != 'image':
+            raise _erro_canvas(f"O item {item} não é uma imagem (é {self._NOME_TIPO.get(tipo, f'do tipo {tipo!r}')}).")
+        self.widget.itemconfigure(item, image=self._carregar(caminho))     # se o caminho falhar, o item não muda
+
+    def _caixa(self, item):
+        if self.widget.type(item) in ('rectangle', 'oval'):     # o bbox do Tk soma 1 px de contorno por lado
+            x1, y1, x2, y2 = self.widget.coords(item)
+            return min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2)
+        return self.widget.bbox(item)
+
+    def colide(self, a, b):
+        """Colisão por retângulo; encostar não conta. Para linha e texto vale o bbox do Tk, um pouco maior que o desenho."""
+        self._item(a); self._item(b)
+        if a == b:
+            return True
+        ax1, ay1, ax2, ay2 = self._caixa(a)
+        bx1, by1, bx2, by2 = self._caixa(b)
+        return ax1 < bx2 and bx1 < ax2 and ay1 < by2 and by1 < ay2
+
+    def para_frente(self, item):
+        self.widget.tag_raise(self._item(item))
+
+    def para_tras(self, item):
+        self.widget.tag_lower(self._item(item))
 
     def mover(self, item, dx, dy):
         self._item(item); _num_canvas(dx, 'dx'); _num_canvas(dy, 'dy')

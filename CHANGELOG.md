@@ -191,6 +191,31 @@ Todas as mudanças importantes da Advak Language. Datas no formato ano-mês-dia.
     `_SERIALIZAR_CALLBACKS = False` com várias threads; sem display (o teste falha em vez de pular); `advak.bat`,
     `advak --live` e programa compilado. Num programa que usa `importar`, o caminho relativo da imagem vale a partir da
     pasta do programa principal, não da do módulo importado (só leitura do código, não testado).
+- **`quadro.trocar_imagem(item, caminho)`, `quadro.colide(a, b)`, `quadro.para_frente(item)` e `quadro.para_tras(item)`**
+  (`gui.canvas`). Só `advak_gui_modern.py`; `imagem` passou a usar um auxiliar interno `_carregar` (mesmas mensagens, os 15
+  testes de `quadro.imagem` passaram sem alteração).
+  - `trocar_imagem` troca o desenho de um item que já é imagem, mantendo número, posição e `quantidade`. Reaproveita o cache
+    de `quadro.imagem` (o mesmo arquivo dá a mesma imagem). Se o caminho falhar, o item não muda. Item que não é imagem:
+    `O item N não é uma imagem (é um retângulo).` (também `um círculo`, `uma linha`, `um texto`; outro tipo do Tk aparece
+    como `do tipo 'polygon'`). Os erros de caminho são os de `quadro.imagem`.
+  - `colide` devolve `verdadeiro` ou `falso`, **por retângulo; encostar não conta**; `colide(a, a)` é `verdadeiro`. Aceita
+    qualquer tipo de item. Retângulo e círculo usam as coordenadas exatas; imagem, linha e texto usam o `bbox` do Tk. **O
+    retângulo de uma imagem inclui os pixels transparentes**, e o de um círculo é o quadrado que o contém: a colisão fica
+    um pouco maior que o desenho. Linha e texto ficam ainda um pouco maiores (ver o medido abaixo).
+  - `para_frente` e `para_tras` mudam a ordem de desenho (quem fica por cima); `quantidade` não muda.
+  - Item que não existe: a mensagem de sempre (`O item N não existe nesta tela (já foi apagado ou nunca foi criado).`).
+  - **Medido (Tk, uma vez, esta máquina):** o `bbox` do Tk é exato para imagem (32×32 em (10, 10) → (10, 10, 42, 42)) e
+    maior que o desenho nos outros tipos: retângulo (100, 10, 140, 40) → (99, 9, 141, 41), com e sem preenchimento; círculo
+    (40, 80, 80, 120) → (39, 79, 81, 121) (1 px por lado); linha de espessura 1 na diagonal (100, 100)-(160, 140) → (98, 98,
+    162, 142) (2 px); linha horizontal de espessura 3 → 4 px por lado; texto "Olá" tamanho 12 em (200, 100) → (199, 100, 225,
+    121). Por isso retângulo e círculo usam `coords` (com o `bbox`, dois retângulos encostando colidiriam). `tag_raise` e
+    `tag_lower` com o número do item mexeram só nesse item (ordem de `find_all()` conferida).
+  - Testes: `testes/test_gui_itens.py`, 18 testes. Antes da mudança, `Ran 18 tests`, `FAILED (failures=7, errors=11)`;
+    depois, `Ran 18 tests`, `OK`. As 25 suítes de `testes/` (as 24 de antes mais esta) e `python testes/curso.py`
+    (`exit=0`) passaram (nesta máquina, uma rodada cada).
+  - Não medidos: `colide` com polígono e outros tipos (usariam o `bbox`, sem teste); linha e texto em outras fontes, tamanhos
+    ou escalas de tela; várias threads chamando estes métodos ao mesmo tempo; custo por quadro pelo interpretador;
+    memória do cache (as imagens trocadas continuam guardadas até a janela fechar); `trocar_imagem` a cada quadro.
 
 ### Conhecido
 
