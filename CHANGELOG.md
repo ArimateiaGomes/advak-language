@@ -186,11 +186,43 @@ Todas as mudanças importantes da Advak Language. Datas no formato ano-mês-dia.
     em cache e o herói, mediana de 2,66 ms; o fundo recarregado do disco a cada quadro, mediana de cerca de 30 ms.
   - Limitação conhecida (com teste): um GIF renomeado para `.png` é lido pelo Tk, porque só o nome é checado. Não há
     suporte a GIF.
-  - Não medidos: custo por quadro pelo interpretador (`repetir`, `ao_tecla`); aparência na tela e transparência real;
-    memória do cache; outros tipos de PNG além dos 7 gerados (RGBA 8 bits): paleta, tons de cinza, 16 bits; JPEG real;
-    `_SERIALIZAR_CALLBACKS = False` com várias threads; sem display (o teste falha em vez de pular); `advak.bat`,
-    `advak --live` e programa compilado. Num programa que usa `importar`, o caminho relativo da imagem vale a partir da
-    pasta do programa principal, não da do módulo importado (só leitura do código, não testado).
+  - **Medido depois.** Cada item: uma vez, nesta máquina (Windows 10 Home 10.0.19045, Python 3.13.8, Tk 8.6), sem outra
+    máquina nem outra versão.
+    - Custo por quadro pelo interpretador (**PC parado, confirmado pelo usuário**): `gui.repetir(16, ...)`, 5000 ms por
+      execução, 2 execuções por cenário. Mediana do intervalo entre quadros cerca de 16,8 ms (a previsão de cerca de
+      31 ms **não bateu**). Mediana do tratador: 1 `mover` 0,42 a 0,48 ms; 10 `mover` 8,45 a 9,06 ms; fundo + herói +
+      4 moedas movendo os 5, 4,98 a 5,12 ms; com 4 `colide`, 8,20 a 8,22 ms; com `trocar_imagem` por quadro, 7,57 a 7,71
+      ms (inclui `k = k + 1` e a indexação; a parte da `trocar_imagem` não foi separada). Os 4 primeiros quadros com
+      `trocar_imagem` levaram 14,6 a 29,9 ms. Numa execução do cenário vazio houve uma parada de cerca de 5 s, causa não
+      investigada. `ao_tecla` ficou fora desta medição.
+    - Memória do cache de imagens (**PC em uso**): fundo 480×320 com 200 caminhos distintos. Logo depois de criar as
+      imagens, antes de desenhar: 1.100.411 B de `PrivateUsage` por imagem (previsão de 614.400 B: **não bateu**,
+      1,79×). Depois de `limpar()` com as imagens ainda no cache: 631.747 a 687.718 B por imagem (1,03× a 1,12× a
+      previsão de 614.400 B; fundo ×10, ×100 e ×200, uma vez, nesta máquina, PC em uso; no ×1 não houve queda). Herói
+      32×32 com 200, 14.643 B por imagem
+      (previsão de 4.096 B: **não bateu**, 3,58×); 200 itens do mesmo caminho, cerca de 870 B por item. Esvaziar o cache à
+      mão devolveu a memória do fundo; `apagar` e `limpar` não esvaziam o cache. A sobra por imagem não foi explicada.
+    - Outros tipos de PNG (**PC em uso**, sem previsão escrita antes): em 14 casos de 4×4 (RGB, cinza 8 e 16 bits, cinza
+      + alfa, paleta com e sem `tRNS`, paleta de 2 bits, RGB e RGBA de 16 bits, os 4 filtros de linha, entrelaçado
+      Adam7, `gAMA` 45455 e 100000) o Tk e o `quadro.imagem` leram os pixels esperados; transparência conferida só no
+      cinza + alfa e na paleta com `tRNS`.
+    - Caminho relativo dentro de módulo importado (**PC em uso**): 7 casos. O caminho de `quadro.imagem` vale a partir da
+      **pasta do programa principal** (imagem 32×32), não da do módulo (16×16) nem do diretório atual (480×320).
+      `importar` com caminho relativo não acha o módulo quando o diretório atual é outra pasta (`Módulo não encontrado`).
+      O `advak` saiu com código 0 nesse erro.
+    - Repetição de tecla segurada (Windows com `KeyboardDelay = 1` e `KeyboardSpeed = 31`; estado do PC não registrado).
+      Tk puro: atraso até a 1ª repetição 615 a 627 ms (previsto 440 a 560 ms: **não bateu**), mediana do intervalo
+      37,2 a 37,7 ms (previsto 30 a 40 ms: bateu), um `KeyRelease` por aperto. Duas teclas: com a 2ª entrando, a 1ª
+      deixou de gerar `KeyPress` nas duas fases, e a 2ª repetiu com atraso de 627 e 621 ms. `gui.ao_tecla`: atraso 609 a
+      632 ms e mediana 37,3 a 37,9 ms, com dispersão maior (intervalos de 13,8 a 59,4 ms; causa não investigada); esta
+      parte não recebe `KeyRelease`.
+  - **Lido do código, não medido:** `gui.repetir` não espera o tratador (enfileira e reagenda o próximo `after` na hora);
+    não foi medido com um tratador lento nem com a fila crescendo.
+  - **Não medido / a decidir:** a retomada das teclas (a 1ª voltar a repetir ao soltar a 2ª); aparência na tela e
+    transparência real; alfa parcial; PNG de editor real, cinza de 1, 2 e 4 bits, paleta de 1 e 4 bits e imagens
+    grandes; JPEG real; `_SERIALIZAR_CALLBACKS = False` com várias threads; sem display (o teste falha em vez de
+    pular); `advak.bat`, `advak --live` e programa compilado; importações em cadeia. Possível necessidade de evento de
+    soltura, a decidir em etapa própria.
 - **`quadro.trocar_imagem(item, caminho)`, `quadro.colide(a, b)`, `quadro.para_frente(item)` e `quadro.para_tras(item)`**
   (`gui.canvas`). Só `advak_gui_modern.py`; `imagem` passou a usar um auxiliar interno `_carregar` (mesmas mensagens, os 15
   testes de `quadro.imagem` passaram sem alteração).
@@ -213,9 +245,14 @@ Todas as mudanças importantes da Advak Language. Datas no formato ano-mês-dia.
   - Testes: `testes/test_gui_itens.py`, 18 testes. Antes da mudança, `Ran 18 tests`, `FAILED (failures=7, errors=11)`;
     depois, `Ran 18 tests`, `OK`. As 25 suítes de `testes/` (as 24 de antes mais esta) e `python testes/curso.py`
     (`exit=0`) passaram (nesta máquina, uma rodada cada).
-  - Não medidos: `colide` com polígono e outros tipos (usariam o `bbox`, sem teste); linha e texto em outras fontes, tamanhos
-    ou escalas de tela; várias threads chamando estes métodos ao mesmo tempo; custo por quadro pelo interpretador;
-    memória do cache (as imagens trocadas continuam guardadas até a janela fechar); `trocar_imagem` a cada quadro.
+  - **Medido depois** (uma vez, nesta máquina): `trocar_imagem` a cada quadro em `gui.repetir(16, ...)` (**PC parado,
+    confirmado pelo usuário**) deu mediana de tratador de 7,57 a 7,71 ms contra 4,98 a 5,12 ms do mesmo cenário sem ela
+    (o excesso inclui `k = k + 1` e a indexação; a `trocar_imagem` isolada não foi separada); 4 `colide` por quadro somaram
+    cerca de +3,1 a +3,2 ms. Memória (**PC em uso**): as imagens trocadas continuam no cache, que só é esvaziado à mão; com 200
+    imagens de 32×32 no cache foram 14.643 B por imagem (previsão de 4.096 B: **não bateu**).
+  - **Não medido / a decidir:** `colide` com polígono e outros tipos (usariam o `bbox`, sem teste); linha e texto em
+    outras fontes, tamanhos ou escalas de tela; várias threads chamando estes métodos ao mesmo tempo; custo da
+    `trocar_imagem` isolado e com muitos arquivos distintos (só 4); o custo de `para_frente` e `para_tras`; a retomada das teclas e a aparência da transparência.
 
 ### Conhecido
 
