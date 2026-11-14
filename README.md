@@ -958,15 +958,57 @@ As linhas de simulação usam `jan.event_generate` e `area.widget`, atalhos para
 - `tecla` vem em português para sete teclas: `esquerda`, `direita`, `cima`, `baixo`, `espaco`, `enter` e `esc`. As outras seguem o nome do Tk (`a`, `A`, `F1`...). `caractere` é o texto digitado: vazio para setas, Esc e F1, e `"\r"` para enter. O `ç` chega como `ccedilla` em `tecla` e como `ç` em `caractere`.
 - Chamar `gui.ao_tecla`, `area.ao_clicar` ou `area.ao_soltar` de novo troca o tratador.
 - Uma tecla digitada num campo com foco também chega ao `gui.ao_tecla`; o campo recebe o texto normalmente.
-- Só o botão esquerdo do mouse. Não existem `ao_mover` nem tratador de tecla solta.
+- Só o botão esquerdo do mouse. Não existe `ao_mover`. Para a tecla solta, veja `gui.ao_soltar_tecla` logo abaixo.
 - Os tratadores rodam um por vez, na ordem em que chegam. Um erro dentro de um tratador aparece no terminal, com a mensagem e a linha.
 - `ao_soltar` tem outro sentido em `habilitar_drop` e `kanban`: lá é o tratador de um item arrastado e solto numa área; em `area.ao_soltar` é soltar o botão do mouse sobre a tela.
 
+#### Tecla apertada e tecla solta
+
+`gui.tecla_apertada(nome)` responde se uma tecla está apertada **agora**. `gui.ao_soltar_tecla(tratador)` chama o tratador quando uma tecla é solta. Juntas, servem para movimento contínuo (segurar a seta e a bola andar) sem depender da repetição do teclado.
+
+```advak
+seja jan = gui.janela("Segure uma seta", 320, 120)
+seja area = gui.canvas(jan, 300, 60, "branco")
+seja bola = area.circulo(30, 30, 10, "azul")
+
+gui.ao_soltar_tecla((e) => { imprimir("soltou:", e.tecla, "| caractere:", e.caractere) })
+
+gui.repetir(50, () => {
+    se (gui.tecla_apertada("direita")) { area.mover(bola, 3, 0) }
+    se (gui.tecla_apertada("esquerda")) { area.mover(bola, -3, 0) }
+})
+gui.iniciar()
+```
+
+Este exemplo depende de uma pessoa no teclado, então não tem saída fixa. A sintaxe foi conferida com `advak check`, e o autor executou o exemplo uma vez à mão, nesta máquina, Windows 10: a bola andou e a soltura apareceu no terminal. Segurar Direita deve mover a bola; soltar deve imprimir `soltou: direita | caractere: ` (com o caractere vazio).
+
+- **Nomes aceitos:** `a` a `z`, `0` a `9`, `espaco`, `enter`, `esc`, `esquerda`, `direita`, `cima` e `baixo`. As letras são sempre minúsculas, com ou sem Shift ou Caps Lock.
+- **`caractere` na soltura é sempre vazio**, em toda soltura, para não depender de Shift nem de Caps Lock. O formato do tratador é o do `gui.ao_tecla` (`e.tecla` e `e.caractere`).
+- **`gui.tecla_apertada` devolve o estado no instante da chamada.** Quando um tratador roda, o estado pode já ser outro (a tecla pode ter sido solta nesse meio tempo).
+- **Nome desconhecido dá erro de execução**, com a lista de nomes: `Tecla desconhecida: 'xyz'. Use um destes nomes: a a z, 0 a 9, espaco, enter, esc, esquerda, direita, cima, baixo.` O erro pode ser capturado com `tentar` / `capturar`. Um valor que não é texto dá o mesmo erro.
+- **Teclas fora da lista são ignoradas, sem erro:** Shift, Control, Tab e F1 a F12. Elas continuam chegando ao `gui.ao_tecla`.
+- **Janela sem foco:** se a janela perde o foco com teclas apertadas, o tratador de soltura é chamado uma vez por tecla, na ordem do aperto, com `caractere` vazio (soltura sintética). O estado já está vazio quando esses tratadores rodam. Se a janela é fechada com teclas apertadas, o estado é limpo e **não** há soltura sintética.
+- **Limite conhecido, Shift mais dígito:** o dígito apertado com Shift chega com o nome do símbolo (por exemplo `exclam` no lugar de `1`), que não está na lista; por isso não é registrado. Isso vem da leitura do código: não foi medido com teclado de verdade e nenhum teste aperta Shift mais dígito.
+- Chamar `gui.ao_soltar_tecla` de novo troca o tratador, e é preciso criar a janela antes (`gui.janela`).
+- **Tratador escrito em Python** (não em `.dk`) que levanta exceção: a exceção sobe para o Tk, como já acontece com `gui.ao_tecla` (lido no código, em `_chamar`). Um erro num tratador `.dk` aparece no terminal com a mensagem e a linha, como nos outros tratadores.
+
+**Medido à mão pelo autor, com teclado de verdade, uma vez, nesta máquina, Windows 10 (registro local, não publicado):**
+
+- A tecla segurada repete o aperto sem soltar; o intervalo mediano entre repetições ficou entre 37,4 e 38,3 ms.
+- Houve 1 soltura por tecla segurada, com setas, Espaço, `a`, `b`, `z`, `0` e `9`.
+- O estado bateu com as teclas apertadas em 273 de 274 apertos de Direita; em 1 deles o estado já estava falso quando o tratador rodou, compatível com ler o estado no instante da chamada; causa não verificada.
+- O keycode da letra é o mesmo no aperto e na soltura, mesmo com o Shift ou o Caps Lock mudando o nome da tecla.
+- O Shift direito solta com o nome do Shift esquerdo (`Shift_L`).
+- Na perda real de foco da janela com uma tecla apertada, o aviso de foco chega e a soltura da tecla não chega.
+
+**Só os testes e a leitura do código cobrem:** a soltura sintética por perda de foco (`testes/test_gui_teclado.py`, testes 8 a 12 com janela simulada; o teste 16 usa Tk real com eventos gerados, não teclas físicas) e o Shift mais dígito (só leitura do código).
+
 **O que não foi medido:**
 
-- Se o Windows repete a tecla segurada. O tratador é chamado uma vez por tecla que o Tk entregar, um de cada vez, sem juntar eventos.
-- Janela secundária: `gui.ao_tecla` só foi testado na janela principal.
-- Programas compilados (`advak_compiler.py`): `gui.ao_tecla` não existe neles. O compilador também não lista `gui.canvas`.
+- Linux (e a repetição por pares de soltar e apertar que o X pode gerar): não foi testado.
+- Janela secundária (`Toplevel`): `gui.ao_tecla`, `gui.ao_soltar_tecla` e `gui.tecla_apertada` só foram usados na janela principal.
+- Outros teclados: só um teclado foi usado nas medições; o layout não foi registrado.
+- Programas compilados (`advak_compiler.py`): `gui.ao_tecla`, `gui.ao_soltar_tecla` e `gui.tecla_apertada` não existem neles (lido no código: nenhuma delas aparece no `advak_compiler.py`). O compilador também não lista `gui.canvas`.
 
 Detalhes e testes: `CHANGELOG.md` e `testes/test_gui_teclado.py`.
 

@@ -81,20 +81,48 @@ Todas as mudanças importantes da Advak Language. Datas no formato ano-mês-dia.
 - **Teclado e mouse em português:** `gui.ao_tecla(tratador)` chama o tratador a cada tecla pressionada na janela
   principal, com `{tecla, caractere}`. `area.ao_clicar(tratador)` e `area.ao_soltar(tratador)` chamam o tratador com
   `{x, y}` (as coordenadas do desenho) quando o botão esquerdo do mouse é pressionado ou solto sobre a tela. Chamar de
-  novo troca o tratador. Teste: `testes/test_gui_teclado.py`, 17 testes.
+  novo troca o tratador. Teste: `testes/test_gui_teclado.py`, 34 testes.
   - `tecla` vem em português para sete teclas (`esquerda`, `direita`, `cima`, `baixo`, `espaco`, `enter`, `esc`); as
     outras seguem o nome do Tk (`a`, `A`, `F1`...). `caractere` é o texto digitado: vazio para setas, Esc e F1, e
     `"\r"` para enter. O `ç` chega como `ccedilla` em `tecla` e como `ç` em `caractere`.
   - Uma tecla digitada num campo com foco também chega ao `gui.ao_tecla`; o campo recebe o texto normalmente.
-  - Só o botão esquerdo do mouse. Não há `ao_mover` nem tratador de tecla solta.
+  - Só o botão esquerdo do mouse. Não há `ao_mover`. Tecla solta: veja `gui.ao_soltar_tecla`, logo abaixo.
   - `area.ao_clicar` e `area.ao_soltar` não apagam um `bind` que o programa já tenha feito em `area.widget`.
   - **`ao_soltar` tem outro sentido em `habilitar_drop` e `kanban`:** lá é o tratador de um item arrastado e solto
     numa área; em `area.ao_soltar` é soltar o botão do mouse sobre a tela.
-  - Não foi medido se o Windows repete a tecla segurada; o tratador é chamado uma vez por tecla que o Tk entregar, um
-    de cada vez, sem juntar eventos.
+  - O Windows repete a tecla segurada (medido à mão, ver `gui.tecla_apertada` abaixo); o tratador é chamado uma vez por
+    tecla que o Tk entregar, um de cada vez, sem juntar eventos.
   - **Janela secundária:** `gui.ao_tecla` só foi testado na janela principal; o bindtags de uma janela secundária
     inclui all, mas o event_generate não permitiu medir.
   - **`gui.ao_tecla` não existe em programas compilados** (`advak_compiler.py`, que também não lista `gui.canvas`).
+- **Tecla apertada e tecla solta (etapa 6):** `gui.tecla_apertada(nome)` devolve se a tecla está apertada no instante da
+  chamada (que pode já ser outro quando um tratador roda), e `gui.ao_soltar_tecla(tratador)` chama o tratador com
+  `{tecla, caractere}` quando uma tecla da lista é solta. O estado é por keycode (o nome da tecla muda entre apertar e
+  soltar com Shift ou Caps Lock; o keycode não). O interpretador passa a expor os dois nomes. Testes:
+  `testes/test_gui_teclado.py`, 34 testes (17 novos).
+  - **Nomes:** `a` a `z`, `0` a `9`, `espaco`, `enter`, `esc`, `esquerda`, `direita`, `cima`, `baixo`. Nome desconhecido, ou
+    valor que não é texto, dá erro de execução com a lista de nomes (capturável com `tentar`). Shift, Control, Tab e F1 a
+    F12 ficam de fora e são ignorados sem erro.
+  - `caractere` na soltura é sempre vazio. Chamar `gui.ao_soltar_tecla` de novo troca o tratador.
+  - **Perda de foco da janela:** as teclas apertadas recebem uma soltura sintética, uma por tecla, na ordem do aperto,
+    com o estado já vazio. Janela destruída com teclas apertadas: o estado é limpo, sem soltura sintética.
+  - **Medido à mão pelo autor, com teclado de verdade, uma vez, nesta máquina, Windows 10 (registro local, não
+    publicado):** a tecla segurada repete o aperto sem soltar (intervalo mediano de 37,4 a 38,3 ms); 1 soltura por tecla
+    segurada, com setas, Espaço, `a`, `b`, `z`, `0` e `9`; o estado bateu com as teclas apertadas em 273 de 274 apertos
+    de Direita (em 1 deles o estado já estava falso quando o tratador rodou, compatível com ler o estado no instante da
+    chamada; causa não verificada); keycode igual no aperto e na soltura; o Shift direito solta com o nome do Shift
+    esquerdo (`Shift_L`); na perda real de foco o aviso de foco chega e a soltura da tecla não chega.
+  - **Só os testes cobrem** (testes 8 a 12 com janela simulada; 16 com Tk real e eventos gerados) a soltura sintética
+    por perda de foco. **Shift mais dígito** (o dígito chega com o nome do símbolo, como `exclam`, que não está na lista,
+    e portanto não é registrado) é um limite conhecido **lido no código**: não foi medido com teclado de verdade e nenhum
+    teste o cobre.
+  - **Não medido:** Linux/X11, janela secundária (`Toplevel`) e outros teclados. Caps Lock e layout do teclado não foram
+    registrados.
+  - Uma função Python registrada como tratador de soltura que levanta exceção sobe para o Tk, como já acontece com
+    `gui.ao_tecla` (lido no código); um erro num tratador `.dk` aparece no terminal.
+  - **Pendências (nada alterado):** dos 274 `APERTOU` de direita, 1 teve o estado da própria tecla falso quando o tratador
+    rodou, compatível com o estado ser lido no instante do tratador; a causa não foi verificada. O tempo registrado em
+    cada linha da medição é a hora em que o tratador rodou, não a hora da tecla.
 - **Mudado:** erros dentro de tratadores (botão, `gui.apos`, `gui.repetir`) agora aparecem no terminal (stderr), com a
   mensagem e a linha; antes eram engolidos em silêncio. O mesmo erro repetido aparece uma vez, e ao fechar a janela
   sai um resumo (`⚠ 3 erros em tratadores (1 diferente).`). Um erro causado só por a janela já ter fechado não é mostrado.

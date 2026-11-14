@@ -418,6 +418,12 @@ class Tela:
 _NOMES_TECLA = {'Left': 'esquerda', 'Right': 'direita', 'Up': 'cima', 'Down': 'baixo',
                 'space': 'espaco', 'Return': 'enter', 'Escape': 'esc'}
 
+# Os únicos nomes que gui.tecla_apertada e gui.ao_soltar_tecla conhecem. Shift, Control, Tab e F1 a F12 ficam de fora
+# nesta etapa (o KeyRelease do Shift direito chega como Shift_L; esses nomes esperam medição) e não fazem nada.
+_NOMES_ESTADO = frozenset('abcdefghijklmnopqrstuvwxyz0123456789') | {'espaco', 'enter', 'esc', 'esquerda', 'direita',
+                                                                    'cima', 'baixo'}
+_LISTA_NOMES = "a a z, 0 a 9, espaco, enter, esc, esquerda, direita, cima, baixo"
+
 
 class AdvakGUIModern:
     """
@@ -435,6 +441,10 @@ class AdvakGUIModern:
         self._despachante = _Despachante()
         self._tratador_tecla = None
         self._tecla_ligada = False
+        self._apertadas = {}                    # keycode -> nome, na ordem do aperto (só os nomes de _NOMES_ESTADO)
+        self._trava_teclas = threading.Lock()   # protege _apertadas: o Tk escreve, a thread dos tratadores lê
+        self._tratador_soltar = None
+        self._teclado_ligado = False
 
     # ── Janela principal ──────────────────────────────────────────────────────
 
@@ -491,6 +501,7 @@ class AdvakGUIModern:
         self._root.bind('<F11>', lambda e: self._toggle_tema())
         # Inicia o processador de tarefas GUI (para advak_executar thread-safe)
         self._root.after(50, self._processar_fila_gui)
+        self._ligar_teclado()
 
         win = self._root
         win.titulo      = lambda t: win.title(t)
@@ -1629,6 +1640,97 @@ class AdvakGUIModern:
     @staticmethod
     def _dados_tecla(evento):
         return {"tecla": _NOMES_TECLA.get(evento.keysym, evento.keysym), "caractere": evento.char}
+
+    # ── Teclas apertadas e soltura (gui.tecla_apertada, gui.ao_soltar_tecla) ──────────────────────────────────
+    # Medido só no Windows 10, uma vez, nesta máquina (registro local, não publicado). O estado é
+    # por keycode: o keysym muda entre apertar e soltar (Shift, Caps Lock) e o Shift direito solta como Shift_L, mas
+    # o keycode da tecla é o mesmo. No Windows a tecla segurada repete KeyPress sem KeyRelease.
+
+    def _ligar_teclado(self):
+        """Liga os eventos de tecla e de foco que alimentam o estado. Idempotente; janela() e os testes chamam."""
+        if self._teclado_ligado or self._root is None:
+            return
+        self._teclado_ligado = True
+        try:
+            # bind_all, como o ao_tecla: a janela já tem <F11> (tema) e esconderia um <KeyPress> ligado nela.
+            for sequencia, tratador in (('<KeyPress>', self._tecla_apertou), ('<KeyRelease>', self._tecla_soltou),
+                                        ('<FocusIn>', self._foco_mudou), ('<FocusOut>', self._foco_mudou)):
+                self._root.bind_all(sequencia, tratador, add='+')
+            self._root.bind('<Destroy>', self._janela_destruida, add='+')
+        except tk.TclError:                                        # janela já destruída: não há onde ligar
+            self._teclado_ligado = False
+
+    def _tecla_apertou(self, evento):
+        nome = _NOMES_TECLA.get(evento.keysym) or evento.keysym.lower()
+        if nome not in _NOMES_ESTADO:
+            return
+        with self._trava_teclas:
+            if evento.keycode not in self._apertadas:      # repetição da tecla segurada: não muda nada
+                self._apertadas[evento.keycode] = nome
+
+    def _tecla_soltou(self, evento):
+        with self._trava_teclas:
+            nome = self._apertadas.pop(evento.keycode, None)       # keycode desconhecido: ignorado
+        if nome is not None:
+            self._avisar_soltura(nome)
+
+    def _avisar_soltura(self, nome):
+        if self._tratador_soltar is not None:
+            self._chamar(self._tratador_soltar, {"tecla": nome, "caractere": ""}, origem='tratador de soltar tecla')
+
+    def _foco_mudou(self, evento):
+        # Só depois do after_idle dá para saber se o foco saiu da aplicação: ao ir de um campo para outro da mesma
+        # janela o Tk manda FocusOut, mas focus_displayof() nunca fica None (medido).
+        try:
+            self._root.after_idle(self._checar_foco)
+        except tk.TclError:                                        # janela já destruída
+            pass
+
+    def _checar_foco(self):
+        try:
+            perdeu = self._root.focus_displayof() is None
+        except (tk.TclError, KeyError):         # janela destruída, ou foco num widget interno que o tkinter não conhece
+            return                              # (o KeyError conta como foco ainda da aplicação: não limpa)
+        if perdeu:
+            self._soltar_todas(sintetica=True)
+
+    def _janela_destruida(self, evento):
+        if evento.widget is self._root:                            # <Destroy> também chega por cada widget filho
+            self._soltar_todas(sintetica=False)
+            self._teclado_ligado = False                           # uma janela nova religa os bindings
+
+    def _soltar_todas(self, sintetica):
+        """Esvazia o estado (antes de qualquer callback) e, se `sintetica`, avisa a soltura de cada tecla, na ordem do aperto."""
+        with self._trava_teclas:
+            nomes = list(self._apertadas.values())
+            self._apertadas.clear()
+        if not sintetica:
+            return
+        for nome in nomes:
+            try:
+                self._avisar_soltura(nome)
+            except Exception:                                      # um callback com erro não impede os outros
+                self._root.report_callback_exception(*sys.exc_info())
+
+    def ao_soltar_tecla(self, tratador):
+        """Chama `tratador` com {tecla, caractere} quando uma tecla da lista de gui.tecla_apertada é solta.
+
+        O formato é o do gui.ao_tecla, com `tecla` igual ao nome da tecla apertada. `caractere` vem SEMPRE vazio, em toda
+        soltura, para não depender de Shift nem de Caps Lock. Se a janela perde o foco com teclas apertadas, o
+        tratador é chamado uma vez por tecla (soltura sintética, também com caractere vazio), na ordem do aperto."""
+        _check()
+        if self._root is None:
+            raise _erro_canvas("Crie a janela antes, com gui.janela(...), para usar gui.ao_soltar_tecla.")
+        self._tratador_soltar = tratador                           # o tratador novo substitui o anterior
+        self._ligar_teclado()
+
+    def tecla_apertada(self, nome):
+        """True se a tecla está apertada AGORA (o estado do instante da chamada, que pode já ser outro quando o
+        tratador de um evento chega). Nomes: a a z, 0 a 9, espaco, enter, esc, esquerda, direita, cima, baixo."""
+        if not isinstance(nome, str) or nome not in _NOMES_ESTADO:
+            raise _erro_canvas(f"Tecla desconhecida: {nome!r}. Use um destes nomes: {_LISTA_NOMES}.")
+        with self._trava_teclas:
+            return nome in self._apertadas.values()
 
     def atualizar(self):
         if self._root:
