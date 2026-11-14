@@ -6655,6 +6655,13 @@ class AdvakInterpreter:
                 return str(a) if not isinstance(a, bool) else ('verdadeiro' if a else 'falso'), b
             return a, b
 
+        def _deslocar(a, b, op):
+            n, k = int(a), int(b)
+            if k < 0:
+                raise AdvakError(f"Deslocamento com contagem negativa: {n} {op} {k}. "
+                                 "A contagem de bits precisa ser zero ou maior.")
+            return n << k if op == '<<' else n >> k
+
         ops = {
             '+': lambda a,b: a+b, '-': lambda a,b: a-b,
             '*': lambda a,b: a*b,
@@ -6675,8 +6682,8 @@ class AdvakInterpreter:
             '&':  lambda a,b: int(a) & int(b),
             '|':  lambda a,b: int(a) | int(b),
             '^':  lambda a,b: int(a) ^ int(b),
-            '<<': lambda a,b: int(a) << int(b),
-            '>>': lambda a,b: int(a) >> int(b),
+            '<<': lambda a,b: _deslocar(a, b, '<<'),
+            '>>': lambda a,b: _deslocar(a, b, '>>'),
         }
         if op not in ops: raise AdvakError(f"Operador '{op}' não suportado")
         try:

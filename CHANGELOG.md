@@ -130,6 +130,12 @@ Todas as mudanças importantes da Advak Language. Datas no formato ano-mês-dia.
 
 ### Linguagem e ferramentas
 
+- **Deslocamento com contagem negativa:** `1 << -1` e `8 >> -2` agora dão erro de execução em português
+  (`Deslocamento com contagem negativa: 1 << -1. A contagem de bits precisa ser zero ou maior.`), que pode ser capturado
+  com `tentar`. Antes saía um erro cru do Python, em inglês (`ValueError: negative shift count`), na caixa "ERRO
+  INESPERADO". Contagem zero ou positiva não muda (`-8 >> 1` dá `-4`, `1 << 100` dá `1267650600228229401496703205376`).
+  Testes: `testes/test_operadores_bit.py`. Medido uma vez, nesta máquina, Windows 10.
+  - **Não medido:** operando que não seja número e contagem muito grande (`1 << 10**10`), que continuam como antes.
 - **Literais hexadecimal, binário e octal:** `0x1F`, `0b101` e `0o17` (também `0X`, `0B` e `0O`) são números inteiros
   comuns, sem o limite de 32 ou 64 bits (medido com 80 e 100 bits). Sem `_` como separador e sem expoente. Prefixo sem
   dígitos (`0x`) ou dígito que não existe na base (`0b2`, `0o8`, `0xG1`) dá erro de sintaxe em português. Valem em
