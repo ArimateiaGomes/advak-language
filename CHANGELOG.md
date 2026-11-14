@@ -130,6 +130,18 @@ Todas as mudanças importantes da Advak Language. Datas no formato ano-mês-dia.
 
 ### Linguagem e ferramentas
 
+- **Literais hexadecimal, binário e octal:** `0x1F`, `0b101` e `0o17` (também `0X`, `0B` e `0O`) são números inteiros
+  comuns, sem o limite de 32 ou 64 bits (medido com 80 e 100 bits). Sem `_` como separador e sem expoente. Prefixo sem
+  dígitos (`0x`) ou dígito que não existe na base (`0b2`, `0o8`, `0xG1`) dá erro de sintaxe em português. Valem em
+  contas, na interpolação (`` `${0xFF:x}` `` dá `ff`), depois de `//` (`7 // 0x2` dá `3`) e no `advak check`; o
+  `advak formatar` os mantém como foram escritos. Texto não é convertido: `numero("0x1F")` continua dando `0`.
+  Testes: `testes/test_literais_base.py`.
+- **Operadores bit a bit documentados:** `&`, `|`, `^`, `~`, `<<` e `>>` já existiam. A precedência, medida uma vez,
+  nesta máquina, Windows 10 (só aritméticos, comparação, igualdade e bit a bit): `~` e os sinais, depois
+  `* / // % << >>`, depois `+ -`, depois `< > <= >=`, depois `&`, `^`, `|` e por fim `== !=`. Decimal é truncado
+  antes da conta (`7.9 & 3` dá `3`).
+- **Não medido:** operandos que não sejam número; os formatos `o`, `X` e `c`; programas compilados e transpiladores;
+  Linux.
 - **Comentário alinhado depois de uma divisão inteira** (`advak_lexer.py`). Antes, `seja y = 7 // 2   // metade`
   dava erro de sintaxe, e `seja z = (10 // 3)   // 3` e `seja b = (20 // 3) + 1   // 201 = criado` rodavam em
   silêncio com valor errado (1 em vez de 3; 6 em vez de 7), porque o segundo `//` da linha era lido como outra

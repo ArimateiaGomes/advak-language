@@ -53,6 +53,7 @@ A linguagem de programação Advak foi influenciada por **Python**, **C**, **Pro
 4. [Guia da linguagem](#guia-da-linguagem)
    - [Variáveis e tipos](#variáveis-e-tipos)
    - [Operadores](#operadores)
+   - [Literais com base e operadores bit a bit](#literais-com-base-e-operadores-bit-a-bit)
    - [Textos e template strings](#textos-e-template-strings)
    - [Condicionais](#condicionais)
    - [Laços de repetição](#laços-de-repetição)
@@ -271,6 +272,72 @@ seja apelido = nulo ?? "sem apelido"
 seja pessoa = {endereco: {cidade: "Arraial"}}
 imprimir(pessoa?.endereco?.cidade)
 ```
+
+### Literais com base e operadores bit a bit
+
+Números inteiros podem ser escritos em hexadecimal (`0x`), binário (`0b`) ou octal (`0o`):
+
+```advak
+imprimir(0x1F + 1)
+imprimir(0b101 & 0b011)
+imprimir(0xFF >> 4)
+seja x = 0o17
+imprimir(x, tipo(x))
+imprimir(-0x1F)
+imprimir(`${0xFF:x} ${0b101:08b}`)
+```
+
+Saída deste programa, rodado de verdade (uma vez, nesta máquina, Windows 10):
+
+```text
+32
+1
+15
+15 numero
+-31
+ff 00000101
+```
+
+- O prefixo pode ser maiúsculo (`0X`, `0B`, `0O`), e os dígitos hexadecimais, maiúsculos ou minúsculos (`0xDEADbeef`). O valor é um número comum, do mesmo tipo que `31`, sem o limite de 32 ou 64 bits (medido com 80 e 100 bits: `0xFFFFFFFFFFFFFFFFFFFF` vale 1208925819614629174706175 e `1 << 100` vale 1267650600228229401496703205376).
+- Só inteiros. Não existe `_` como separador (`0x1_F` não é um literal: é `0x1` seguido do nome `_F`) nem expoente (`1e3` é `1` seguido do nome `e3`).
+- Prefixo sem dígitos ou dígito que não existe na base é erro de sintaxe, em português:
+  `[Advak] Número hexadecimal sem dígitos: '0x' na linha 1, coluna 10. Escreva os dígitos depois do prefixo, por exemplo 0x1F`
+  `[Advak] Dígito '2' inválido em número binário '0b2' na linha 1, coluna 12`
+- O literal vale em contas, na interpolação e depois de `//` (`7 // 0x2` dá `3`). `advak check` o aceita e `advak formatar` o mantém como foi escrito.
+- Texto não é convertido: `numero("0x1F")` continua dando `0`. Para mostrar um número em outra base, use o formato da interpolação: `` `${255:x}` `` dá `ff`, `` `${5:08b}` `` dá `00000101` e `` `${255:#x}` `` dá `0xff`.
+
+**Operadores bit a bit** (só para números inteiros; um decimal é truncado antes da conta, e `7.9 & 3` dá `3`):
+
+| Operador | O que faz | Exemplo | Resultado |
+|---|---|---|---|
+| `&` | E bit a bit | `5 & 3` | `1` |
+| `\|` | OU bit a bit | `5 \| 3` | `7` |
+| `^` | OU exclusivo (não é potência: a potência é `**`) | `5 ^ 3` | `6` |
+| `~` | NÃO bit a bit (um valor só) | `~5` | `-6` |
+| `<<` | desloca para a esquerda | `1 << 100` | `1267650600228229401496703205376` |
+| `>>` | desloca para a direita | `-8 >> 1` | `-4` |
+
+`e`, `ou`, `nao`, `&&`, `||` e `!` são operadores lógicos, não bit a bit. Com números negativos: `-5 & 3` dá `3` e `~5` dá `-6`.
+
+**Ordem de precedência** (do mais forte ao mais fraco). A lista cobre só os operadores aritméticos, de comparação, de igualdade e bit a bit; a relação deles com `**`, `??`, o ternário e os operadores lógicos (`e`, `ou`, `&&`, `||`) não está descrita aqui. Ela não é a ordem do Python nem a do C: `1 << 2 + 1` dá `5` aqui e `8` nessas linguagens. Na dúvida, use parênteses:
+
+1. `~` e os sinais `-` e `+` de um valor só. Ex.: `~1 + 1` dá `-1` e `-5 & 3` dá `3`.
+2. `*`, `/`, `//`, `%`, `<<` e `>>`, no mesmo nível, da esquerda para a direita. Ex.: `1 << 2 * 3` dá `12`.
+3. `+` e `-`. Ex.: `2 + 1 << 2` dá `6`.
+4. `<`, `>`, `<=` e `>=`. Ex.: `5 & 3 < 4` dá `1`, isto é, `5 & (3 < 4)`; `1 + 1 < 3` e `2 < 1 << 2` dão `verdadeiro`.
+5. `&`. Ex.: `6 ^ 2 & 4` dá `6`.
+6. `^`. Ex.: `1 | 2 ^ 3` dá `1`.
+7. `|`. Ex.: `1 | 2 == 3` dá `verdadeiro`, isto é, `(1 | 2) == 3`.
+8. `==` e `!=`. Ex.: `6 & 3 == 2` dá `verdadeiro`, isto é, `(6 & 3) == 2`.
+
+**O que não foi medido:**
+
+- Operandos que não sejam número (texto, `nulo`).
+- Os formatos `o`, `X` e `c` da interpolação.
+- Programas compilados (`advak_compiler.py`) e os transpiladores para Python e C.
+- Linux.
+
+Testes: `testes/test_literais_base.py`.
 
 ### Textos e template strings
 

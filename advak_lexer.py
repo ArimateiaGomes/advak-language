@@ -64,6 +64,7 @@ TOKEN_SPECS = [
     ('BLOCK_COMMENT',  r'/\*[\s\S]*?\*/'),
     ('STRING',         r'"(?:\\.|[^"\\])*"'),
     ('STRING_SINGLE',  r"'(?:\\.|[^'\\])*'"),
+    ('NUMBER_BASE',    r'0[xXbBoO][0-9A-Za-z]*'),   # 0x1F, 0b101, 0o17: antes de FLOAT e NUMBER
     ('FLOAT',          r'\d+\.\d+'),
     ('NUMBER',         r'\d+'),
     ('ARROW',          r'=>'),
@@ -114,7 +115,7 @@ TOKEN_SPECS = [
     ('MISMATCH',       r'.'),
 ]
 
-_PARTES_DE_EXPRESSAO = re.compile(r'\d+(?:\.\d+)?|[^\W\d]\w*|[()+\-*/%]|\S')
+_PARTES_DE_EXPRESSAO = re.compile(r'0[xXbBoO][0-9A-Za-z]*|\d+(?:\.\d+)?|[^\W\d]\w*|[()+\-*/%]|\S')
 _TEXTO_ENTRE_ASPAS = re.compile(r'"[^"\n]*"|' + "'[^'\\n]*'")
 _SIMBOLOS_DE_EXPRESSAO = '()[]{},;+-*/%<>=!'
 _FECHAMENTOS_DE_EXPRESSAO = ')]};,'
@@ -358,7 +359,26 @@ class AdvakLexer:
     _BOOL_FALSE = {'falso', 'false'}
     _NULL_VALS  = {'nulo', 'null', 'undefined'}
 
+    # Literais com base (0x, 0b, 0o; maiúsculas ou minúsculas). Sem "_" e sem expoente.
+    _BASES = {'x': (16, 'hexadecimal', '0123456789abcdefABCDEF', '0x1F'),
+              'b': (2, 'binário', '01', '0b101'),
+              'o': (8, 'octal', '01234567', '0o17')}
+
+    def _numero_com_base(self, texto, line, col):
+        base, nome, validos, exemplo = self._BASES[texto[1].lower()]
+        digitos = texto[2:]
+        if not digitos:
+            raise SyntaxError(f"[Advak] Número {nome} sem dígitos: '{texto}' na linha {line}, coluna {col}. "
+                              f"Escreva os dígitos depois do prefixo, por exemplo {exemplo}")
+        for k, d in enumerate(digitos):
+            if d not in validos:
+                raise SyntaxError(f"[Advak] Dígito '{d}' inválido em número {nome} '{texto}' na linha {line}, "
+                                  f"coluna {col + 2 + k}")
+        return {'type': 'NUMBER', 'value': int(digitos, base), 'line': line, 'col': col}
+
     def _make_token(self, kind, value, line, col):
+        if kind == 'NUMBER_BASE':
+            return self._numero_com_base(value, line, col)
         tok = {'type': kind, 'value': value, 'line': line, 'col': col}
 
         if kind == 'NUMBER':
