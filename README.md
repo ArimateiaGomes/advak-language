@@ -54,6 +54,7 @@ A linguagem de programação Advak foi influenciada por **Python**, **C**, **Pro
    - [Variáveis e tipos](#variáveis-e-tipos)
    - [Operadores](#operadores)
    - [Literais com base e operadores bit a bit](#literais-com-base-e-operadores-bit-a-bit)
+   - [Bits: números em binário e hexadecimal](#bits-números-em-binário-e-hexadecimal)
    - [Textos e template strings](#textos-e-template-strings)
    - [Condicionais](#condicionais)
    - [Laços de repetição](#laços-de-repetição)
@@ -338,6 +339,81 @@ ff 00000101
 - Linux.
 
 Testes: `testes/test_literais_base.py`.
+
+### Bits: números em binário e hexadecimal
+
+`Bits` converte um número inteiro em texto binário ou hexadecimal, faz o caminho de volta, e lê ou muda um bit. São 10 funções:
+
+| Função | O que faz | Exemplo | Resultado |
+|---|---|---|---|
+| `Bits.binario(n)` / `Bits.binario(n, largura)` | número em texto binário | `Bits.binario(5, 8)` | `00000101` |
+| `Bits.hexa(n)` / `Bits.hexa(n, largura)` | número em texto hexadecimal (minúsculo) | `Bits.hexa(255, 8)` | `ff` |
+| `Bits.de_binario(texto)` | texto binário em número | `Bits.de_binario("0b101")` | `5` |
+| `Bits.de_hexa(texto)` | texto hexadecimal em número | `Bits.de_hexa("-0x10")` | `-16` |
+| `Bits.limitar(n, largura)` | `n mod 2^largura` | `Bits.limitar(300, 8)` | `44` |
+| `Bits.com_sinal(n, largura)` | lê os `largura` bits como número com sinal | `Bits.com_sinal(255, 8)` | `-1` |
+| `Bits.contar_uns(n)` | quantos bits 1 (só para `n` zero ou maior) | `Bits.contar_uns(255)` | `8` |
+| `Bits.bit(n, posicao)` | o bit (0 ou 1) na posição | `Bits.bit(5, 2)` | `1` |
+| `Bits.ligar(n, posicao)` | `n` com esse bit em 1 | `Bits.ligar(0, 3)` | `8` |
+| `Bits.desligar(n, posicao)` | `n` com esse bit em 0 | `Bits.desligar(15, 0)` | `14` |
+
+```advak
+imprimir(Bits.binario(5, 8))
+imprimir(Bits.hexa(255, 8))
+imprimir(Bits.de_binario("0b101"))
+imprimir(Bits.de_hexa("-0x10"))
+imprimir(Bits.limitar(300, 8))
+imprimir(Bits.com_sinal(255, 8))
+imprimir(Bits.contar_uns(255))
+imprimir(Bits.bit(5, 2))
+imprimir(Bits.ligar(0, 3))
+imprimir(Bits.desligar(15, 0))
+tentar {
+    imprimir(Bits.binario(256, 8))
+} capturar (e) {
+    imprimir(e)
+}
+```
+
+Saída deste programa, rodado de verdade (uma vez, nesta máquina, Windows 10, Python 3.13.8):
+
+```text
+00000101
+ff
+5
+-16
+44
+-1
+8
+1
+8
+14
+Bits.binario: 256 não cabe em 8 bits (a faixa é de -128 a 255).
+```
+
+**Regras medidas** (uma vez, nesta máquina, Windows 10, Python 3.13.8, pelos 25 testes de `testes/test_bits.py`, exceto os itens "Número errado de argumentos" e "Resultados enormes", que foram medidos à parte):
+
+- **Largura** de 1 a 65536 e **posição** de 0 a 65535. Fora disso é erro em português, que `tentar` captura: `Bits.binario: a largura precisa ser um inteiro de 1 a 65536, mas recebeu 65537.` e `Bits.bit: a posição precisa ser um inteiro de 0 a 65535, mas recebeu -1.`
+- **Faixa:** com largura `w`, `binario`, `hexa` e `com_sinal` aceitam de `-2^(w-1)` a `2^w - 1`. Fora dela dão erro: `Bits.binario: 256 não cabe em 8 bits (a faixa é de -128 a 255).` Com largura, `binario` e `hexa` escrevem o resto da divisão por `2^w` (`Bits.binario(-1, 8)` dá `11111111`). `hexa` usa `ceil(w/4)` dígitos (`Bits.hexa(1, 5)` dá `01`).
+- **Sem largura**, `binario` e `hexa` dão o número em base 2 ou 16, sem prefixo, com `-` se for negativo (`Bits.binario(-5)` dá `-101`). `nulo` como largura vale o mesmo que não passar largura (`Bits.binario(5, nulo)` dá `101`).
+- **`limitar` nunca dá "não cabe"**: é `n mod 2^w` para qualquer `n` (`Bits.limitar(-1, 8)` dá `255`).
+- **Só inteiros.** Decimal dá erro com a dica de `piso()`, `teto()`, `arred()` ou `//`, mesmo valendo um inteiro: `Bits.binario(5.0)` e `Bits.binario(10 / 2)` dão `Bits.binario espera um número inteiro, mas recebeu 5.0. Use piso(), teto(), arred() ou // para obter um inteiro.` `verdadeiro` e texto também dão erro. Na largura, decimal em `binario`, `limitar` e `com_sinal` dá, por exemplo, `Bits.limitar espera uma largura inteira, mas recebeu 2.5.` (com a mesma dica, e o nome da própria função) e `verdadeiro` em `limitar` e `com_sinal` dá, por exemplo, `Bits.limitar espera uma largura inteira, mas recebeu verdadeiro.` Na posição, decimal em `bit` dá `Bits.bit espera uma posição inteira, mas recebeu 1.5.` (com a mesma dica).
+- **Texto estrito** em `de_binario` e `de_hexa`: sem espaço, sem `+` e sem `_` (`Bits.de_binario(" 101")` dá `dígito ' ' inválido em número binário ' 101'`). Medido: `de_binario` aceita `0b` e `0B`, `de_hexa` aceita `0x` (e dígitos em maiúsculo ou minúsculo), e os dois aceitam um `-` na frente. Em `de_binario`, texto vazio ou só o prefixo dá `o texto '' não tem dígitos.`
+- **`contar_uns` com número negativo** dá erro: `Bits.contar_uns não aceita número negativo (recebeu -1). Use Bits.limitar(n, largura) antes para escolher a largura.`
+- **Número errado de argumentos** dá um erro cru do Python, em inglês, com o nome interno da função. Com `tentar`, a mensagem completa de `Bits.binario()` é `AdvakInterpreter._setup_builtins.<locals>._bits_binario() missing 1 required positional argument: 'n'`, e a de `Bits.binario(1, 2, 3)` é `AdvakInterpreter._setup_builtins.<locals>._bits_binario() takes from 1 to 2 positional arguments but 3 were given`. Sem `tentar`, aparece na caixa "ERRO INESPERADO" (`TypeError`), com a linha do detalhe cortada no fim. Medido à parte, como o item seguinte.
+- **Resultados enormes:** `Bits.ligar(0, 65535)` é um número de cerca de 19 mil dígitos. Imprimi-lo em decimal com `imprimir` dá um erro cru do Python, em inglês, na caixa "ERRO INESPERADO": `ValueError: Exceeds the limit (4300 digits) for integer string conversion`. `binario` e `hexa` devolvem **texto** e não têm esse limite: `Bits.binario(-1, 65536)` tem 65536 caracteres e `Bits.hexa(0, 65536)` tem 16384.
+
+**Verificação independente** (uma vez, nesta máquina, Windows 10, Python 3.13.8): 410 casos gerados com semente fixa (20261116), larguras de 1 a 64 mais 96, 100 e 128, valores dentro e fora da faixa, comparados linha a linha com um cálculo de referência em Python puro escrito antes de rodar: **410 concordam, 0 divergem**. Os 30 casos fora da faixa esperavam erro com "não cabe", e todos deram.
+
+**O que não foi medido:**
+
+- Um `n` enorme (por exemplo `1 << 1000000`).
+- `de_binario` e `de_hexa` fora dos testes de `testes/test_bits.py`.
+- Programas compilados (`advak_compiler.py`) e os transpiladores para Python e C, com `Bits`.
+- A interface gráfica e o REPL.
+- Linux.
+
+Testes: `testes/test_bits.py`.
 
 ### Textos e template strings
 

@@ -1009,6 +1009,125 @@ class AdvakInterpreter:
         g.declare('aleatorio',         __import__('random').random)
         g.declare('inteiro_aleatorio', __import__('random').randint)
 
+        # ── Bits: inteiros em binário e hexadecimal, com largura em bits ────────────────────────────
+        _BITS_LIMITE = 65536     # largura máxima em bits; a posição máxima é _BITS_LIMITE - 1
+
+        def _bits_mostrar(v):
+            return repr(v) if isinstance(v, str) else self._to_str(v)
+
+        def _bits_inteiro(valor, funcao, o_que):
+            """`o_que`: 'um número inteiro', 'uma largura inteira' ou 'uma posição inteira'. Bool e decimal são erro."""
+            if isinstance(valor, bool) or not isinstance(valor, int):
+                dica = (" Use piso(), teto(), arred() ou // para obter um inteiro."
+                        if isinstance(valor, float) else "")
+                raise AdvakError(f"Bits.{funcao} espera {o_que}, mas recebeu {_bits_mostrar(valor)}.{dica}")
+            return valor
+
+        def _bits_largura(largura, funcao):
+            largura = _bits_inteiro(largura, funcao, 'uma largura inteira')
+            if not 1 <= largura <= _BITS_LIMITE:
+                raise AdvakError(f"Bits.{funcao}: a largura precisa ser um inteiro de 1 a {_BITS_LIMITE}, "
+                                 f"mas recebeu {largura}.")
+            return largura
+
+        def _bits_posicao(i, funcao):
+            i = _bits_inteiro(i, funcao, 'uma posição inteira')
+            if not 0 <= i < _BITS_LIMITE:
+                raise AdvakError(f"Bits.{funcao}: a posição precisa ser um inteiro de 0 a {_BITS_LIMITE - 1}, "
+                                 f"mas recebeu {i}.")
+            return i
+
+        def _bits_faixa(n, largura, funcao):
+            minimo, maximo = -(1 << (largura - 1)), (1 << largura) - 1
+            if not minimo <= n <= maximo:
+                unidade = 'bit' if largura == 1 else 'bits'
+                raise AdvakError(f"Bits.{funcao}: {n} não cabe em {largura} {unidade} "
+                                 f"(a faixa é de {minimo} a {maximo}).")
+
+        def _bits_binario(n, largura=None):
+            n = _bits_inteiro(n, 'binario', 'um número inteiro')
+            if largura is None:
+                return format(n, 'b')
+            largura = _bits_largura(largura, 'binario')
+            _bits_faixa(n, largura, 'binario')
+            return format(n & ((1 << largura) - 1), f'0{largura}b')
+
+        def _bits_hexa(n, largura=None):
+            n = _bits_inteiro(n, 'hexa', 'um número inteiro')
+            if largura is None:
+                return format(n, 'x')
+            largura = _bits_largura(largura, 'hexa')
+            _bits_faixa(n, largura, 'hexa')
+            return format(n & ((1 << largura) - 1), f'0{(largura + 3) // 4}x')
+
+        def _bits_de_texto(texto, funcao, base, nome, prefixo, validos):
+            if not isinstance(texto, str):
+                raise AdvakError(f"Bits.{funcao} espera um texto com o número {nome}, "
+                                 f"mas recebeu {_bits_mostrar(texto)}.")
+            resto = texto
+            negativo = resto.startswith('-')
+            if negativo:
+                resto = resto[1:]
+            if resto[:2].lower() == prefixo:
+                resto = resto[2:]
+            if not resto:
+                raise AdvakError(f"Bits.{funcao}: o texto {texto!r} não tem dígitos.")
+            for d in resto:
+                if d not in validos:
+                    raise AdvakError(f"Bits.{funcao}: dígito {d!r} inválido em número {nome} {texto!r}.")
+            valor = int(resto, base)
+            return -valor if negativo else valor
+
+        def _bits_de_binario(texto):
+            return _bits_de_texto(texto, 'de_binario', 2, 'binário', '0b', '01')
+
+        def _bits_de_hexa(texto):
+            return _bits_de_texto(texto, 'de_hexa', 16, 'hexadecimal', '0x', '0123456789abcdefABCDEF')
+
+        def _bits_limitar(n, largura):
+            n = _bits_inteiro(n, 'limitar', 'um número inteiro')
+            largura = _bits_largura(largura, 'limitar')
+            return n & ((1 << largura) - 1)
+
+        def _bits_com_sinal(n, largura):
+            n = _bits_inteiro(n, 'com_sinal', 'um número inteiro')
+            largura = _bits_largura(largura, 'com_sinal')
+            _bits_faixa(n, largura, 'com_sinal')
+            valor = n & ((1 << largura) - 1)
+            return valor - (1 << largura) if valor >> (largura - 1) else valor
+
+        def _bits_contar_uns(n):
+            n = _bits_inteiro(n, 'contar_uns', 'um número inteiro')
+            if n < 0:
+                raise AdvakError(f"Bits.contar_uns não aceita número negativo (recebeu {n}). "
+                                 "Use Bits.limitar(n, largura) antes para escolher a largura.")
+            return bin(n).count('1')
+
+        def _bits_bit(n, i):
+            n = _bits_inteiro(n, 'bit', 'um número inteiro')
+            return (n >> _bits_posicao(i, 'bit')) & 1
+
+        def _bits_ligar(n, i):
+            n = _bits_inteiro(n, 'ligar', 'um número inteiro')
+            return n | (1 << _bits_posicao(i, 'ligar'))
+
+        def _bits_desligar(n, i):
+            n = _bits_inteiro(n, 'desligar', 'um número inteiro')
+            return n & ~(1 << _bits_posicao(i, 'desligar'))
+
+        g.declare('Bits', {
+            'binario':    _bits_binario,
+            'hexa':       _bits_hexa,
+            'de_binario': _bits_de_binario,
+            'de_hexa':    _bits_de_hexa,
+            'limitar':    _bits_limitar,
+            'com_sinal':  _bits_com_sinal,
+            'contar_uns': _bits_contar_uns,
+            'bit':        _bits_bit,
+            'ligar':      _bits_ligar,
+            'desligar':   _bits_desligar,
+        })
+
         # ── JSON ────────────────────────────────────────────────────────────
         g.declare('JSON', {
             # PT-BR

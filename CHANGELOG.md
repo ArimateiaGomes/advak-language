@@ -130,6 +130,29 @@ Todas as mudanças importantes da Advak Language. Datas no formato ano-mês-dia.
 
 ### Linguagem e ferramentas
 
+- **Módulo `Bits`:** 10 funções para números inteiros em binário e hexadecimal, em português: `Bits.binario`,
+  `Bits.hexa`, `Bits.de_binario`, `Bits.de_hexa`, `Bits.limitar`, `Bits.com_sinal`, `Bits.contar_uns`, `Bits.bit`,
+  `Bits.ligar` e `Bits.desligar`. Seção nova no README, "Bits: números em binário e hexadecimal". Testes:
+  `testes/test_bits.py`. Tudo abaixo foi medido uma vez, nesta máquina, Windows 10, Python 3.13.8.
+  - **Medido:** largura de 1 a 65536 e posição de 0 a 65535, com os erros em português (capturáveis com `tentar`).
+    Com largura `w`, `binario`, `hexa` e `com_sinal` aceitam de `-2^(w-1)` a `2^w - 1`; fora disso dão
+    `... não cabe em 8 bits (a faixa é de -128 a 255).` `limitar` é `n mod 2^w` e nunca dá "não cabe". Decimal
+    (inclusive `5.0` e `10 / 2`) dá erro com a dica de `piso()`, `teto()`, `arred()` ou `//`. `de_binario` e `de_hexa`
+    são estritos: sem espaço, `+` ou `_`. `nulo` como largura vale o mesmo que sem largura.
+  - **Medido, e é um limite:** imprimir em decimal um resultado de cerca de 19 mil dígitos (`Bits.ligar(0, 65535)`)
+    dá o erro cru do Python, em inglês (`ValueError: Exceeds the limit (4300 digits) for integer string conversion`),
+    na caixa "ERRO INESPERADO". `binario` e `hexa` devolvem texto e não têm esse limite (65536 e 16384 caracteres
+    medidos).
+  - **Verificação independente:** 410 casos com semente fixa (20261116), larguras de 1 a 64 mais 96, 100 e 128,
+    comparados com uma referência em Python puro escrita antes de rodar: **410 concordam, 0 divergem** (30 casos fora
+    da faixa, todos com erro "não cabe"). Testes: `test_bits.py` com 25 testes, `OK`; `test_operadores_bit.py` com 6,
+    `OK`, depois de aplicar o `Bits`.
+  - **Medido, e é um limite:** número errado de argumentos dá um erro cru do Python, em inglês, com o nome interno da
+    função. Com `tentar`: `AdvakInterpreter._setup_builtins.<locals>._bits_binario() missing 1 required positional
+    argument: 'n'` (`Bits.binario()`) e `... takes from 1 to 2 positional arguments but 3 were given`
+    (`Bits.binario(1, 2, 3)`). Sem `tentar`, aparece na caixa "ERRO INESPERADO" (`TypeError`).
+  - **Não medido:** um `n` enorme (por exemplo `1 << 1000000`); `de_binario` e `de_hexa` fora dos testes; programas
+    compilados ou transpilados com `Bits`; a interface gráfica e o REPL; Linux.
 - **Deslocamento com contagem negativa:** `1 << -1` e `8 >> -2` agora dão erro de execução em português
   (`Deslocamento com contagem negativa: 1 << -1. A contagem de bits precisa ser zero ou maior.`), que pode ser capturado
   com `tentar`. Antes saía um erro cru do Python, em inglês (`ValueError: negative shift count`), na caixa "ERRO
