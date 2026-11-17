@@ -135,17 +135,30 @@ Todas as mudanças importantes da Advak Language. Datas no formato ano-mês-dia.
   `Bits.ligar` e `Bits.desligar`. Seção nova no README, "Bits: números em binário e hexadecimal". Testes:
   `testes/test_bits.py`. Tudo abaixo foi medido uma vez, nesta máquina, Windows 10, com o `python` do PATH, que em
   2026-11-16 é o miniconda 3.13.0 (não dá para reconstruir com certeza a versão de cada rodada). Em 2026-11-16,
-  `test_bits.py` (25 testes), `test_operadores_bit.py` (6), `test_literais_base.py` (39) e `test_docs.py` (18)
-  passaram com o miniconda 3.13.0 e com o Python 3.13.8 do Program Files.
+  `test_bits.py` (36 testes: os 25 do módulo e os 11 da etapa 1.2b), `test_operadores_bit.py` (6) e
+  `test_literais_base.py` (39) passaram com o miniconda 3.13.0 e com o Python 3.13.8 do Program Files, pelo
+  caminho explícito; `test_docs.py` (18) passou nos dois antes da etapa 1.2b e, depois dela, com o miniconda 3.13.0,
+  na suíte completa (28 arquivos, 586 testes, 8 pulados), rodada só com o `python` do PATH.
   - **Medido:** largura de 1 a 65536 e posição de 0 a 65535, com os erros em português (capturáveis com `tentar`).
     Com largura `w`, `binario`, `hexa` e `com_sinal` aceitam de `-2^(w-1)` a `2^w - 1`; fora disso dão
     `... não cabe em 8 bits (a faixa é de -128 a 255).` `limitar` é `n mod 2^w` e nunca dá "não cabe". Decimal
     (inclusive `5.0` e `10 / 2`) dá erro com a dica de `piso()`, `teto()`, `arred()` ou `//`. `de_binario` e `de_hexa`
     são estritos: sem espaço, `+` ou `_`. `nulo` como largura vale o mesmo que sem largura.
-  - **Medido, e é um limite:** imprimir em decimal um resultado de cerca de 19 mil dígitos (`Bits.ligar(0, 65535)`)
-    dá o erro cru do Python, em inglês (`ValueError: Exceeds the limit (4300 digits) for integer string conversion`),
-    na caixa "ERRO INESPERADO". `binario` e `hexa` devolvem texto e não têm esse limite (65536 e 16384 caracteres
-    medidos).
+  - **Medido (etapa 1.2b, commit `1d80d9e`):** as mensagens de erro do `Bits` com número enorme (mais de 4300
+    dígitos decimais, o limite do Python para converter inteiro em texto) deixaram de dar `ValueError` cru e passaram
+    a dizer `um número de N bits` (ou `um número negativo de N bits`), com N vindo de `bit_length()`. A faixa usa
+    potências de 2 quando os limites passam de 4300 dígitos (`-2^(w-1) a 2^w - 1`, da largura de 14285 bits em
+    diante), e uma lista com um inteiro enorme vira `uma lista com um inteiro grande demais para mostrar`. Até 4300
+    dígitos nada mudou. Antes, n com 4301 e 6021 dígitos e largura 14285 e 65536 com um valor que não cabe davam o
+    erro cru. O `test_bits.py` agora tem 36 testes: os 25 antigos, sem edição, e 11 novos (G1 a G11).
+  - **Medido, e é um limite:** para larguras até 14284 bits a mensagem de faixa funciona, mas é muito longa: medidos
+    12707 caracteres de saída com largura 14000 e 12962 com largura 14284.
+  - **Medido, e é um limite:** fora do `Bits`, continuam com `ValueError` cru, em inglês, acima de 4300 dígitos
+    (medido com `1 << 20000`): `imprimir`, `texto()`, a interpolação, `JSON.codificar`, a concatenação com texto e a
+    mensagem do deslocamento negativo. Com 4300 dígitos `imprimir` funciona.
+    `imprimir(Bits.ligar(0, 65535))`, de cerca de 19 mil dígitos, dá `ValueError: Exceeds the limit (4300 digits) for
+    integer string conversion` na caixa "ERRO INESPERADO". `binario` e `hexa` devolvem texto e não têm esse limite
+    (65536 e 16384 caracteres medidos).
   - **Verificação independente:** 410 casos com semente fixa (20261116), larguras de 1 a 64 mais 96, 100 e 128,
     comparados com uma referência em Python puro escrita antes de rodar: **410 concordam, 0 divergem** (30 casos fora
     da faixa, todos com erro "não cabe"). Testes: `test_bits.py` com 25 testes, `OK`; `test_operadores_bit.py` com 6,
@@ -155,7 +168,8 @@ Todas as mudanças importantes da Advak Language. Datas no formato ano-mês-dia.
     argument: 'n'` (`Bits.binario()`) e `... takes from 1 to 2 positional arguments but 3 were given`
     (`Bits.binario(1, 2, 3)`). Sem `tentar`, aparece na caixa "ERRO INESPERADO" (`TypeError`).
   - **Não medido:** um `n` enorme (por exemplo `1 << 1000000`); `de_binario` e `de_hexa` fora dos testes; programas
-    compilados ou transpilados com `Bits`; a interface gráfica e o REPL; Linux.
+    compilados ou transpilados com `Bits`; a interface gráfica e o REPL; o limite de dígitos alterado por
+    `PYTHONINTMAXSTRDIGITS`; Linux.
 - **Deslocamento com contagem negativa:** `1 << -1` e `8 >> -2` agora dão erro de execução em português
   (`Deslocamento com contagem negativa: 1 << -1. A contagem de bits precisa ser zero ou maior.`), que pode ser capturado
   com `tentar`. Antes saía um erro cru do Python, em inglês (`ValueError: negative shift count`), na caixa "ERRO
