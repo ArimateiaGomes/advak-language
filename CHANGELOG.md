@@ -133,7 +133,10 @@ Todas as mudanças importantes da Advak Language. Datas no formato ano-mês-dia.
 - **Módulo `Bits`:** 10 funções para números inteiros em binário e hexadecimal, em português: `Bits.binario`,
   `Bits.hexa`, `Bits.de_binario`, `Bits.de_hexa`, `Bits.limitar`, `Bits.com_sinal`, `Bits.contar_uns`, `Bits.bit`,
   `Bits.ligar` e `Bits.desligar`. Seção nova no README, "Bits: números em binário e hexadecimal". Testes:
-  `testes/test_bits.py`. Tudo abaixo foi medido uma vez, nesta máquina, Windows 10, Python 3.13.8.
+  `testes/test_bits.py`. Tudo abaixo foi medido uma vez, nesta máquina, Windows 10, com o `python` do PATH, que em
+  2026-11-16 é o miniconda 3.13.0 (não dá para reconstruir com certeza a versão de cada rodada). Em 2026-11-16,
+  `test_bits.py` (25 testes), `test_operadores_bit.py` (6), `test_literais_base.py` (39) e `test_docs.py` (18)
+  passaram com o miniconda 3.13.0 e com o Python 3.13.8 do Program Files.
   - **Medido:** largura de 1 a 65536 e posição de 0 a 65535, com os erros em português (capturáveis com `tentar`).
     Com largura `w`, `binario`, `hexa` e `com_sinal` aceitam de `-2^(w-1)` a `2^w - 1`; fora disso dão
     `... não cabe em 8 bits (a faixa é de -128 a 255).` `limitar` é `n mod 2^w` e nunca dá "não cabe". Decimal

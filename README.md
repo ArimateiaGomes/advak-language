@@ -375,7 +375,7 @@ tentar {
 }
 ```
 
-Saída deste programa, rodado de verdade (uma vez, nesta máquina, Windows 10, Python 3.13.8):
+Saída deste programa, rodado de verdade (uma vez, nesta máquina, Windows 10, com o `python` do PATH (a versão exata desta rodada não foi registrada; o `python` do PATH hoje é o miniconda 3.13.0)):
 
 ```text
 00000101
@@ -391,7 +391,7 @@ ff
 Bits.binario: 256 não cabe em 8 bits (a faixa é de -128 a 255).
 ```
 
-**Regras medidas** (uma vez, nesta máquina, Windows 10, Python 3.13.8, pelos 25 testes de `testes/test_bits.py`, exceto os itens "Número errado de argumentos" e "Resultados enormes", que foram medidos à parte):
+**Regras medidas** (uma vez, nesta máquina, Windows 10, com o `python` do PATH (a versão exata desta rodada não foi registrada; o `python` do PATH hoje é o miniconda 3.13.0), pelos 25 testes de `testes/test_bits.py`, que em 2026-11-16 também passaram com o Python 3.13.8 do Program Files; exceto os itens "Número errado de argumentos" e "Resultados enormes", que foram medidos à parte):
 
 - **Largura** de 1 a 65536 e **posição** de 0 a 65535. Fora disso é erro em português, que `tentar` captura: `Bits.binario: a largura precisa ser um inteiro de 1 a 65536, mas recebeu 65537.` e `Bits.bit: a posição precisa ser um inteiro de 0 a 65535, mas recebeu -1.`
 - **Faixa:** com largura `w`, `binario`, `hexa` e `com_sinal` aceitam de `-2^(w-1)` a `2^w - 1`. Fora dela dão erro: `Bits.binario: 256 não cabe em 8 bits (a faixa é de -128 a 255).` Com largura, `binario` e `hexa` escrevem o resto da divisão por `2^w` (`Bits.binario(-1, 8)` dá `11111111`). `hexa` usa `ceil(w/4)` dígitos (`Bits.hexa(1, 5)` dá `01`).
@@ -403,7 +403,7 @@ Bits.binario: 256 não cabe em 8 bits (a faixa é de -128 a 255).
 - **Número errado de argumentos** dá um erro cru do Python, em inglês, com o nome interno da função. Com `tentar`, a mensagem completa de `Bits.binario()` é `AdvakInterpreter._setup_builtins.<locals>._bits_binario() missing 1 required positional argument: 'n'`, e a de `Bits.binario(1, 2, 3)` é `AdvakInterpreter._setup_builtins.<locals>._bits_binario() takes from 1 to 2 positional arguments but 3 were given`. Sem `tentar`, aparece na caixa "ERRO INESPERADO" (`TypeError`), com a linha do detalhe cortada no fim. Medido à parte, como o item seguinte.
 - **Resultados enormes:** `Bits.ligar(0, 65535)` é um número de cerca de 19 mil dígitos. Imprimi-lo em decimal com `imprimir` dá um erro cru do Python, em inglês, na caixa "ERRO INESPERADO": `ValueError: Exceeds the limit (4300 digits) for integer string conversion`. `binario` e `hexa` devolvem **texto** e não têm esse limite: `Bits.binario(-1, 65536)` tem 65536 caracteres e `Bits.hexa(0, 65536)` tem 16384.
 
-**Verificação independente** (uma vez, nesta máquina, Windows 10, Python 3.13.8): 410 casos gerados com semente fixa (20261116), larguras de 1 a 64 mais 96, 100 e 128, valores dentro e fora da faixa, comparados linha a linha com um cálculo de referência em Python puro escrito antes de rodar: **410 concordam, 0 divergem**. Os 30 casos fora da faixa esperavam erro com "não cabe", e todos deram.
+**Verificação independente** (uma vez, nesta máquina, Windows 10, com o `python` do PATH (a versão exata desta rodada não foi registrada; o `python` do PATH hoje é o miniconda 3.13.0); não foi repetida com o 3.13.8): 410 casos gerados com semente fixa (20261116), larguras de 1 a 64 mais 96, 100 e 128, valores dentro e fora da faixa, comparados linha a linha com um cálculo de referência em Python puro escrito antes de rodar: **410 concordam, 0 divergem**. Os 30 casos fora da faixa esperavam erro com "não cabe", e todos deram.
 
 **O que não foi medido:**
 
