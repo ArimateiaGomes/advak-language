@@ -218,5 +218,103 @@ class TesteTeto(Base):
                        "E: Bits.desligar: a posição precisa ser um inteiro de 0 a 65535, mas recebeu 65536."])
 
 
+class TesteNumerosEnormes(Base):
+    """Etapa 1.2b. As mensagens de erro do Bits que mostrariam um número grande passam a dizer "um número de N bits" (ou
+    "um número negativo de N bits"), e a faixa de uma largura a partir de 14285 bits passa a usar potências de 2. O que
+    já funcionava (até 4300 dígitos) não muda. O esperado foi escrito antes de implementar. O Python recusa converter
+    para texto um inteiro com mais de 4300 dígitos decimais (limite medido em 2026-11-16, igual nos dois Pythons
+    testados); estes testes garantem que as mensagens de Bits não dependem dessa conversão."""
+
+    # todos dão erro de Bits com número de mais de 4300 dígitos (ou lista com um); usados no teste G11
+    CASOS = [
+        "Bits.binario(1 << 14285, 14285)", "Bits.hexa(1 << 14285, 14285)", "Bits.com_sinal(1 << 14285, 14285)",
+        "Bits.binario(1 << 65536, 65536)", "Bits.hexa(1 << 65536, 65536)", "Bits.com_sinal(1 << 65536, 65536)",
+        "Bits.binario(-(1 << 14284) - 1, 14285)", "Bits.binario(10 ** 4300, 8)", "Bits.hexa(-(10 ** 6020), 16)",
+        "Bits.contar_uns(-(10 ** 4300))",
+        "Bits.binario(5, 10 ** 6020)", "Bits.hexa(5, 10 ** 6020)", "Bits.limitar(5, 10 ** 6020)",
+        "Bits.com_sinal(5, 10 ** 6020)", "Bits.binario(5, -(1 << 20000))",
+        "Bits.bit(5, 10 ** 4300)", "Bits.ligar(5, 10 ** 4300)", "Bits.desligar(5, 10 ** 4300)",
+        "Bits.de_binario(10 ** 6020)", "Bits.de_hexa(10 ** 6020)", "Bits.binario([1 << 20000])",
+    ]
+
+    def test_G1_o_que_ja_funcionava_nao_muda(self):
+        """Até 4300 dígitos o número continua por extenso, e a faixa também (largura 14284: 4300 dígitos)."""
+        self.conferir([erro("Bits.binario(1 << 14284, 14284)"), erro("Bits.binario(10 ** 4299, 8)"),
+                       erro("Bits.binario(1 << 1000, 1000)")],
+                      [f"E: Bits.binario: {1 << 14284} não cabe em 14284 bits "
+                       f"(a faixa é de {-(1 << 14283)} a {(1 << 14284) - 1}).",
+                       f"E: Bits.binario: {10 ** 4299} não cabe em 8 bits (a faixa é de -128 a 255).",
+                       f"E: Bits.binario: {1 << 1000} não cabe em 1000 bits "
+                       f"(a faixa é de {-(1 << 999)} a {(1 << 1000) - 1})."])
+
+    def test_G2_faixa_a_partir_de_14285_bits(self):
+        fim = "não cabe em 14285 bits (a faixa é de -2^14284 a 2^14285 - 1)."
+        self.conferir([erro(f"Bits.{f}(1 << 14285, 14285)") for f in ("binario", "hexa", "com_sinal")],
+                      [f"E: Bits.{f}: um número de 14286 bits {fim}" for f in ("binario", "hexa", "com_sinal")])
+
+    def test_G3_faixa_no_teto_de_65536_bits(self):
+        fim = "não cabe em 65536 bits (a faixa é de -2^65535 a 2^65536 - 1)."
+        self.conferir([erro(f"Bits.{f}(1 << 65536, 65536)") for f in ("binario", "hexa", "com_sinal")],
+                      [f"E: Bits.{f}: um número de 65537 bits {fim}" for f in ("binario", "hexa", "com_sinal")])
+
+    def test_G4_so_a_faixa_e_enorme(self):
+        """n tem 4300 dígitos (por extenso); o máximo da faixa de 14285 bits tem 4301 (potências)."""
+        n = -(1 << 14284) - 1
+        self.conferir([erro("Bits.binario(-(1 << 14284) - 1, 14285)")],
+                      [f"E: Bits.binario: {n} não cabe em 14285 bits (a faixa é de -2^14284 a 2^14285 - 1)."])
+
+    def test_G5_valor_enorme_e_largura_pequena(self):
+        self.conferir([erro("Bits.binario(10 ** 4300, 8)"), erro("Bits.hexa(-(10 ** 6020), 16)")],
+                      ["E: Bits.binario: um número de 14285 bits não cabe em 8 bits (a faixa é de -128 a 255).",
+                       "E: Bits.hexa: um número negativo de 19999 bits não cabe em 16 bits "
+                       "(a faixa é de -32768 a 65535)."])
+
+    def test_G6_contar_uns_com_negativo_enorme(self):
+        self.conferir([erro("Bits.contar_uns(-(10 ** 4300))")],
+                      ["E: Bits.contar_uns não aceita número negativo (recebeu um número negativo de 14285 bits). "
+                       "Use Bits.limitar(n, largura) antes para escolher a largura."])
+
+    def test_G7_largura_enorme(self):
+        fns = ("binario", "hexa", "limitar", "com_sinal")
+        self.conferir([erro(f"Bits.{f}(5, 10 ** 6020)") for f in fns] + [erro("Bits.binario(5, -(1 << 20000))")],
+                      [f"E: Bits.{f}: a largura precisa ser um inteiro de 1 a 65536, "
+                       "mas recebeu um número de 19999 bits." for f in fns] +
+                      ["E: Bits.binario: a largura precisa ser um inteiro de 1 a 65536, "
+                       "mas recebeu um número negativo de 20001 bits."])
+
+    def test_G8_posicao_enorme(self):
+        fns = ("bit", "ligar", "desligar")
+        self.conferir([erro(f"Bits.{f}(5, 10 ** 4300)") for f in fns],
+                      [f"E: Bits.{f}: a posição precisa ser um inteiro de 0 a 65535, "
+                       "mas recebeu um número de 14285 bits." for f in fns])
+
+    def test_G9_texto_que_na_verdade_e_um_inteiro_enorme(self):
+        self.conferir([erro("Bits.de_binario(10 ** 6020)"), erro("Bits.de_hexa(10 ** 6020)")],
+                      ["E: Bits.de_binario espera um texto com o número binário, "
+                       "mas recebeu um número de 19999 bits.",
+                       "E: Bits.de_hexa espera um texto com o número hexadecimal, "
+                       "mas recebeu um número de 19999 bits."])
+
+    def test_G10_lista_com_inteiro_enorme(self):
+        self.conferir([erro("Bits.binario([1 << 20000])")],
+                      ["E: Bits.binario espera um número inteiro, "
+                       "mas recebeu uma lista com um inteiro grande demais para mostrar."])
+
+    def test_G11_nenhum_valueerror_cru_em_ingles(self):
+        saida = rodar_dk("".join(erro(c) for c in self.CASOS))
+        linhas = saida.split("\n")[:-1] if saida.endswith("\n") else saida.split("\n")
+        self.assertEqual(len(linhas), len(self.CASOS), saida[:500])
+        for caso, linha in zip(self.CASOS, linhas):
+            self.assertTrue(linha.startswith("E: Bits."), f"{caso}: {linha[:200]}")
+            for proibido in ("Exceeds the limit", "ValueError", "ERRO INESPERADO"):
+                self.assertNotIn(proibido, linha, caso)
+        # sem tentar: a caixa é a de erro do Advak, não a de erro inesperado
+        for caso in ("Bits.binario(1 << 65536, 65536)", "Bits.contar_uns(-(10 ** 4300))"):
+            saida = rodar_dk(valor(caso))
+            self.assertIn("ERRO DE EXECUÇÃO", saida, caso)
+            self.assertNotIn("ERRO INESPERADO", saida, caso)
+            self.assertNotIn("Exceeds the limit", saida, caso)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

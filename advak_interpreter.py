@@ -1012,8 +1012,24 @@ class AdvakInterpreter:
         # ── Bits: inteiros em binário e hexadecimal, com largura em bits ────────────────────────────
         _BITS_LIMITE = 65536     # largura máxima em bits; a posição máxima é _BITS_LIMITE - 1
 
+        def _bits_num(v):
+            """Inteiro por extenso. Se o Python recusar (mais de 4300 dígitos decimais), diz o tamanho em bits;
+            bit_length() não passa por conversão decimal, então não sofre esse limite."""
+            try:
+                return str(v)
+            except ValueError:
+                return f"um número {'negativo ' if v < 0 else ''}de {abs(v).bit_length()} bits"
+
         def _bits_mostrar(v):
-            return repr(v) if isinstance(v, str) else self._to_str(v)
+            if isinstance(v, str):
+                return repr(v)
+            if isinstance(v, int) and not isinstance(v, bool):
+                return _bits_num(v)
+            try:
+                return self._to_str(v)
+            except ValueError:   # lista, mapa... com um inteiro grande demais para virar texto
+                quem = "uma lista" if isinstance(v, list) else "um valor"
+                return f"{quem} com um inteiro grande demais para mostrar"
 
         def _bits_inteiro(valor, funcao, o_que):
             """`o_que`: 'um número inteiro', 'uma largura inteira' ou 'uma posição inteira'. Bool e decimal são erro."""
@@ -1027,22 +1043,26 @@ class AdvakInterpreter:
             largura = _bits_inteiro(largura, funcao, 'uma largura inteira')
             if not 1 <= largura <= _BITS_LIMITE:
                 raise AdvakError(f"Bits.{funcao}: a largura precisa ser um inteiro de 1 a {_BITS_LIMITE}, "
-                                 f"mas recebeu {largura}.")
+                                 f"mas recebeu {_bits_num(largura)}.")
             return largura
 
         def _bits_posicao(i, funcao):
             i = _bits_inteiro(i, funcao, 'uma posição inteira')
             if not 0 <= i < _BITS_LIMITE:
                 raise AdvakError(f"Bits.{funcao}: a posição precisa ser um inteiro de 0 a {_BITS_LIMITE - 1}, "
-                                 f"mas recebeu {i}.")
+                                 f"mas recebeu {_bits_num(i)}.")
             return i
 
         def _bits_faixa(n, largura, funcao):
             minimo, maximo = -(1 << (largura - 1)), (1 << largura) - 1
             if not minimo <= n <= maximo:
                 unidade = 'bit' if largura == 1 else 'bits'
-                raise AdvakError(f"Bits.{funcao}: {n} não cabe em {largura} {unidade} "
-                                 f"(a faixa é de {minimo} a {maximo}).")
+                try:
+                    faixa = f"{minimo} a {maximo}"
+                except ValueError:   # limites com mais de 4300 dígitos decimais: usa potências de 2
+                    faixa = f"-2^{largura - 1} a 2^{largura} - 1"
+                raise AdvakError(f"Bits.{funcao}: {_bits_num(n)} não cabe em {largura} {unidade} "
+                                 f"(a faixa é de {faixa}).")
 
         def _bits_binario(n, largura=None):
             n = _bits_inteiro(n, 'binario', 'um número inteiro')
@@ -1099,7 +1119,7 @@ class AdvakInterpreter:
         def _bits_contar_uns(n):
             n = _bits_inteiro(n, 'contar_uns', 'um número inteiro')
             if n < 0:
-                raise AdvakError(f"Bits.contar_uns não aceita número negativo (recebeu {n}). "
+                raise AdvakError(f"Bits.contar_uns não aceita número negativo (recebeu {_bits_num(n)}). "
                                  "Use Bits.limitar(n, largura) antes para escolher a largura.")
             return bin(n).count('1')
 
